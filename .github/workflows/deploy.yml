@@ -21,9 +21,9 @@ jobs:
     - name: Publish Blazor App
       run: dotnet publish -c Release -o release
 
+        # touch release/wwwroot/.nojekyll
     - name: Fix GitHub Pages settings
       run: |
-        touch release/wwwroot/.nojekyll
         cp release/wwwroot/index.html release/wwwroot/404.html
 
     - name: Deploy to GitHub Pages
