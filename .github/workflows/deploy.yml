@@ -1,0 +1,33 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ] # mainブランチにプッシュされた時に作動
+
+permissions:
+  contents: write # GitHub Pagesブランチへの書き込み権限を付与
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x' # お使いの.NETバージョンに合わせてください(7.0.x等)
+
+    - name: Publish Blazor App
+      run: dotnet publish -c Release -o release
+
+    - name: Fix GitHub Pages settings
+      run: |
+        touch release/wwwroot/.nojekyll
+        cp release/wwwroot/index.html release/wwwroot/404.html
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./release/wwwroot

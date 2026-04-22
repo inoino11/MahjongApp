@@ -1,0 +1,44 @@
+@using MahjongApp.Models
+
+<MudDialog>
+    <DialogContent>
+        @if (Presets == null || Presets.Count == 0)
+        {
+            <MudText>保存済みの設定はありません。</MudText>
+        }
+        else
+        {
+            <MudStack Spacing="2">
+                @foreach (var preset in Presets)
+                {
+                    <MudPaper Elevation="0" Outlined="true" Class="pa-3" Style="cursor:pointer;" @onclick="() => SelectPreset(preset)">
+                        <MudText Typo="Typo.subtitle1" Style="font-weight:bold;" Color="Color.Primary">@preset.Name</MudText>
+                        <MudText Typo="Typo.body2" Class="mt-1">
+                            @* ★変更: 三麻 / 四麻 という表記に変換 *@
+                            @(preset.PlayerCount == 3 ? "三麻" : "四麻") / 持ち点:@preset.StartingPoints / 返し点:@preset.ReturnPoints<br />
+                            レート:@(preset.Rate)円 / ウマ:@(preset.Uma1)-@(preset.Uma2) / チップ:@(preset.ChipRate)円
+                        </MudText>
+                    </MudPaper>
+                }
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">閉じる</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public List<RuleSet> Presets { get; set; } = new();
+
+    private void SelectPreset(RuleSet preset)
+    {
+        MudDialog.Close(DialogResult.Ok(preset));
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}

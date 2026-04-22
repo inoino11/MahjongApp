@@ -1,0 +1,52 @@
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudText Class="mb-4">同点が発生しました。<br />起家から順に全員をクリックしてください。</MudText>
+        
+        <MudStack>
+            @foreach (var player in Players)
+            {
+                bool isSelected = SelectedOrder.Contains(player);
+                <MudButton Variant="@(isSelected? Variant.Filled: Variant.Outlined)"
+                           Color="@(isSelected ? Color.Primary : Color.Default)" Disabled="isSelected"
+                           OnClick="() => SelectPlayer(player)">
+                    @(isSelected ? $"{SelectedOrder.IndexOf(player) + 1}番目 : {player}" : player)
+                </MudButton>
+            }
+        </MudStack>
+
+        @if (SelectedOrder.Count > 0)
+        {
+            <MudButton Class="mt-4" Color="Color.Error" Variant="Variant.Text" OnClick="ResetSelection">
+                選択をやり直す
+            </MudButton>
+        }
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    
+    // 親画面から受け取る対局者リスト
+    [Parameter] public List<string> Players { get; set; } = new();
+
+    // クリックされた順に名前を格納するリスト
+    private List<string> SelectedOrder = new();
+
+    private void SelectPlayer(string player)
+    {
+        SelectedOrder.Add(player);
+        
+        // 全員選択されたら自動的にダイアログを閉じて、結果を親画面に返す
+        if (SelectedOrder.Count == Players.Count)
+        {
+            MudDialog.Close(DialogResult.Ok(SelectedOrder));
+        }
+    }
+
+    private void ResetSelection()
+    {
+        SelectedOrder.Clear();
+    }
+}
