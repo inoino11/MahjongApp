@@ -2,32 +2,48 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ] # mainブランチにプッシュされた時に作動
+    branches: [ main ]
 
+# GitHub Pagesへの直接デプロイに必要な権限を付与
 permissions:
-  contents: write # GitHub Pagesブランチへの書き込み権限を付与
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x' # お使いの.NETバージョンに合わせてください(7.0.x等)
+        dotnet-version: '10.0.x' # ※ローカルのバージョンに合わせる
 
     - name: Publish Blazor App
       run: dotnet publish -c Release -o release
 
     - name: Fix GitHub Pages settings
       run: |
+        sed -i 's/<base href="\/" \/>/<base href="\/MahjongApp\/" \/>/g' release/wwwroot/index.html
         touch release/wwwroot/.nojekyll
         cp release/wwwroot/index.html release/wwwroot/404.html
 
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
+    # ビルド結果をアーティファクトとしてアップロード
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./release/wwwroot
+        path: './release/wwwroot'
+
+    # GitHub Pagesへデプロイ
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
