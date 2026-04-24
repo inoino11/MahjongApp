@@ -12,7 +12,7 @@
         <MudText Typo="Typo.h6" Class="ml-3">麻雀集計ツール</MudText>
     </MudAppBar>
 
-    @* 左側のメニュー (幅を狭く、色を変更) *@
+    @* 左側のメニュー *@
     <MudDrawer @bind-Open="_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always" Width="160px" Style="background-color: #e8f5e9;">
         <NavMenu />
     </MudDrawer>
@@ -24,7 +24,6 @@
 </MudLayout>
 
 @code {
-    // スマホ等の狭い画面も考慮し、初期状態はメニューを閉じておきます
     bool _drawerOpen = false;
 
     void DrawerToggle()
@@ -32,14 +31,13 @@
         _drawerOpen = !_drawerOpen;
     }
 
-    // Index.razorからテーマ設定をこちらに移動（アプリ全体に適用するため）
     private MudTheme mahjongTheme = new MudTheme()
     {
         PaletteLight = new PaletteLight()
         {
             Primary = "#1b5e20",    // 深緑
             Secondary = "#b71c1c",  // 赤
-            Background = "#2e7d32", // 麻雀マットの緑
+            Background = "#2e7d32", // 緑
             Surface = "#ffffff",    // 白
             TextPrimary = "#000000",// 黒
             AppbarBackground = "#1b5e20", // 上部バーも深緑

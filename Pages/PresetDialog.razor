@@ -1,4 +1,6 @@
 @using MahjongApp.Models
+@inject ILocalStorageService LocalStorage
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
@@ -9,16 +11,18 @@
         else
         {
             <MudStack Spacing="2">
-                @foreach (var preset in Presets)
+                @foreach (var preset in Presets.ToList())
                 {
-                    <MudPaper Elevation="0" Outlined="true" Class="pa-3" Style="cursor:pointer;" @onclick="() => SelectPreset(preset)">
-                        <MudText Typo="Typo.subtitle1" Style="font-weight:bold;" Color="Color.Primary">@preset.Name</MudText>
-                        <MudText Typo="Typo.body2" Class="mt-1">
-                            @* ★変更: 三麻 / 四麻 という表記に変換 *@
-                            @(preset.PlayerCount == 3 ? "三麻" : "四麻") / 持ち点:@preset.StartingPoints / 返し点:@preset.ReturnPoints<br />
-                            レート:@(preset.Rate)円 / ウマ:@(preset.Uma1)-@(preset.Uma2) / チップ:@(preset.ChipRate)円
-                        </MudText>
-                    </MudPaper>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudPaper Elevation="0" Outlined="true" Class="pa-3 flex-grow-1" Style="cursor:pointer;" @onclick="() => SelectPreset(preset)">
+                            <MudText Typo="Typo.subtitle1" Style="font-weight:bold;" Color="Color.Primary">@preset.Name</MudText>
+                            <MudText Typo="Typo.body2" Class="mt-1">
+                                @(preset.PlayerCount == 3 ? "三麻" : "四麻") / @(preset.StartingPoints)点持ち / @(preset.ReturnPoints)点返し<br />
+                                ウマ:@(preset.Uma1)-@(preset.Uma2) / レート:@(preset.Rate)円 / チップ:@(preset.ChipRate)円
+                            </MudText>
+                        </MudPaper>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Medium" OnClick="() => DeletePreset(preset)" />
+                    </MudStack>
                 }
             </MudStack>
         }
@@ -35,6 +39,14 @@
     private void SelectPreset(RuleSet preset)
     {
         MudDialog.Close(DialogResult.Ok(preset));
+    }
+
+    private async Task DeletePreset(RuleSet preset)
+    {
+        Presets.Remove(preset);
+        await LocalStorage.SetItemAsync("rulePresets", Presets);
+        Snackbar.Add($"設定「{preset.Name}」を削除しました", Severity.Info);
+        StateHasChanged(); // UIを更新
     }
 
     private void Cancel()
