@@ -1,0 +1,16 @@
+{
+  "name": "麻雀集計ツール",
+  "short_name": "麻雀集計",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0d140d",
+  "theme_color": "#1b5e20",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}

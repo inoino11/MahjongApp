@@ -4,7 +4,6 @@ on:
   push:
     branches: [ main ]
 
-# GitHub Pagesへの直接デプロイに必要な権限を付与
 permissions:
   contents: read
   pages: write
@@ -26,7 +25,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '10.0.x' # ※ローカルのバージョンに合わせる
+        dotnet-version: '10.0.x'
 
     - name: Publish Blazor App
       run: dotnet publish -c Release -o release
@@ -37,13 +36,11 @@ jobs:
         touch release/wwwroot/.nojekyll
         cp release/wwwroot/index.html release/wwwroot/404.html
 
-    # ビルド結果をアーティファクトとしてアップロード
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
         path: './release/wwwroot'
 
-    # GitHub Pagesへデプロイ
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
