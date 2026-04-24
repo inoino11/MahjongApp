@@ -6,8 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>麻雀集計ツール</title>
     
-    <!-- <base href="/" /> -->
-    <base href="/MahjongApp/" />
+    <script>
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            document.write('<base href="/" />');
+        } else {
+            document.write('<base href="/MahjongApp/" />');
+        }
+    </script>
     
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
