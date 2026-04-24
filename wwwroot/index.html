@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>麻雀集計ツール</title>
     
+    <!-- <base href="/" /> -->
     <base href="/MahjongApp/" />
     
     <link rel="stylesheet" href="css/app.css" />
@@ -28,11 +29,46 @@
 
 <body>
     <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
+        <style>
+            .mahjong-loading-container {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                background-color: #0d140d; /* アプリ背景と同じ深い緑 */
+                color: #e0e0e0;
+                font-family: 'Kaisei Decol', serif;
+            }
+            .loading-tile {
+                font-size: 4rem;
+                /* 牌がフワフワと浮き沈みするアニメーション */
+                animation: float 2s ease-in-out infinite;
+            }
+            .loading-text {
+                margin-top: 20px;
+                font-size: 1.2rem;
+                font-weight: 700;
+                letter-spacing: 0.1em;
+                /* 文字がゆっくり点滅するアニメーション */
+                animation: pulse 1.5s ease-in-out infinite;
+            }
+            @keyframes float {
+                0% { transform: translateY(0px); }
+                50% { transform: translateY(-15px); }
+                100% { transform: translateY(0px); }
+            }
+            @keyframes pulse {
+                0% { opacity: 0.5; }
+                50% { opacity: 1; }
+                100% { opacity: 0.5; }
+            }
+        </style>
+        
+        <div class="mahjong-loading-container">
+            <div class="loading-tile">🀄</div>
+            <div class="loading-text">雀卓準備中...</div>
+        </div>
     </div>
 
     <div id="blazor-error-ui">
