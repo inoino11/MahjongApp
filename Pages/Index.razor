@@ -82,7 +82,8 @@
                                     @for (int i = 0; i < 4; i++)
                                     {
                                         var index = i;
-                                        <MudTextField Placeholder="@($"対局者 {index + 1}")" @bind-Value="currentPlayers[index]"
+                                        <MudTextField Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index]"
+                                                      ValueChanged="@((string v) => OnPlayerNameChanged(index, v))"
                                                       Disabled="@(index >= rules.PlayerCount)" Margin="Margin.Dense" />
                                     }
                                 </MudStack>
@@ -238,6 +239,11 @@
     {
         var savedRules = await LocalStorage.GetItemAsync<RuleSet>("rules");
         if (savedRules != null) rules = savedRules;
+        var savedPlayers = await LocalStorage.GetItemAsync<List<string>>("currentPlayers");
+        if (savedPlayers != null && savedPlayers.Count >= 4)
+        {
+            currentPlayers = savedPlayers;
+        }
         var savedPresets = await LocalStorage.GetItemAsync<List<RuleSet>>("rulePresets");
         if (savedPresets != null) rulePresets = savedPresets;
         var dictHistories = await LocalStorage.GetItemAsync<Dictionary<int, List<GameResult>>>("histories_dict");
@@ -354,6 +360,12 @@
         await LocalStorage.SetItemAsync("sessionChips_dict", sessionChipsMap);
     }
 
+    private async Task OnPlayerNameChanged(int index, string value)
+    {
+        currentPlayers[index] = value;
+        await LocalStorage.SetItemAsync("currentPlayers", currentPlayers);
+    }
+
     private async Task RecordGame()
     {
         int pCount = rules.PlayerCount;
@@ -396,7 +408,14 @@
             points[pIndex] = rank == 0 ? basePoint + uma + oka : basePoint + uma;
         }
         resultData.Points = points.ToList();
-        resultData.Yen = points.Select(p => (int)Math.Round(p * rules.Rate)).ToList();
+        var yenList = points.Select(p => (int)Math.Round(p * rules.Rate)).ToList();        
+        int yenSum = yenList.Sum();
+        if (yenSum != 0)
+        {
+            int topPlayerIndex = rankedIndices[0];
+            yenList[topPlayerIndex] -= yenSum; 
+        }        
+        resultData.Yen = yenList;
         ActiveHistory.Add(resultData);
         await LocalStorage.SetItemAsync("histories_dict", histories);
         await LocalStorage.SetItemAsync("rules", rules);
