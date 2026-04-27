@@ -83,13 +83,32 @@
     </div>
     
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
-
+    <script src="_framework/blazor.webassembly.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js');
+            navigator.serviceWorker.register('service-worker.js').then(registration => {
+                registration.onupdatefound = () => {
+                    const installingWorker = registration.installing;
+                    if (installingWorker == null) {
+                        return;
+                    }
+                    installingWorker.onstatechange = () => {
+                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            if (confirm("アプリの新しいバージョンがあります。更新して再読み込みしますか？\n（現在の入力状態は保存されます）")) {
+                                installingWorker.postMessage('SKIP_WAITING');
+                            }
+                        }
+                    };
+                };
+            });
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    window.location.reload();
+                    refreshing = true;
+                }
+            });
         }
     </script>
 </body>
-
 </html>
