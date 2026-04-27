@@ -32,7 +32,6 @@ jobs:
 
     - name: Fix GitHub Pages settings
       run: |
-        sed -i 's/<base href="\/" \/>/<base href="\/MahjongApp\/" \/>/g' release/wwwroot/index.html
         touch release/wwwroot/.nojekyll
         cp release/wwwroot/index.html release/wwwroot/404.html
 
