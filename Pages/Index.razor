@@ -104,7 +104,7 @@
                 {
                     var index = i;
                     <MudItem xs="6" sm="3">
-                        <MudNumericField T="int?" Label="@currentPlayers[index]" Value="currentScores[index]"
+                        <MudNumericField T="int?" Label="@(string.IsNullOrWhiteSpace(currentPlayers[index]) ? " " : currentPlayers[index])" Value="currentScores[index]"
                                          ValueChanged="@(v => OnScoreChanged(index, v))" Step="100" Margin="Margin.Dense" />
                     </MudItem>
                 }
@@ -142,7 +142,7 @@
                         {
                             var idx = i;
                             <MudItem xs="3">
-                                <MudNumericField T="int" Label="@(currentPlayers[idx])" Value="ActiveSessionChips[idx]"
+                                <MudNumericField T="int" Label="@(string.IsNullOrWhiteSpace(currentPlayers[idx]) ? " " : currentPlayers[idx])" Value="ActiveSessionChips[idx]"
                                                  ValueChanged="@(v => OnChipChanged(idx, v))" Step="1" HideSpinButtons="true"
                                                  Margin="Margin.Dense" Style="@(isChipError ? "color:#ff0000; font-weight:bold;" : "")" />
                             </MudItem>
@@ -168,10 +168,9 @@
                             @for (int i = 0; i < rules.PlayerCount; i++)
                             {
                                 var idx = i;
-                                <MudTh
-                                    Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.75rem; letter-spacing: -0.5px;">
-                                    @currentPlayers[idx]
-                                </MudTh>
+                               <MudTh Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.75rem; letter-spacing: -0.5px;">
+                                   @(string.IsNullOrWhiteSpace(currentPlayers[idx]) ? " " : currentPlayers[idx])
+                               </MudTh>
                             }
                             <MudTh Style="padding: 4px 0px;"></MudTh>
                         </HeaderContent>
