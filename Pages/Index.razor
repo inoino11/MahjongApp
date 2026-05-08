@@ -3,7 +3,7 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 pb-10">
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 pb-10" @onclick="CancelDelete">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6"
              Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
         麻雀集計ツール</MudText>
@@ -20,18 +20,27 @@
                         <MudCard Outlined="true" Class="flex-grow-1">
                             <MudCardHeader Class="pb-0">
                                 <CardHeaderContent>
-                                    <MudText Typo="Typo.subtitle1" Style="font-weight:bold;">ルール設定</MudText>
+                                    <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                        <MudText Typo="Typo.subtitle1" Style="font-weight:bold; white-space: nowrap;">ルール設定</MudText>
+                                        
+                                        <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small"
+                                                       StartIcon="@Icons.Material.Filled.Settings" OnClick="OpenCustomRuleDialog">
+                                                カスタム<span class="d-none d-sm-inline">ルール</span>
+                                            </MudButton>
+                                            
+                                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                                       StartIcon="@Icons.Material.Filled.Save" OnClick="SavePreset">
+                                                <span class="d-none d-sm-inline">現在の</span>設定保存
+                                            </MudButton>
+                                        </MudStack>
+                                    </MudStack>
                                 </CardHeaderContent>
-                                <CardHeaderActions>
-                                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
-                                               StartIcon="@Icons.Material.Filled.Save" OnClick="SavePreset">現在の設定を保存</MudButton>
-                                </CardHeaderActions>
                             </MudCardHeader>
-                            <MudCardContent Class="pa-3 pt-1">
+                            <MudCardContent Class="pa-3 pt-1 mt-2">
                                 <MudGrid Spacing="1">
                                     <MudItem xs="6" sm="4">
-                                        <MudSelect T="int" Label="対局人数" @bind-Value="rules.PlayerCount"
-                                                   Margin="Margin.Dense">
+                                        <MudSelect T="int" Label="対局人数" @bind-Value="rules.PlayerCount" Margin="Margin.Dense">
                                             <MudSelectItem Value="4">四人麻雀</MudSelectItem>
                                             <MudSelectItem Value="3">三人麻雀</MudSelectItem>
                                         </MudSelect>
@@ -39,32 +48,48 @@
                                     <MudItem xs="6" sm="8">
                                         <MudTextField Label="ルール名" @bind-Value="rules.Name" Margin="Margin.Dense" />
                                     </MudItem>
-                                
                                     <MudItem xs="6" sm="4">
                                         <MudNumericField T="int" Label="持ち点" Value="rules.StartingPoints"
-                                                         ValueChanged="OnStartingPointsChanged" Step="5000" Min="0"
-                                                         Margin="Margin.Dense" />
+                                                         ValueChanged="OnStartingPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" />
                                     </MudItem>
                                     <MudItem xs="6" sm="4">
                                         <MudNumericField T="int" Label="返し点" Value="rules.ReturnPoints"
-                                                         ValueChanged="OnReturnPointsChanged" Step="5000" Min="0"
-                                                         Margin="Margin.Dense" />
+                                                         ValueChanged="OnReturnPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" />
                                     </MudItem>
                                     <MudItem xs="6" sm="4">
-                                        <MudNumericField Label="レート(円/1k)" @bind-Value="rules.Rate" Step="10" Min="0"
-                                                         Margin="Margin.Dense" />
+                                        <MudNumericField Label="レート(円/1k)" @bind-Value="rules.Rate" Step="10" Min="0" Margin="Margin.Dense" />
                                     </MudItem>
                                     <MudItem xs="6" sm="4">
-                                        <MudNumericField Label="チップ(円/枚)" @bind-Value="rules.ChipRate" Step="50" Min="0"
-                                                         Margin="Margin.Dense" />
+                                        <MudNumericField Label="チップ(円/枚)" @bind-Value="rules.ChipRate" Step="50" Min="0" Margin="Margin.Dense" />
                                     </MudItem>
                                     <MudItem xs="6" sm="4">
-                                        <MudNumericField Label="@(rules.PlayerCount == 3 ? "ウマ(1←2)" : "ウマ(2←3)")"
-                                                         @bind-Value="rules.Uma1" Step="5" Min="0" Margin="Margin.Dense" />
+                                        @if (rules.IsCustomUma)
+                                        {
+                                            @* カスタムON時: 「カスタム」と表示し、×ボタンで解除可能にする *@
+                                            <MudTextField Label="@(rules.PlayerCount == 3 ? "ウマ(1←2)" : "ウマ(2←3)")" 
+                                                          Value="@("カスタム")" ReadOnly="true" Margin="Margin.Dense"
+                                                          Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Close" 
+                                                          OnAdornmentClick="DisableCustomUma" />
+                                        }
+                                        else
+                                        {
+                                            @* カスタムOFF時: 通常の数値入力 *@
+                                            <MudNumericField Label="@(rules.PlayerCount == 3 ? "ウマ(1←2)" : "ウマ(2←3)")"
+                                                             @bind-Value="rules.Uma1" Step="5" Min="0" Margin="Margin.Dense" />
+                                        }
                                     </MudItem>
                                     <MudItem xs="6" sm="4">
-                                        <MudNumericField Label="@(rules.PlayerCount == 3 ? "ウマ(1←3)" : "ウマ(1←4)")"
-                                                         @bind-Value="rules.Uma2" Step="5" Min="0" Margin="Margin.Dense" />
+                                        @if (rules.IsCustomUma)
+                                        {
+                                            @* ウマ2も同様（こちらは×ボタンを省いてスッキリさせてもOK） *@
+                                            <MudTextField Label="@(rules.PlayerCount == 3 ? "ウマ(1←3)" : "ウマ(1←4)")" 
+                                                          Value="@("カスタム")" ReadOnly="true" Margin="Margin.Dense" />
+                                        }
+                                        else
+                                        {
+                                            <MudNumericField Label="@(rules.PlayerCount == 3 ? "ウマ(1←3)" : "ウマ(1←4)")"
+                                                             @bind-Value="rules.Uma2" Step="5" Min="0" Margin="Margin.Dense" />
+                                        }
                                     </MudItem>
                                 </MudGrid>
                             </MudCardContent>
@@ -99,13 +124,27 @@
             <MudStack Row="true" AlignItems="AlignItems.Baseline" Class="mb-2">
                 <MudText Typo="Typo.h6">素点入力</MudText>
             </MudStack>
-            <MudGrid Spacing="1">
+            <MudGrid Spacing="1" AlignItems="AlignItems.Center">
                 @for (int i = 0; i < rules.PlayerCount; i++)
                 {
                     var index = i;
-                    <MudItem xs="6" sm="3">
-                        <MudNumericField T="int?" Label="@(string.IsNullOrWhiteSpace(currentPlayers[index]) ? " " : currentPlayers[index])" Value="currentScores[index]"
-                                         ValueChanged="@(v => OnScoreChanged(index, v))" Step="100" Margin="Margin.Dense" />
+                    <MudItem xs="12" sm="6" Class="d-flex align-center">
+                        <MudNumericField T="int?" Label="@(string.IsNullOrWhiteSpace(currentPlayers[index]) ? " " : currentPlayers[index])" 
+                                        Value="currentScores[index]" ValueChanged="@(v => OnScoreChanged(index, v))" 
+                                        Step="100" Margin="Margin.Dense" Class="flex-grow-1" />
+                        
+                        @if (rules.IsYakitoriEnabled)
+                        {
+                            <MudToggleIconButton @bind-Toggled="currentYakitori[index]"
+                                                Icon="@Icons.Material.Filled.NoMeals" Color="Color.Default" Title="@(currentTobiBonus[index] ? "🍗 焼き鳥です" : "焼き鳥ではありません")"
+                                                ToggledIcon="@YakitoriIcon" ToggledColor="Color.Warning" ToggledTitle="🍗 焼き鳥です" />
+                        }
+                        @if (rules.IsTobiEnabled)
+                        {
+                            <MudToggleIconButton @bind-Toggled="currentTobiBonus[index]"
+                                                Icon="@Icons.Material.Filled.Rocket" Color="Color.Default" Title="@(currentTobiBonus[index] ? "🚀 トビ賞を獲得します" : "トビ賞を獲得しません")"
+                                                ToggledIcon="@Icons.Material.Filled.RocketLaunch" ToggledColor="Color.Error" ToggledTitle="🚀 トビ賞を獲得します" />
+                        }
                     </MudItem>
                 }
             </MudGrid>
@@ -114,19 +153,21 @@
         </MudPaper>
 
         @* --- セクション3: 集計結果 --- *@
-        <MudPaper Class="pa-2 px-sm-4" Elevation="2">
+        <MudPaper Class="pa-2 px-sm-4" Elevation="2" @onclick="CancelDelete">
             <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center"
                       Class="mb-4 gap-2">
-                <MudStack Row="true" Wrap="Wrap.Wrap" AlignItems="AlignItems.Center" Class="gap-2">
-                    <MudText Typo="Typo.h6">集計結果</MudText>
-                    <MudStack Row="true" Spacing="1">
-                        <MudButton Variant="@(displayMode == 0 ? Variant.Filled : Variant.Outlined)" Color="Color.Primary"
-                                   Size="Size.Small" OnClick="() => displayMode = 0">素点</MudButton>
-                        <MudButton Variant="@(displayMode == 1 ? Variant.Filled : Variant.Outlined)" Color="Color.Primary"
-                                   Size="Size.Small" OnClick="() => displayMode = 1">+/−</MudButton>
-                        <MudButton Variant="@(displayMode == 2 ? Variant.Filled : Variant.Outlined)" Color="Color.Primary"
-                                   Size="Size.Small" OnClick="() => displayMode = 2">円</MudButton>
-                    </MudStack>
+                <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                    <MudButton Variant="@(displayMode == 0 ? Variant.Filled : Variant.Outlined)" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 0">素点</MudButton>
+                    <MudButton Variant="@(displayMode == 1 ? Variant.Filled : Variant.Outlined)" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 1">+/−</MudButton>
+                    <MudButton Variant="@(displayMode == 2 ? Variant.Filled : Variant.Outlined)" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 2">円</MudButton>
+                    @if (rules.IsYakitoriEnabled)
+                    {
+                        <MudButton Variant="@(displayMode == 3 ? Variant.Filled : Variant.Outlined)" Color="Color.Warning" Size="Size.Small" OnClick="() => displayMode = 3">焼き鳥</MudButton>
+                    }
+                    @if (rules.IsTobiEnabled)
+                    {
+                        <MudButton Variant="@(displayMode == 4 ? Variant.Filled : Variant.Outlined)" Color="Color.Info" Size="Size.Small" OnClick="() => displayMode = 4">トビ</MudButton>
+                    }
                 </MudStack>
                 <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
                            StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="ConfirmReset">記録リセット</MudButton>
@@ -189,8 +230,14 @@
                                 </MudTd>
                             }
                             <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px;">
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
-                                               Style="padding: 0px; color: #9e9e9e;" OnClick="() => DeleteResult(context)" />
+                                <span @onclick="() => {}" @onclick:stopPropagation="true">
+                                    <MudIconButton 
+                                        Icon="@(armedDeleteTarget == context ? @DeleteEmpty : Icons.Material.Filled.Delete)" 
+                                        Color="@(armedDeleteTarget == context ? Color.Error : Color.Default)" 
+                                        Size="Size.Small"
+                                        Style="@(armedDeleteTarget == context ? "padding: 0px;" : "padding: 0px; color: #9e9e9e;")" 
+                                        OnClick="() => OnDeleteClicked(context)" />
+                                </span>
                             </MudTd>
                         </RowTemplate>
                         <FooterContent>
@@ -217,7 +264,7 @@
                         </FooterContent>
                     </MudTable>
                 </div>
-            </MudPaper>
+        </MudPaper>
         </MudContainer>
 
 @code {
@@ -233,7 +280,13 @@
     private List<int> ActiveSessionChips => sessionChipsMap[rules.PlayerCount];
     private bool IsTotalCorrect => currentScores.Take(rules.PlayerCount).All(x => x.HasValue) &&
                                    currentScores.Take(rules.PlayerCount).Sum(x => x ?? 0) == rules.StartingPoints * rules.PlayerCount;
-
+    private List<bool> currentYakitori = new() { false, false, false, false };
+    private List<bool> currentTobiBonus = new() { false, false, false, false };
+    private const string YakitoriIcon = "<g transform=\"matrix(0.025, 0, 0, 0.025, 0, 24)\"><path d=\"M843-60 670-234l-85 85q-23 23-56.5 23T472-149l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23 23-56.5 23T246-375l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23-23-23-56.5t23-56.5l28-28L60-844l56-56 102 102 28-28q23-23 57-23t57 23l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l-85 84 172 173-56 57ZM529-205l227-226-57-57-227 227 57 56Zm-57-170 114-113-57-56-113 113 56 56Zm-170-56 227-227-57-56-226 226 56 57Zm-56-170 114-113-57-57-113 113 56 57Zm368 255ZM501-460ZM388-573ZM275-686Z\"/></g>";
+    private const string DeleteEmpty = "<path d=\"M20.37,8.91L19.37,10.64L7.24,3.64L8.24,1.91L11.28,3.66L12.64,3.29L16.97,5.79L17.34,7.16L20.37,8.91M6,19V7H11.07L18,11V19A2,2 0 0,1 16,21H8A2,2 0 0,1 6,19Z\"/>";
+    private int? armedDeleteIndex = null;
+    private GameResult? armedDeleteTarget = null;
+    
     protected override async Task OnInitializedAsync()
     {
         var savedRules = await LocalStorage.GetItemAsync<RuleSet>("rules");
@@ -256,7 +309,12 @@
         ResetCurrentScores();
     }
 
-    private void ResetCurrentScores() => currentScores = Enumerable.Repeat((int?)null, 4).ToList();
+    private void ResetCurrentScores()
+    {
+        currentScores = Enumerable.Repeat((int?)null, 4).ToList();
+        currentYakitori = new() { false, false, false, false };
+        currentTobiBonus = new() { false, false, false, false };
+    }
 
     private void OnStartingPointsChanged(int val)
     {
@@ -296,6 +354,35 @@
         }
     }
 
+    private void AdjustFractions(double[] points, List<int> orderedIndices)
+    {
+        double sum = points.Sum();
+        double diff = Math.Round(0 - sum, 1); // ゼロサムからのズレ
+        if (Math.Abs(diff) < 0.05) return; 
+        int steps = (int)Math.Round(Math.Abs(diff) * 10);
+        double adjustment = diff > 0 ? 0.1 : -0.1; // 足りないなら+0.1を配る、多すぎるなら-0.1を配る
+        // マイナスを分配する場合は、下位から順に（逆順に）背負わせる
+        var targetIndices = diff > 0 ? orderedIndices : Enumerable.Reverse(orderedIndices).ToList();
+        for (int i = 0; i < steps; i++)
+        {
+            int targetIndex = targetIndices[i % targetIndices.Count];
+            points[targetIndex] += adjustment;
+            points[targetIndex] = Math.Round(points[targetIndex], 1); // 浮動小数点誤差の補正
+        }
+    }
+
+    private void ValidateDisplayMode()
+    {
+        if (displayMode == 3 && !rules.IsYakitoriEnabled)
+        {
+            displayMode = 1;
+        }
+        if (displayMode == 4 && !rules.IsTobiEnabled)
+        {
+            displayMode = 1;
+        }
+    }
+
     private async Task OpenPresetDialog()
     {
         var parameters = new DialogParameters { ["Presets"] = rulePresets };
@@ -303,16 +390,10 @@
         var result = await dialog.Result;
         if (result is not null && !result.Canceled && result.Data is RuleSet preset)
         {
-            rules.Name = preset.Name;
-            rules.PlayerCount = preset.PlayerCount;
-            rules.StartingPoints = preset.StartingPoints;
-            rules.ReturnPoints = preset.ReturnPoints;
-            rules.Rate = preset.Rate;
-            rules.Uma1 = preset.Uma1;
-            rules.Uma2 = preset.Uma2;
-            rules.ChipRate = preset.ChipRate;
+            rules = preset.DeepClone();
             await LocalStorage.SetItemAsync("rules", rules);
             Snackbar.Add($"設定「{preset.Name}」を読み込みました", Severity.Success);
+            ValidateDisplayMode();
             StateHasChanged();
         }
     }
@@ -320,20 +401,20 @@
     private async Task SavePreset()
     {
         rulePresets.RemoveAll(p => p.Name == rules.Name);
-        rulePresets.Add(new RuleSet
-        {
-            Name = rules.Name,
-            PlayerCount = rules.PlayerCount,
-            StartingPoints = rules.StartingPoints,
-            ReturnPoints = rules.ReturnPoints,
-            Rate = rules.Rate,
-            Uma1 = rules.Uma1,
-            Uma2 = rules.Uma2,
-            ChipRate = rules.ChipRate
-        });
+        var newPreset = rules.DeepClone();
+        rulePresets.Add(newPreset);
+        
         await LocalStorage.SetItemAsync("rulePresets", rulePresets);
         await LocalStorage.SetItemAsync("rules", rules);
         Snackbar.Add($"設定「{rules.Name}」を保存しました", Severity.Success);
+    }
+
+    private async Task DisableCustomUma()
+    {
+        rules.IsCustomUma = false;
+        await LocalStorage.SetItemAsync("rules", rules);
+        Snackbar.Add("順位ウマの個別設定を解除しました", Severity.Info);
+        StateHasChanged();
     }
 
     private async Task ConfirmReset()
@@ -349,6 +430,29 @@
             await LocalStorage.SetItemAsync("histories_dict", histories);
             await LocalStorage.SetItemAsync("sessionChips_dict", sessionChipsMap);
             Snackbar.Add($"{(rules.PlayerCount == 3 ? "三" : "四")}人麻雀の記録をリセットしました", Severity.Info);
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnDeleteClicked(GameResult item)
+    {
+        if (armedDeleteTarget == item)
+        {
+            ActiveHistory.Remove(item);
+            armedDeleteTarget = null;
+            await LocalStorage.SetItemAsync("histories_dict", histories);
+        }
+        else
+        {
+            armedDeleteTarget = item;
+        }
+    }
+
+    private void CancelDelete()
+    {
+        if (armedDeleteTarget != null)
+        {
+            armedDeleteTarget = null;
             StateHasChanged();
         }
     }
@@ -370,55 +474,315 @@
         int pCount = rules.PlayerCount;
         var activeScores = currentScores.Take(pCount).Select(x => x ?? 0).ToList();
         var activePlayers = currentPlayers.Take(pCount).ToList();
-        var result = await OpenTieBreakerIfNeeded(activeScores, activePlayers);
-        if (result == null) return;
+
+        // 1. 入力ミスチェック（トビとボーナス獲得者の不一致）
+        if (rules.IsTobiEnabled)
+        {
+            bool hasTobi = activeScores.Any(s => rules.TobiJustIsTobi ? s <= rules.TobiPoint : s < rules.TobiPoint);
+            bool hasTobiBonus = currentTobiBonus.Take(pCount).Any(b => b);
+
+            if (hasTobi && !hasTobiBonus)
+            {
+                Snackbar.Add("トビが発生していますが、ボーナス獲得者（🚀）が選択されていません。", Severity.Error);
+                return;
+            }
+            if (!hasTobi && hasTobiBonus)
+            {
+                Snackbar.Add("トビが発生していないのに、ボーナス獲得者（🚀）が選択されています。", Severity.Error);
+                return;
+            }
+        }
+
+        // 1. オカ・順位ウマのベースポイント算出（席順や素点に依存しない固定値）
+        double[] baseUmaOka = new double[pCount];
+        double oka = (rules.ReturnPoints - rules.StartingPoints) * pCount / 1000.0;
+        baseUmaOka[0] += oka;
+
+        for (int rank = 0; rank < pCount; rank++)
+        {
+            double uma = 0;
+            if (pCount == 4)
+            {
+                if (rank == 0) uma = rules.IsCustomUma ? rules.CustomUma1 : rules.Uma2;
+                else if (rank == 1) uma = rules.IsCustomUma ? rules.CustomUma2 : rules.Uma1;
+                else if (rank == 2) uma = rules.IsCustomUma ? rules.CustomUma3 : -rules.Uma1;
+                else if (rank == 3) uma = rules.IsCustomUma ? rules.CustomUma4 : -rules.Uma2;
+            }
+            else if (pCount == 3)
+            {
+                if (rank == 0) uma = rules.IsCustomUma ? rules.CustomUma1 : rules.Uma1 + rules.Uma2;
+                else if (rank == 1) uma = rules.IsCustomUma ? rules.CustomUma2 : -rules.Uma1;
+                else if (rank == 2) uma = rules.IsCustomUma ? rules.CustomUma3 : -rules.Uma2;
+            }
+            baseUmaOka[rank] += uma;
+        }
+
+        // 2. 各個人の素点と端数処理
+        double[] points = new double[pCount];
+        double totalPts = 0;
+        for (int i = 0; i < pCount; i++)
+        {
+            double rawPt = (activeScores[i] - rules.ReturnPoints) / 1000.0;
+            points[i] = ApplyRounding(rawPt, rules.Rounding);
+            totalPts += points[i];
+        }
+
+        // ゼロサムにするために必要な +0.1 の数
+        int fractionsToAdjust = (int)Math.Round(-(totalPts + oka) * 10);
+
+        // 3. 同着グループの分析と「席順入力ダイアログ」の要否判定
+        var groupedScores = activeScores.Select((score, index) => new { score, index })
+                                        .GroupBy(x => x.score)
+                                        .OrderByDescending(g => g.Key)
+                                        .ToList();
+
+        bool needsTieBreaker = false;
+        if (groupedScores.Any(g => g.Count() > 1))
+        {
+            if (rules.TieBreaker == TieBreakerRule.Kamicha)
+            {
+                needsTieBreaker = true; // 上家取りルールの場合は同着があれば必ず必要
+            }
+            else // 折半 (TieBreakerRule.Split) の場合
+            {
+                int currentRank = 0;
+                foreach (var group in groupedScores)
+                {
+                    int count = group.Count();
+                    if (count > 1)
+                    {
+                        // a. 素点の端数調整で、同着者の間に「+0.1配る/配らない」の境界線が引かれるか？
+                        if (fractionsToAdjust > currentRank && fractionsToAdjust < currentRank + count)
+                        {
+                            needsTieBreaker = true;
+                        }                    
+                        // b. オカ・ウマの折半で、0.1単位で割り切れない端数が出るか？（例: 40 ÷ 3）
+                        double sumUmaOka = 0;
+                        for (int i = 0; i < count; i++) sumUmaOka += baseUmaOka[currentRank + i];
+                        
+                        double splitBase = Math.Floor(sumUmaOka / count * 10) / 10.0;
+                        double remainder = Math.Round(sumUmaOka - (splitBase * count), 1);
+                        if (remainder > 0)
+                        {
+                            needsTieBreaker = true; // 割り切れない余り(0.1)を上家に渡すため必要
+                        }
+                    }
+                    currentRank += count;
+                }
+            }
+        }
+
+        // 席順の決定
+        Dictionary<int, int> priority = null;
+        if (needsTieBreaker)
+        {
+            priority = await OpenTieBreakerIfNeeded(activeScores, activePlayers);
+            if (priority == null) return; // キャンセルされたら処理中断
+        }
+        else
+        {
+            priority = Enumerable.Range(0, pCount).ToDictionary(i => i, i => i);
+        }
+
+        // 4. 最終的な順位付け（同点の場合は priority で上家優先にソート）
+        var rankedIndices = activeScores.Select((score, index) => new { score, index })
+                                        .OrderByDescending(x => x.score)
+                                        .ThenBy(x => priority[x.index])
+                                        .Select(x => x.index)
+                                        .ToList();
+
+
+        // 5. 順位ウマ・オカの分配 (上家取り or 折半)
+        int currentR = 0;
+        while (currentR < pCount)
+        {
+            int score = activeScores[rankedIndices[currentR]];
+            int tieCount = 1;
+            for (int i = currentR + 1; i < pCount; i++)
+            {
+                if (activeScores[rankedIndices[i]] == score) tieCount++;
+                else break;
+            }
+            if (rules.TieBreaker == TieBreakerRule.Split && tieCount > 1)
+            {
+                // 折半処理
+                double sumUmaOka = 0;
+                for (int i = 0; i < tieCount; i++) sumUmaOka += baseUmaOka[currentR + i];
+                
+                // 0.1単位で綺麗に折半し、割り切れなかった分は上家へ
+                double splitBase = Math.Floor(sumUmaOka / tieCount * 10) / 10.0;
+                double remainder = Math.Round(sumUmaOka - (splitBase * tieCount), 1);
+                int remainderUnits = (int)Math.Round(remainder * 10); // 上家に配るべき +0.1 の数
+
+                for (int i = 0; i < tieCount; i++)
+                {
+                    double addPt = splitBase;
+                    if (i < remainderUnits) addPt += 0.1; // 割り切れなかった分は上家（配列の前の方）から優先
+                    points[rankedIndices[currentR + i]] += addPt;
+                }
+            }
+            else
+            {
+                // 上家取り、または単独順位
+                for (int i = 0; i < tieCount; i++)
+                {
+                    points[rankedIndices[currentR + i]] += baseUmaOka[currentR + i];
+                }
+            }
+            currentR += tieCount;
+        }
+        AdjustFractions(points, rankedIndices);
+
+        // 4. イベント（沈みウマ、焼き鳥、トビ、コールド）処理
+        
+        // 【沈みウマ】
+        if (rules.IsSunkenUmaEnabled)
+        {
+            int borderPoint = rules.IsSunkenBaseCustom ? rules.SunkenUmaBasePoint : rules.StartingPoints;
+            var ukiIndices = new List<int>();
+            var shizumiIndices = new List<int>();
+            
+            for (int i = 0; i < pCount; i++)
+            {
+                bool isUki = rules.SunkenJustIsUki ? activeScores[i] >= borderPoint : activeScores[i] > borderPoint;
+                if (isUki) ukiIndices.Add(i); else shizumiIndices.Add(i);
+            }
+
+            if (shizumiIndices.Count > 0 && ukiIndices.Count > 0)
+            {
+                int totalPenalty = shizumiIndices.Count * rules.SunkenUmaPenalty;
+                foreach (var i in shizumiIndices) points[i] -= rules.SunkenUmaPenalty;
+
+                if (rules.SunkenUmaDistribution == PenaltyDistribution.WinnerTakeAll)
+                {
+                    points[rankedIndices[0]] += totalPenalty;
+                }
+                else // 分配
+                {
+                    double bonusPerPlayer = (double)totalPenalty / ukiIndices.Count;
+                    bonusPerPlayer = ApplyRounding(bonusPerPlayer, rules.Rounding);
+                    foreach (var i in ukiIndices) points[i] += bonusPerPlayer;
+                    AdjustFractions(points, rankedIndices); // 割り切れなかった分を調整
+                }
+            }
+        }
+
+        // 【焼き鳥】
+        double[] preYakiPts = points.ToArray();
+        if (rules.IsYakitoriEnabled)
+        {
+            var yakiIndices = new List<int>();
+            var safeIndices = new List<int>();
+            for (int i = 0; i < pCount; i++)
+            {
+                if (currentYakitori[i]) yakiIndices.Add(i); else safeIndices.Add(i);
+            }
+
+            if (yakiIndices.Count > 0 && yakiIndices.Count < pCount) // 全員焼き鳥はペナルティなし等の慣例
+            {
+                int totalPenalty = yakiIndices.Count * rules.YakitoriPenalty;
+                foreach (var i in yakiIndices) points[i] -= rules.YakitoriPenalty;
+
+                if (rules.YakitoriDistribution == PenaltyDistribution.WinnerTakeAll)
+                {
+                    points[rankedIndices[0]] += totalPenalty;
+                }
+                else
+                {
+                    double bonusPerPlayer = (double)totalPenalty / safeIndices.Count;
+                    bonusPerPlayer = ApplyRounding(bonusPerPlayer, rules.Rounding);
+                    foreach (var i in safeIndices) points[i] += bonusPerPlayer;
+                    AdjustFractions(points, rankedIndices);
+                }
+            }
+        }
+        var yakitoriPts = points.Select((p, i) => Math.Round(p - preYakiPts[i], 1)).ToList();
+
+        // 【トビ】
+        double[] preTobiPts = points.ToArray();
+        if (rules.IsTobiEnabled)
+        {
+            var tobiIndices = new List<int>();
+            var bonusIndices = new List<int>();
+            for (int i = 0; i < pCount; i++)
+            {
+                bool isTobi = rules.TobiJustIsTobi ? activeScores[i] <= rules.TobiPoint : activeScores[i] < rules.TobiPoint;
+                if (isTobi) tobiIndices.Add(i);
+                if (currentTobiBonus[i]) bonusIndices.Add(i);
+            }
+
+            if (tobiIndices.Count > 0 && bonusIndices.Count > 0)
+            {
+                int totalPenalty = tobiIndices.Count * rules.TobiPenalty;
+                foreach (var i in tobiIndices) points[i] -= rules.TobiPenalty;
+
+                double bonusPerPlayer = (double)totalPenalty / bonusIndices.Count;
+                bonusPerPlayer = ApplyRounding(bonusPerPlayer, rules.Rounding);
+                foreach (var i in bonusIndices) points[i] += bonusPerPlayer;
+                AdjustFractions(points, rankedIndices);
+            }
+        }
+        var tobiPts = points.Select((p, i) => Math.Round(p - preTobiPts[i], 1)).ToList();
+
+        // 【コールド】
+        if (rules.IsColdEnabled)
+        {
+            bool isCold = rules.ColdJustIsCold ? activeScores[rankedIndices[0]] >= rules.ColdPoint : activeScores[rankedIndices[0]] > rules.ColdPoint;
+            if (isCold)
+            {
+                int totalBonus = (pCount - 1) * rules.ColdBonus;
+                points[rankedIndices[0]] += totalBonus;
+                for (int i = 0; i < pCount; i++)
+                {
+                    if (i != rankedIndices[0]) points[i] -= rules.ColdBonus;
+                }
+            }
+        }
+
+        // 5. 円の計算 (上家・上位優先の端数処理ロジック)
+        double[] exactYen = new double[pCount];
+        int[] baseYen = new int[pCount];
+        double[] fractions = new double[pCount];
+        int totalBaseYen = 0;
+
+        for (int i = 0; i < pCount; i++)
+        {
+            exactYen[i] = points[i] * rules.Rate; 
+            baseYen[i] = (int)Math.Floor(exactYen[i]);
+            fractions[i] = exactYen[i] - baseYen[i]; 
+            totalBaseYen += baseYen[i];
+        }
+        int shortage = 0 - totalBaseYen;
+        var yenDistributionOrder = Enumerable.Range(0, pCount)
+            .OrderByDescending(i => fractions[i])
+            .ThenBy(i => rankedIndices.IndexOf(i))
+            .ToList();
+        for (int i = 0; i < shortage; i++)
+        {
+            int targetIndex = yenDistributionOrder[i];
+            baseYen[targetIndex] += 1;
+        }
+        // 結果オブジェクトの構築
         var resultData = new GameResult
         {
             Timestamp = DateTime.Now,
             PlayerNames = activePlayers,
-            RawScores = activeScores
+            RawScores = activeScores,
+            Points = points.ToList(),
+            YakitoriPlayers = currentYakitori.Take(pCount).ToList(),
+            TobiPlayers = activeScores.Select(s => rules.TobiJustIsTobi ? s <= rules.TobiPoint : s < rules.TobiPoint).ToList(),
+            TobiBonusRecipients = currentTobiBonus.Take(pCount).ToList(),
+            YakitoriPoints = yakitoriPts,
+            TobiPoints = tobiPts,
+            Yen = baseYen.ToList()
         };
-        var rankedIndices = activeScores.Select((score, index) => new { score, index })
-                               .OrderByDescending(x => x.score)
-                               .ThenBy(x => result[x.index])
-                               .Select(x => x.index)
-                               .ToList();
-        double[] points = new double[pCount];
-        double oka = (rules.ReturnPoints - rules.StartingPoints) * pCount / 1000.0;
-        for (int rank = 0; rank < pCount; rank++)
-        {
-            int pIndex = rankedIndices[rank];
-            double basePoint = (activeScores[pIndex] - rules.ReturnPoints) / 1000.0;
-            
-            double uma = 0;
-            if (pCount == 4)
-            {
-                if (rank == 0) uma = rules.Uma2;
-                else if (rank == 1) uma = rules.Uma1;
-                else if (rank == 2) uma = -rules.Uma1;
-                else if (rank == 3) uma = -rules.Uma2;
-            }
-            else if (pCount == 3)
-            {
-                if (rank == 0) uma = rules.Uma1 + rules.Uma2;
-                else if (rank == 1) uma = -rules.Uma1;
-                else if (rank == 2) uma = -rules.Uma2;
-            }
-            points[pIndex] = rank == 0 ? basePoint + uma + oka : basePoint + uma;
-        }
-        resultData.Points = points.ToList();
-        var yenList = points.Select(p => (int)Math.Round(p * rules.Rate)).ToList();        
-        int yenSum = yenList.Sum();
-        if (yenSum != 0)
-        {
-            int topPlayerIndex = rankedIndices[0];
-            yenList[topPlayerIndex] -= yenSum; 
-        }        
-        resultData.Yen = yenList;
+
+        // 保存処理へ
         ActiveHistory.Add(resultData);
         await LocalStorage.SetItemAsync("histories_dict", histories);
         await LocalStorage.SetItemAsync("rules", rules);
         ResetCurrentScores();
+        armedDeleteIndex = null;
     }
 
     private async Task<Dictionary<int, int>?> OpenTieBreakerIfNeeded(List<int> scores, List<string> players)
@@ -443,32 +807,108 @@
         await LocalStorage.SetItemAsync("histories_dict", histories);
     }
 
+    private async Task OpenCustomRuleDialog()
+    {
+        var parameters = new DialogParameters { ["OriginalRules"] = rules };
+        var options = new DialogOptions 
+    { 
+        CloseOnEscapeKey = false, 
+        BackdropClick = false, 
+        MaxWidth = MaxWidth.Medium, 
+        FullWidth = true,
+        Position = DialogPosition.TopCenter 
+    };
+        var dialog = await DialogService.ShowAsync<CustomRuleDialog>("カスタムルール", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled && result.Data is RuleSet newRules)
+        {
+            rules = newRules;
+            await LocalStorage.SetItemAsync("rules", rules);
+            ValidateDisplayMode();
+            StateHasChanged();
+        }
+    }
+
     private string GetDisplayValue(GameResult res, int idx)
     {
         if (displayMode == 0) return res.RawScores[idx].ToString("N0");
-        if (displayMode == 1)
+        if (displayMode == 1) return res.Points[idx] > 0 ? $"+{res.Points[idx]:F1}" : res.Points[idx].ToString("F1");
+        if (displayMode == 2) return res.Yen[idx] > 0 ? $"+{res.Yen[idx]:N0}円" : $"{res.Yen[idx]:N0}円";
+        
+        // ▼ 追加: 焼き鳥表示 (3)
+        if (displayMode == 3)
         {
-            double pt = res.Points[idx];
-            return pt > 0 ? $"+{pt:F1}" : pt.ToString("F1");
+            if (res.YakitoriPoints == null || res.YakitoriPoints.Count <= idx) return "-";
+            double pt = res.YakitoriPoints[idx];
+            if (pt == 0) return "0.0";
+            // 焼き鳥本人には 🍗 を付ける
+            string icon = (res.YakitoriPlayers.Count > idx && res.YakitoriPlayers[idx]) ? "🍗 " : "";
+            return pt > 0 ? $"{icon}+{pt:F1}" : $"{icon}{pt:F1}";
         }
-        if (displayMode == 2)
+        
+        // ▼ 追加: トバし表示 (4)
+        if (displayMode == 4)
         {
-            int yen = res.Yen[idx];
-            return yen > 0 ? $"+{yen:N0}円" : $"{yen:N0}円";
+            if (res.TobiPoints == null || res.TobiPoints.Count <= idx) return "-";
+            double pt = res.TobiPoints[idx];
+            if (pt == 0) return "0.0";
+            // トバした人には 🚀、トんだ人には 💥 を付ける
+            string icon = (res.TobiBonusRecipients.Count > idx && res.TobiBonusRecipients[idx]) ? "🚀 " : 
+                          ((res.TobiPlayers.Count > idx && res.TobiPlayers[idx]) ? "💥 " : "");
+            return pt > 0 ? $"{icon}+{pt:F1}" : $"{icon}{pt:F1}";
         }
         return "";
     }
 
     private string GetTdStyle(GameResult res, int idx)
     {
-        double pt = res.Points[idx];
-        string boxWidth = displayMode == 0 ? "3.4rem" : (displayMode == 1 ? "2.6rem" : "4.2rem");
+        double val = 0;
+        List<double> valList = new();
+
+        // 選択されている表示モードに応じて、評価対象の数値とリストを切り替える
+        if (displayMode == 0) 
+        {
+            val = res.RawScores[idx];
+            valList = res.RawScores.Select(x => (double)x).ToList();
+        }
+        else if (displayMode == 1) 
+        {
+            val = res.Points[idx];
+            valList = res.Points;
+        }
+        else if (displayMode == 2) 
+        {
+            val = res.Yen[idx];
+            valList = res.Yen.Select(x => (double)x).ToList();
+        }
+        else if (displayMode == 3)
+        {
+            if (res.YakitoriPoints == null || res.YakitoriPoints.Count <= idx) return "";
+            val = res.YakitoriPoints[idx];
+            valList = res.YakitoriPoints;
+        }
+        else if (displayMode == 4)
+        {
+            if (res.TobiPoints == null || res.TobiPoints.Count <= idx) return "";
+            val = res.TobiPoints[idx];
+            valList = res.TobiPoints;
+        }
+
+        // 絵文字が入る分、モード1,3,4の幅を少し広め(3.2rem)に確保
+        string boxWidth = displayMode == 0 ? "3.4rem" : (displayMode == 2 ? "4.2rem" : "3.2rem");
         string style = $"display: inline-block; width: {boxWidth}; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.8rem; letter-spacing: -0.5px; ";
-        style += pt >= 0 ? "color: #ff0000; " : "color: #1976d2; ";
-        if (res.Points.Distinct().Count() > 1 && (pt == res.Points.Max() || pt == res.Points.Min()))
+        
+        // 色の判定: 素点モード(0)の時は総合ポイントの浮き沈みで判定、それ以外は現在の表示項目の値で判定
+        bool isPositive = (displayMode == 0) ? (res.Points[idx] >= 0) : (val >= 0);
+        style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
+
+        // 太字の判定: 現在の表示項目の中での最大値・最小値を太字にする
+        if (valList.Count > 0 && valList.Distinct().Count() > 1 && (val == valList.Max() || val == valList.Min()))
         {
             style += "font-weight: bold; ";
         }
+        
         return style;
     }
 
@@ -477,7 +917,22 @@
         if (ActiveHistory.Count == 0 && ActiveSessionChips[idx] == 0) return 0;
         if (displayMode == 0) return ActiveHistory.Count == 0 ? 0 : ActiveHistory.Average(h => h.RawScores[idx]);
         if (displayMode == 1) return ActiveHistory.Sum(h => h.Points[idx]);
-        return ActiveHistory.Sum(h => h.Yen[idx]) + (ActiveSessionChips[idx] * rules.ChipRate);
+        if (displayMode == 2) return ActiveHistory.Sum(h => h.Yen[idx]) + (ActiveSessionChips[idx] * rules.ChipRate);
+        if (displayMode == 3) return ActiveHistory.Sum(h => h.YakitoriPoints != null && h.YakitoriPoints.Count > idx ? h.YakitoriPoints[idx] : 0);
+        if (displayMode == 4) return ActiveHistory.Sum(h => h.TobiPoints != null && h.TobiPoints.Count > idx ? h.TobiPoints[idx] : 0);
+        return 0;
+    }
+
+    private double ApplyRounding(double value, RoundingRule rule)
+    {
+        return rule switch
+        {
+            RoundingRule.ShishaGonyu => Math.Round(value, MidpointRounding.AwayFromZero),
+            RoundingRule.RoundDown => Math.Floor(value),
+            RoundingRule.RoundUp => Math.Ceiling(value),
+            RoundingRule.GoshaRokunyu => Math.Floor(value + 0.4), // 0.5以下は切り捨て(+0.4してFloor)、0.6以上は切り上げ
+            _ => value
+        };
     }
 
     private string GetTotalDisplayValue(int idx)
@@ -485,7 +940,7 @@
         if (ActiveHistory.Count == 0 && ActiveSessionChips[idx] == 0) return "0";
         double val = GetTotalNumericValue(idx);
         if (displayMode == 0) return Math.Round(val).ToString("N0");
-        if (displayMode == 1) return val > 0 ? $"+{val:F1}" : val.ToString("F1");
+        if (displayMode == 1 || displayMode == 3 || displayMode == 4) return val > 0 ? $"+{val:F1}" : val.ToString("F1"); // 3と4を追加
         if (displayMode == 2) return val > 0 ? $"+{val:N0}円" : $"{val:N0}円";
         return "";
     }
@@ -497,19 +952,25 @@
 
     private string GetTotalSpanStyle(int idx)
     {
-        string boxWidth = displayMode == 0 ? "3.4rem" : (displayMode == 1 ? "2.6rem" : "4.2rem");
+        string boxWidth = displayMode == 0 ? "3.4rem" : (displayMode == 2 ? "4.2rem" : "3.2rem");
         string style = $"display: inline-block; width: {boxWidth}; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; letter-spacing: -0.5px; ";
+        
         if (ActiveHistory.Count == 0 && ActiveSessionChips[idx] == 0) return style;
+        
+        // 全プレイヤーの「現在の表示モードにおける合計値」を取得
         var allValues = Enumerable.Range(0, rules.PlayerCount).Select(i => GetTotalNumericValue(i)).ToList();
         double val = allValues[idx];
+        
+        // 太字の判定
         if (allValues.Distinct().Count() > 1 && (val == allValues.Max() || val == allValues.Min()))
         {
             style += "font-weight: bold; ";
         }
-        double pointSum = ActiveHistory.Sum(h => h.Points[idx]);
-        double yenSum = ActiveHistory.Sum(h => h.Yen[idx]) + (ActiveSessionChips[idx] * rules.ChipRate);
-        bool isPositive = (displayMode == 2) ? (yenSum >= 0) : (pointSum >= 0);
+        
+        // 色の判定
+        bool isPositive = (displayMode == 0) ? (ActiveHistory.Sum(h => h.Points[idx]) >= 0) : (val >= 0);
         style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
+        
         return style;
     }
 }

@@ -13,16 +13,22 @@
             <MudStack Spacing="2">
                 @foreach (var preset in Presets.ToList())
                 {
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                        <MudPaper Elevation="0" Outlined="true" Class="pa-3 flex-grow-1" Style="cursor:pointer;" @onclick="() => SelectPreset(preset)">
+                    <MudPaper Elevation="0" Outlined="true" Class="pa-3 flex-grow-1" Style="cursor:pointer;" @onclick="() => SelectPreset(preset)">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                             <MudText Typo="Typo.subtitle1" Style="font-weight:bold;" Color="Color.Primary">@preset.Name</MudText>
-                            <MudText Typo="Typo.body2" Class="mt-1">
-                                @(preset.PlayerCount == 3 ? "三麻" : "四麻") / @(preset.StartingPoints)点持ち / @(preset.ReturnPoints)点返し<br />
-                                ウマ:@(preset.Uma1)-@(preset.Uma2) / レート:@(preset.Rate)円 / チップ:@(preset.ChipRate)円
-                            </MudText>
-                        </MudPaper>
+                            @if (IsCustomApplied(preset))
+                            {
+                                <MudTooltip Text="カスタムルール適用中">
+                                    <MudIcon Icon="@Icons.Material.Filled.Tune" Color="Color.Secondary" Size="Size.Small" />
+                                </MudTooltip>
+                            }
+                        </MudStack>
+                        <MudText Typo="Typo.body2" Class="mt-1">
+                            @(preset.PlayerCount == 3 ? "三麻" : "四麻") / @(preset.StartingPoints)点持ち / @(preset.ReturnPoints)点返し<br />
+                            ウマ:@(preset.IsCustomUma ? "カスタム" : $"{preset.Uma1}-{preset.Uma2}") / レート:@(preset.Rate)円
+                        </MudText>
                         <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Medium" OnClick="() => DeletePreset(preset)" />
-                    </MudStack>
+                    </MudPaper>
                 }
             </MudStack>
         }
@@ -47,6 +53,17 @@
         await LocalStorage.SetItemAsync("rulePresets", Presets);
         Snackbar.Add($"設定「{preset.Name}」を削除しました", Severity.Info);
         StateHasChanged(); // UIを更新
+    }
+
+    private bool IsCustomApplied(RuleSet p)
+    {
+        return p.IsCustomUma || 
+               p.IsSunkenUmaEnabled || 
+               p.IsYakitoriEnabled || 
+               p.IsTobiEnabled || 
+               p.IsColdEnabled ||
+               p.TieBreaker != TieBreakerRule.Kamicha || 
+               p.Rounding != RoundingRule.GoshaRokunyu;
     }
 
     private void Cancel()

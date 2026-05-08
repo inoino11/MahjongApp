@@ -1,0 +1,369 @@
+@using MahjongApp.Models
+@using System.Text.Json
+@inject IDialogService DialogService
+
+<style>
+    /* スマホ画面でタブをスクロールさせず1行に収めるための調整 */
+    .compact-tabs .mud-tab {
+        min-width: 0 !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+        flex: 1;
+    }
+    /* 今回追加: ラベルと枠線の重なりを解消 */
+    .mud-input-label-outlined {
+        background-color: var(--mud-palette-surface) !important;
+        padding: 0 4px !important; /* 文字の左右に少しだけ余白を持たせて線を隠す */
+        border-radius: 4px;
+    }
+</style>
+<MudDialog DisableBackdropClick="true">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-2" Style="vertical-align: text-bottom;" />
+            カスタムルール設定
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTabs DisableRipple="true" Class="compact-tabs" @bind-ActivePanelIndex="activeTabIndex" Centered="true" Elevation="1" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4" Style="min-height: 450px;">
+            
+            @* ==========================================
+               タブ1: ウマ・端数処理
+               ========================================== *@
+            <MudTabPanel Text="@(activeTabIndex == 0 ? "ウマ・端数処理" : "")" Icon="@Icons.Material.Filled.Calculate" ToolTip="ウマ・端数処理">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12">
+                        <div style="width: fit-content;">
+                            <MudSwitch @bind-Value="EditingRules.IsCustomUma" Color="Color.Primary" Label="順位ウマの完全個別設定" />
+                        </div>
+                        @if (EditingRules.IsCustomUma)
+                        {
+                            <MudPaper Class="pa-3 mt-2" Outlined="true" Style="@(!IsUmaValid ? "border-color: red;" : "")">
+                                <MudGrid Spacing="1">
+                                    <MudItem xs="3">
+                                        <MudNumericField Label="1着" @bind-Value="EditingRules.CustomUma1" Step="5" Margin="Margin.Dense" />
+                                    </MudItem>
+                                    <MudItem xs="3">
+                                        <MudNumericField Label="2着" @bind-Value="EditingRules.CustomUma2" Step="5" Margin="Margin.Dense" />
+                                    </MudItem>
+                                    <MudItem xs="3">
+                                        <MudNumericField Label="3着" @bind-Value="EditingRules.CustomUma3" Step="5" Margin="Margin.Dense" />
+                                    </MudItem>
+                                    @if (EditingRules.PlayerCount == 4)
+                                    {
+                                        <MudItem xs="3">
+                                            <MudNumericField Label="4着" @bind-Value="EditingRules.CustomUma4" Step="5" Margin="Margin.Dense" />
+                                        </MudItem>
+                                    }
+                                </MudGrid>
+                                @if (!IsUmaValid)
+                                {
+                                    <MudText Color="Color.Error" Typo="Typo.caption" Class="mt-2" Style="font-weight: bold;">
+                                        ※ウマの合計が0になっていません（現在: @CustomUmaSum）
+                                    </MudText>
+                                }
+                            </MudPaper>
+                        }
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" Class="mt-4">
+                        <MudSelect T="TieBreakerRule" Label="同点の処理" @bind-Value="EditingRules.TieBreaker" Margin="Margin.Dense" Variant="Variant.Outlined">
+                            <MudSelectItem Value="TieBreakerRule.Kamicha">上家取り</MudSelectItem>
+                            <MudSelectItem Value="TieBreakerRule.Split">ポイント折半</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" Class="mt-4">
+                        <MudSelect T="RoundingRule" Label="端数処理ルール" @bind-Value="EditingRules.Rounding" Margin="Margin.Dense" Variant="Variant.Outlined">
+                            <MudSelectItem Value="RoundingRule.GoshaRokunyu">五捨六入</MudSelectItem>
+                            <MudSelectItem Value="RoundingRule.ShishaGonyu">四捨五入</MudSelectItem>
+                            <MudSelectItem Value="RoundingRule.RoundDown">切り捨て</MudSelectItem>
+                            <MudSelectItem Value="RoundingRule.RoundUp">切り上げ</MudSelectItem>
+                        </MudSelect>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
+                            計算イベントごとに0.1ポイント未満の端数を丸め、上位(同点なら上家)に余りを分配します
+                        </MudText>
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+
+            @* ==========================================
+               タブ2: ペナルティ (沈みウマ・焼き鳥)
+               ========================================== *@
+            <MudTabPanel Text="@(activeTabIndex == 1 ? "沈み・焼き鳥" : "")" Icon="@Icons.Material.Filled.TrendingDown" ToolTip="沈み・焼き鳥">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12">
+                        <div style="width: fit-content;">
+                            <MudSwitch @bind-Value="EditingRules.IsSunkenUmaEnabled" Color="Color.Primary" Label="沈みウマ" />
+                        </div>
+                        @if (EditingRules.IsSunkenUmaEnabled)
+                        {
+                            <MudPaper Class="pa-3 mt-2" Outlined="true">
+                                <MudGrid Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudItem xs="12" sm="6">
+                                        <MudSelect T="bool" Label="基準点数" @bind-Value="EditingRules.IsSunkenBaseCustom" Margin="Margin.Dense">
+                                            <MudSelectItem Value="false">原点 (@EditingRules.StartingPoints 点)</MudSelectItem>
+                                            <MudSelectItem Value="true">入力値</MudSelectItem>
+                                        </MudSelect>
+                                    </MudItem>
+                                    @if (EditingRules.IsSunkenBaseCustom)
+                                    {
+                                        <MudItem xs="12" sm="6">
+                                            <MudNumericField Label="カスタム基準点" @bind-Value="EditingRules.SunkenUmaBasePoint" Step="1000" Margin="Margin.Dense" />
+                                        </MudItem>
+                                    }
+                                    <MudItem xs="12" sm="4">
+                                        <MudSelect T="bool" Label="ジャスト" @bind-Value="EditingRules.SunkenJustIsUki" Margin="Margin.Dense">
+                                            <MudSelectItem Value="true">ジャスト浮き</MudSelectItem>
+                                            <MudSelectItem Value="false">ジャスト沈み</MudSelectItem>
+                                        </MudSelect>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudSelect T="PenaltyDistribution" Label="精算方法" @bind-Value="EditingRules.SunkenUmaDistribution" Margin="Margin.Dense">
+                                            <MudSelectItem Value="PenaltyDistribution.WinnerTakeAll">1着総取り</MudSelectItem>
+                                            <MudSelectItem Value="PenaltyDistribution.Split">浮きで分配</MudSelectItem>
+                                        </MudSelect>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudNumericField Label="ペナルティ(pt)" @bind-Value="EditingRules.SunkenUmaPenalty" Step="5" Margin="Margin.Dense" />
+                                    </MudItem>
+                                </MudGrid>
+                            </MudPaper>
+                        }
+                    </MudItem>
+
+                    <MudItem xs="12" Class="mt-4">
+                        <MudSwitch @bind-Value="EditingRules.IsYakitoriEnabled" Color="Color.Primary" Label="焼き鳥ルール" />
+                        @if (EditingRules.IsYakitoriEnabled)
+                        {
+                            <MudPaper Class="pa-3 mt-2" Outlined="true">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">
+                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
+                                    🍗にチェックが入ったプレイヤーを焼き鳥として計算します
+                                </MudText>
+                                <MudGrid Spacing="2">
+                                    <MudItem xs="12" sm="6">
+                                        <MudSelect T="PenaltyDistribution" Label="精算方法" @bind-Value="EditingRules.YakitoriDistribution" Margin="Margin.Dense">
+                                            <MudSelectItem Value="PenaltyDistribution.WinnerTakeAll">1着総取り</MudSelectItem>
+                                            <MudSelectItem Value="PenaltyDistribution.Split">回避者で分配</MudSelectItem>
+                                        </MudSelect>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="6">
+                                        <MudNumericField Label="ペナルティ(pt)" @bind-Value="EditingRules.YakitoriPenalty" Step="5" Margin="Margin.Dense" />
+                                    </MudItem>
+                                </MudGrid>
+                            </MudPaper>
+                        }
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+
+            @* ==========================================
+               タブ3: ボーナス (トビ・コールド)
+               ========================================== *@
+            <MudTabPanel Text="@(activeTabIndex == 2 ? "トビ・コールド" : "")" Icon="@Icons.Material.Filled.RocketLaunch" ToolTip="トビ・コールド">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12">
+                        <div style="width: fit-content;">
+                            <MudSwitch @bind-Value="EditingRules.IsTobiEnabled" Color="Color.Primary" Label="トビ賞" />
+                        </div>
+                        @if (EditingRules.IsTobiEnabled)
+                        {
+                            <MudPaper Class="pa-3 mt-2" Outlined="true">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">
+                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
+                                    🚀にチェックが入ったプレイヤーにトビボーナスを分配します
+                                </MudText>
+                                <MudGrid Spacing="2">
+                                    <MudItem xs="12" sm="4">
+                                        <MudNumericField Label="トビ点数" @bind-Value="EditingRules.TobiPoint" Step="100" Margin="Margin.Dense" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudSelect T="bool" Label="条件" @bind-Value="EditingRules.TobiJustIsTobi" Margin="Margin.Dense">
+                                            <MudSelectItem Value="true">ジャストトビ</MudSelectItem>
+                                            <MudSelectItem Value="false">マイナスでトビ</MudSelectItem>
+                                        </MudSelect>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudNumericField Label="ペナルティ(pt)" @bind-Value="EditingRules.TobiPenalty" Step="5" Margin="Margin.Dense" />
+                                    </MudItem>
+                                </MudGrid>
+                            </MudPaper>
+                        }
+                    </MudItem>
+
+                    <MudItem xs="12" Class="mt-4">
+                        <MudSwitch @bind-Value="EditingRules.IsColdEnabled" Color="Color.Primary" Label="コールド賞" />
+                        @if (EditingRules.IsColdEnabled)
+                        {
+                            <MudPaper Class="pa-3 mt-2" Outlined="true">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">
+                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
+                                    コールド達成時にボーナスを他家全員から徴収します
+                                </MudText>
+                                <MudGrid Spacing="2">
+                                    <MudItem xs="12" sm="4">
+                                        <MudNumericField Label="コールド点数" @bind-Value="EditingRules.ColdPoint" Step="1000" Margin="Margin.Dense" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudSelect T="bool" Label="条件" @bind-Value="EditingRules.ColdJustIsCold" Margin="Margin.Dense">
+                                            <MudSelectItem Value="true">ジャスト終了</MudSelectItem>
+                                            <MudSelectItem Value="false">超過で終了</MudSelectItem>
+                                        </MudSelect>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudNumericField Label="ボーナス(pt)" @bind-Value="EditingRules.ColdBonus" Step="5" Margin="Margin.Dense" />
+                                    </MudItem>
+                                </MudGrid>
+                            </MudPaper>
+                        }
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+
+        </MudTabs>
+    </DialogContent>
+    <DialogActions>
+        @* Class="mr-auto" で左側に寄せる *@
+        <MudButton OnClick="ResetToDefault" Color="Color.Error" Variant="Variant.Text" Class="mr-auto">初期化</MudButton>
+        <MudButton OnClick="Cancel" Color="Color.Default">キャンセル</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled" Disabled="@(!IsUmaValid || !HasChanges())">変更を保存</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+
+    // 親から渡される「現在のルール設定」
+    [Parameter] public RuleSet OriginalRules { get; set; } = new();
+
+    // ダイアログ内で編集するためのクローン
+    private RuleSet EditingRules { get; set; } = new();
+
+    private string _originalJson = "";
+
+    private int activeTabIndex = 0;
+
+    protected override void OnInitialized()
+    {
+        // 編集用にディープコピーを作成
+        EditingRules = OriginalRules.DeepClone();
+        
+        // カスタムウマがOFFかつ初めて開いた場合は、基本ウマの値をデフォルトセットしておく
+        if (!EditingRules.IsCustomUma)
+        {
+            if (EditingRules.PlayerCount == 4)
+            {
+                EditingRules.CustomUma1 = EditingRules.Uma2;
+                EditingRules.CustomUma2 = EditingRules.Uma1;
+                EditingRules.CustomUma3 = -EditingRules.Uma1;
+                EditingRules.CustomUma4 = -EditingRules.Uma2;
+            }
+            else // 三麻
+            {
+                // Index.razor の RecordGame ロジック (Uma1 + Uma2, -Uma1, -Uma2) に合わせる
+                EditingRules.CustomUma1 = EditingRules.Uma1 + EditingRules.Uma2;
+                EditingRules.CustomUma2 = -EditingRules.Uma1;
+                EditingRules.CustomUma3 = -EditingRules.Uma2;
+            }
+        }
+
+        // セットアップがすべて完了した後の「開いた時点の最終状態」を基準(Original)として保存する
+        _originalJson = JsonSerializer.Serialize(EditingRules);
+    }
+
+    // ウマの合計値計算
+    private int CustomUmaSum => EditingRules.PlayerCount == 4 
+        ? EditingRules.CustomUma1 + EditingRules.CustomUma2 + EditingRules.CustomUma3 + EditingRules.CustomUma4 
+        : EditingRules.CustomUma1 + EditingRules.CustomUma2 + EditingRules.CustomUma3;
+
+    // ウマの合計が0なら保存可能
+    private bool IsUmaValid => !EditingRules.IsCustomUma || CustomUmaSum == 0;
+
+    private async Task Cancel()
+    {
+        // 変更がある場合のみ、破棄の確認ダイアログを出す
+        if (HasChanges())
+        {
+            var result = await DialogService.ShowMessageBoxAsync(
+                "確認", 
+                "変更が保存されていません。破棄して閉じますか？", 
+                yesText: "破棄する", cancelText: "戻る");
+
+            if (result != true) return; // 「戻る」が押されたら閉じない
+        }
+        
+        // 変更がない、または破棄に同意した場合は閉じる
+        MudDialog.Cancel();
+    }
+
+    private bool HasChanges()
+    {
+        return _originalJson != JsonSerializer.Serialize(EditingRules);
+    }
+
+    private void Submit()
+    {
+        if (EditingRules.IsCustomUma && IsUmaValid)
+        {
+            EditingRules.Uma1 = EditingRules.CustomUma1;
+            EditingRules.Uma2 = EditingRules.CustomUma2;
+        }
+        MudDialog.Close(DialogResult.Ok(EditingRules));
+    }
+
+    private async Task ResetToDefault()
+    {
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "初期化の確認", 
+            "カスタムルールをすべてデフォルトに戻し、設定を保存しますか？\n（この操作は取り消せません）", 
+            yesText: "初期化して保存", cancelText: "戻る");
+
+        if (result != true) return; // 「戻る」なら何もしない
+
+        // 各種ルールの初期化
+        EditingRules.IsCustomUma = false;
+        EditingRules.TieBreaker = TieBreakerRule.Kamicha;
+        EditingRules.Rounding = RoundingRule.GoshaRokunyu;
+
+        EditingRules.IsSunkenUmaEnabled = false;
+        EditingRules.IsSunkenBaseCustom = false;
+        EditingRules.SunkenUmaBasePoint = 30000;
+        EditingRules.SunkenJustIsUki = true;
+        EditingRules.SunkenUmaDistribution = PenaltyDistribution.WinnerTakeAll;
+        EditingRules.SunkenUmaPenalty = 10;
+
+        EditingRules.IsYakitoriEnabled = false;
+        EditingRules.YakitoriDistribution = PenaltyDistribution.Split;
+        EditingRules.YakitoriPenalty = 10;
+
+        EditingRules.IsTobiEnabled = false;
+        EditingRules.TobiPoint = 0;
+        EditingRules.TobiJustIsTobi = true;
+        EditingRules.TobiPenalty = 10;
+
+        EditingRules.IsColdEnabled = false;
+        EditingRules.ColdPoint = 60000;
+        EditingRules.ColdJustIsCold = true;
+        EditingRules.ColdBonus = 10;
+
+        // 四麻・三麻それぞれのウマ合計値が0になるように初期化（適用時のエラー防止）
+        if (EditingRules.PlayerCount == 4)
+        {
+            EditingRules.CustomUma1 = EditingRules.Uma2;
+            EditingRules.CustomUma2 = EditingRules.Uma1;
+            EditingRules.CustomUma3 = -EditingRules.Uma1;
+            EditingRules.CustomUma4 = -EditingRules.Uma2;
+        }
+        else
+        {
+            EditingRules.CustomUma1 = EditingRules.Uma1 + EditingRules.Uma2;
+            EditingRules.CustomUma2 = -EditingRules.Uma1;
+            EditingRules.CustomUma3 = -EditingRules.Uma2;
+        }
+        
+        // 初期化処理が終わったら、そのまま保存処理へ回す
+        Submit();
+    }
+}
