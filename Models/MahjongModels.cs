@@ -44,10 +44,17 @@ public class RuleSet
 
     // --- ウマ完全個別設定 ---
     public bool IsCustomUma { get; set; } = false;
-    public int CustomUma1 { get; set; } = 20;
-    public int CustomUma2 { get; set; } = 10;
-    public int CustomUma3 { get; set; } = -10;
-    public int CustomUma4 { get; set; } = -20;
+    
+    // 4麻用カスタムウマ
+    public int CustomUma4_1 { get; set; } = 20;
+    public int CustomUma4_2 { get; set; } = 10;
+    public int CustomUma4_3 { get; set; } = -10;
+    public int CustomUma4_4 { get; set; } = -20;
+
+    // 3麻用カスタムウマ
+    public int CustomUma3_1 { get; set; } = 30;
+    public int CustomUma3_2 { get; set; } = -10;
+    public int CustomUma3_3 { get; set; } = -20;
 
     // --- 同点・端数処理 ---
     public TieBreakerRule TieBreaker { get; set; } = TieBreakerRule.Kamicha;
@@ -84,6 +91,31 @@ public class RuleSet
         // System.Text.Json を使った最も確実で簡潔なディープコピー
         var json = JsonSerializer.Serialize(this);
         return JsonSerializer.Deserialize<RuleSet>(json) ?? new RuleSet();
+    }
+
+    // --- 個別の順位ウマ表示用テキストを生成 ---
+    public string GetUmaDisplayText(bool isDetailed = false)
+    {
+        if (!IsCustomUma)
+        {
+            return $"{Uma1}-{Uma2}";
+        }
+        string Format(int v) => v > 0 ? $"+{v}" : v.ToString();
+
+        if (PlayerCount == 4)
+        {
+            if (isDetailed)
+                return $" {Format(CustomUma4_1)}     {Format(CustomUma4_2)}     {Format(CustomUma4_3)}     {Format(CustomUma4_4)}";
+            else
+                return $"{Format(CustomUma4_1)}/{Format(CustomUma4_2)}/{Format(CustomUma4_3)}/{Format(CustomUma4_4)}";
+        }
+        else
+        {
+            if (isDetailed)
+                return $" {Format(CustomUma3_1)}     {Format(CustomUma3_2)}     {Format(CustomUma3_3)}";
+            else
+                return $"{Format(CustomUma3_1)}/{Format(CustomUma3_2)}/{Format(CustomUma3_3)}";
+        }
     }
 }
 
