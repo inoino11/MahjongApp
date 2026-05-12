@@ -57,12 +57,12 @@
 
     private bool IsCustomApplied(RuleSet p)
     {
-        return p.IsCustomUma || 
-               p.IsSunkenUmaEnabled || 
-               p.IsYakitoriEnabled || 
-               p.IsTobiEnabled || 
+        return p.IsCustomUma ||
+               p.IsSinkEnabled ||
+               p.IsYakiEnabled ||
+               p.IsTobiEnabled ||
                p.IsColdEnabled ||
-               p.TieBreaker != TieBreakerRule.Kamicha || 
+               p.TieBreaker != TieBreakerRule.Kamicha ||
                p.Rounding != RoundingRule.GoshaRokunyu;
     }
 

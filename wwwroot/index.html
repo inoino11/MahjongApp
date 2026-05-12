@@ -31,7 +31,79 @@
     <meta name="theme-color" content="#1b5e20" />
 
     <script type="importmap"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
+
+<script>
+    window.exportAndShareResult = async (elementId) => {
+        const element = document.getElementById(elementId);
+        if (!element) return "ERROR: Element not found";
+
+        try {
+            // 1. 指定された隠しDOMを画像(Canvas)化
+            const canvas = await html2canvas(element, {
+                backgroundColor: "#1a1a27", // アプリの背景色に合わせる
+                scale: 2, // 高画質化
+                logging: false
+            });
+
+            return new Promise((resolve) => {
+                canvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        resolve("ERROR: Blob creation failed");
+                        return;
+                    }
+
+                    const file = new File([blob], 'mahjong_result.png', { type: 'image/png' });
+
+                    // ▼ スマホ・タブレットかどうかの判定 ▼
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                    // 2. 【スマホ向け】モバイル端末 ＆ Web Share APIが使える場合
+                    if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: '麻雀対局結果'
+                            });
+                            resolve("SHARED");
+                            return;
+                        } catch (e) {
+                            resolve("CANCELLED");
+                            return;
+                        }
+                    }
+
+                    // 3. 【PC向け】クリップボードに画像を直接コピー
+                    try {
+                        if (navigator.clipboard && window.ClipboardItem) {
+                            await navigator.clipboard.write([
+                                new ClipboardItem({ [file.type]: blob })
+                            ]);
+                            resolve("COPIED");
+                            return;
+                        }
+                    } catch (e) {
+                        console.log("Clipboard error fallback", e);
+                    }
+
+                    // 4. 【最終手段】未対応ブラウザの場合はダウンロード
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'mahjong_result.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    resolve("DOWNLOADED");
+                }, 'image/png');
+            });
+        } catch (error) {
+            return "ERROR: " + error.message;
+        }
+    };
+</script>
 
 <body>
     <div id="app">

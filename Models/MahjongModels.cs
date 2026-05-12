@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace MahjongApp.Models;
 
-// --- 各種ルールの選択肢（UIバインディング用） ---
+// --- 各種ルールの選択肢 ---
 
 public enum TieBreakerRule
 {
@@ -33,10 +33,10 @@ public class RuleSet
     public int PlayerCount { get; set; } = 4;
     public int StartingPoints { get; set; } = 25000;
     public int ReturnPoints { get; set; } = 30000;
-    public int Rate { get; set; } = 50; // 円/1000点
-    public int Uma1 { get; set; } = 10; // 4麻:ウマ(2←3)、3麻:ウマ(1←2)
-    public int Uma2 { get; set; } = 20; // 4麻:ウマ(1←4)、3麻:ウマ(1←3)
-    public int ChipRate { get; set; } = 100; // 円/枚
+    public int Rate { get; set; } = 50;
+    public int Uma1 { get; set; } = 10;
+    public int Uma2 { get; set; } = 20;
+    public int ChipRate { get; set; } = 100;
 
     // ==========================================
     // 以下、カスタムルール用追加プロパティ
@@ -61,34 +61,34 @@ public class RuleSet
     public RoundingRule Rounding { get; set; } = RoundingRule.GoshaRokunyu;
 
     // --- 沈みウマ ---
-    public bool IsSunkenUmaEnabled { get; set; } = false;
-    public bool IsSunkenBaseCustom { get; set; } = false;      // true: 入力値, false: 原点(StartingPoints)
-    public int SunkenUmaBasePoint { get; set; } = 30000;       // カスタム時の基準点数
-    public bool SunkenJustIsUki { get; set; } = true;          // true: ジャスト浮き, false: ジャスト沈み
-    public PenaltyDistribution SunkenUmaDistribution { get; set; } = PenaltyDistribution.WinnerTakeAll;
-    public int SunkenUmaPenalty { get; set; } = 10;
+    public bool IsSinkEnabled { get; set; } = false;
+    public bool IsSinkBaseCustom { get; set; } = false;
+    public int SinkUmaBasePoint { get; set; } = 30000;
+    public bool SinkJustIsUki { get; set; } = true;
+    public PenaltyDistribution SinkUmaDistribution { get; set; } = PenaltyDistribution.WinnerTakeAll;
+    public int SinkUmaPenalty { get; set; } = 10;
 
     // --- 焼き鳥ルール ---
-    public bool IsYakitoriEnabled { get; set; } = false;
-    public PenaltyDistribution YakitoriDistribution { get; set; } = PenaltyDistribution.Split;
-    public int YakitoriPenalty { get; set; } = 10;
+    public bool IsYakiEnabled { get; set; } = false;
+    public PenaltyDistribution YakiDistribution { get; set; } = PenaltyDistribution.Split;
+    public int YakiPenalty { get; set; } = 10;
 
     // --- トビ賞 ---
     public bool IsTobiEnabled { get; set; } = false;
     public int TobiPoint { get; set; } = 0;
-    public bool TobiJustIsTobi { get; set; } = true;           // true: ジャストトビ(0点でトビ), false: 続行(マイナスでトビ)
+    public bool TobiJustIsTobi { get; set; } = true;
     public int TobiPenalty { get; set; } = 10;
 
     // --- コールド賞 ---
     public bool IsColdEnabled { get; set; } = false;
     public int ColdPoint { get; set; } = 60000;
-    public bool ColdJustIsCold { get; set; } = true;           // true: ジャストコールド(6万点で終了), false: 続行
+    public bool ColdJustIsCold { get; set; } = true;
     public int ColdBonus { get; set; } = 10;
 
     // --- 安全なコピー（設定キャンセル時の破棄用） ---
     public RuleSet DeepClone()
     {
-        // System.Text.Json を使った最も確実で簡潔なディープコピー
+        // System.Text.Json を使ったディープコピー
         var json = JsonSerializer.Serialize(this);
         return JsonSerializer.Deserialize<RuleSet>(json) ?? new RuleSet();
     }
@@ -131,10 +131,11 @@ public class GameResult
     // 以下、イベント発生履歴（結果取り消し・再描画用）
     // ==========================================
     
-    // インデックスはPlayerNamesと一致させる（trueの人が対象）
-    public List<bool> YakitoriPlayers { get; set; } = new();      // 焼き鳥を食らった人
+    public List<bool> YakiPlayers { get; set; } = new();          // 焼き鳥を食らった人
     public List<bool> TobiPlayers { get; set; } = new();          // トんだ人
-    public List<bool> TobiBonusRecipients { get; set; } = new();  // トバした人（ダブロン等で複数人になる可能性を考慮してList）
-    public List<double> YakitoriPoints { get; set; } = new(); // 焼き鳥で動いたポイント
-    public List<double> TobiPoints { get; set; } = new();     // トビ賞で動いたポイント
+    public List<bool> TobiBonusRecipients { get; set; } = new();  // トバした人
+    public List<double> SinkPoints { get; set; } = new();         // 沈みウマで動いたポイント
+    public List<double> YakiPoints { get; set; } = new();         // 焼き鳥で動いたポイント
+    public List<double> TobiPoints { get; set; } = new();         // トビ賞で動いたポイント
+    public List<double> ColdPoints { get; set; } = new();         // コールドで動いたポイント
 }

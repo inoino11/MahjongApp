@@ -27,8 +27,7 @@
         </MudText>
     </TitleContent>
     <DialogContent>
-        <MudTabs DisableRipple="true" Class="compact-tabs" @bind-ActivePanelIndex="activeTabIndex" Centered="true"
-                 Elevation="1" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4" Style="min-height: 450px;">
+        <MudTabs DisableRipple="true" Class="compact-tabs" @bind-ActivePanelIndex="activeTabIndex" Centered="true" Elevation="1" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4" Style="min-height: 450px;">
             
             @* ==========================================
                タブ1: ウマ・端数処理
@@ -37,8 +36,7 @@
                 <MudGrid Spacing="2">
                     <MudItem xs="12">
                         <div style="width: fit-content;">
-                            <MudSwitch @bind-Value="EditingRules.IsCustomUma" Color="Color.Primary"
-                                       Label="順位ウマの完全個別設定" />
+                            <MudSwitch @bind-Value="EditingRules.IsCustomUma" Color="Color.Primary" Label="順位ウマの完全個別設定" />
                         </div>
                         @if (EditingRules.IsCustomUma)
                         {
@@ -47,35 +45,28 @@
                                     @if (EditingRules.PlayerCount == 4)
                                     {
                                         <MudItem xs="3" Class="pr-3">
-                                            <MudNumericField Label="1着" @bind-Value="EditingRules.CustomUma4_1" Step="5"
-                                                             Margin="Margin.Dense" />
+                                            <MudNumericField Label="1着" @bind-Value="EditingRules.CustomUma4_1" Step="5" Margin="Margin.Dense" />
                                         </MudItem>
                                         <MudItem xs="3" Class="pr-3">
-                                            <MudNumericField Label="2着" @bind-Value="EditingRules.CustomUma4_2" Step="5"
-                                                             Margin="Margin.Dense" />
+                                            <MudNumericField Label="2着" @bind-Value="EditingRules.CustomUma4_2" Step="5" Margin="Margin.Dense" />
                                         </MudItem>
                                         <MudItem xs="3" Class="pr-3">
-                                            <MudNumericField Label="3着" @bind-Value="EditingRules.CustomUma4_3" Step="5"
-                                                             Margin="Margin.Dense" />
+                                            <MudNumericField Label="3着" @bind-Value="EditingRules.CustomUma4_3" Step="5" Margin="Margin.Dense" />
                                         </MudItem>
                                         <MudItem xs="3" Class="pr-3">
-                                            <MudNumericField Label="4着" @bind-Value="EditingRules.CustomUma4_4" Step="5"
-                                                             Margin="Margin.Dense" />
+                                            <MudNumericField Label="4着" @bind-Value="EditingRules.CustomUma4_4" Step="5" Margin="Margin.Dense" />
                                         </MudItem>
                                     }
                                     else
                                     {
                                         <MudItem xs="4" Class="pr-3">
-                                            <MudNumericField Label="1着" @bind-Value="EditingRules.CustomUma3_1" Step="5"
-                                                             Margin="Margin.Dense" />
+                                            <MudNumericField Label="1着" @bind-Value="EditingRules.CustomUma3_1" Step="5" Margin="Margin.Dense" />
                                         </MudItem>
                                         <MudItem xs="4" Class="pr-3">
-                                            <MudNumericField Label="2着" @bind-Value="EditingRules.CustomUma3_2" Step="5"
-                                                             Margin="Margin.Dense" />
+                                            <MudNumericField Label="2着" @bind-Value="EditingRules.CustomUma3_2" Step="5" Margin="Margin.Dense" />
                                         </MudItem>
                                         <MudItem xs="4" Class="pr-3">
-                                            <MudNumericField Label="3着" @bind-Value="EditingRules.CustomUma3_3" Step="5"
-                                                             Margin="Margin.Dense" />
+                                            <MudNumericField Label="3着" @bind-Value="EditingRules.CustomUma3_3" Step="5" Margin="Margin.Dense" />
                                         </MudItem>
                                     }
                                 </MudGrid>
@@ -90,24 +81,21 @@
                     </MudItem>
 
                     <MudItem xs="12" sm="6" Class="mt-4">
-                        <MudSelect T="TieBreakerRule" Label="同点の処理" @bind-Value="EditingRules.TieBreaker"
-                                   Margin="Margin.Dense" Variant="Variant.Outlined">
+                        <MudSelect T="TieBreakerRule" Label="同点の処理" @bind-Value="EditingRules.TieBreaker" Margin="Margin.Dense" Variant="Variant.Outlined">
                             <MudSelectItem Value="TieBreakerRule.Kamicha">上家取り</MudSelectItem>
                             <MudSelectItem Value="TieBreakerRule.Split">ポイント折半</MudSelectItem>
                         </MudSelect>
                     </MudItem>
 
                     <MudItem xs="12" sm="6" Class="mt-4">
-                        <MudSelect T="RoundingRule" Label="端数処理ルール" @bind-Value="EditingRules.Rounding"
-                                   Margin="Margin.Dense" Variant="Variant.Outlined">
+                        <MudSelect T="RoundingRule" Label="端数処理ルール" @bind-Value="EditingRules.Rounding" Margin="Margin.Dense" Variant="Variant.Outlined">
                             <MudSelectItem Value="RoundingRule.GoshaRokunyu">五捨六入</MudSelectItem>
                             <MudSelectItem Value="RoundingRule.ShishaGonyu">四捨五入</MudSelectItem>
                             <MudSelectItem Value="RoundingRule.RoundDown">切り捨て</MudSelectItem>
                             <MudSelectItem Value="RoundingRule.RoundUp">切り上げ</MudSelectItem>
                         </MudSelect>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small"
-                                     Style="vertical-align: bottom; font-size: 14px;" />
+                            <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
                             計算イベントごとに0.1ポイント未満の端数を丸め、上位(同点なら上家)に余りを分配します
                         </MudText>
                     </MudItem>
@@ -121,44 +109,42 @@
                 <MudGrid Spacing="2">
                     <MudItem xs="12">
                         <div style="width: fit-content;">
-                            <MudSwitch @bind-Value="EditingRules.IsSunkenUmaEnabled" Color="Color.Primary"
-                                       Label="沈みウマ" />
+                            <MudSwitch @bind-Value="EditingRules.IsSinkEnabled" Color="Color.Primary" Label="沈みウマ" />
                         </div>
-                        @if (EditingRules.IsSunkenUmaEnabled)
+                        @if (EditingRules.IsSinkEnabled)
                         {
                             <MudPaper Class="pa-3 mt-2" Outlined="true">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">
+                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
+                                    基準点数に満たないプレイヤーにペナルティを課します
+                                </MudText>
                                 <MudGrid Spacing="2" AlignItems="AlignItems.Center">
                                     <MudItem xs="12" sm="6">
-                                        <MudSelect T="bool" Label="基準点数" @bind-Value="EditingRules.IsSunkenBaseCustom"
-                                                   Margin="Margin.Dense">
+                                        <MudSelect T="bool" Label="基準点数" @bind-Value="EditingRules.IsSinkBaseCustom" Margin="Margin.Dense">
                                             <MudSelectItem Value="false">原点 (@EditingRules.StartingPoints 点)</MudSelectItem>
                                             <MudSelectItem Value="true">入力値</MudSelectItem>
                                         </MudSelect>
                                     </MudItem>
-                                    @if (EditingRules.IsSunkenBaseCustom)
+                                    @if (EditingRules.IsSinkBaseCustom)
                                     {
                                         <MudItem xs="12" sm="6">
-                                            <MudNumericField Label="カスタム基準点" @bind-Value="EditingRules.SunkenUmaBasePoint"
-                                                             Step="1000" Margin="Margin.Dense" />
+                                            <MudNumericField Label="カスタム基準点" @bind-Value="EditingRules.SinkUmaBasePoint" Step="1000" Margin="Margin.Dense" />
                                         </MudItem>
                                     }
                                     <MudItem xs="12" sm="4">
-                                        <MudSelect T="bool" Label="ジャスト" @bind-Value="EditingRules.SunkenJustIsUki"
-                                                   Margin="Margin.Dense">
-                                            <MudSelectItem Value="true">ジャスト浮き</MudSelectItem>
-                                            <MudSelectItem Value="false">ジャスト沈み</MudSelectItem>
+                                        <MudSelect T="bool" Label="基準点ジャスト" @bind-Value="EditingRules.SinkJustIsUki" Margin="Margin.Dense">
+                                            <MudSelectItem Value="true">浮き</MudSelectItem>
+                                            <MudSelectItem Value="false">沈み</MudSelectItem>
                                         </MudSelect>
                                     </MudItem>
                                     <MudItem xs="12" sm="4">
-                                        <MudSelect T="PenaltyDistribution" Label="精算方法"
-                                                   @bind-Value="EditingRules.SunkenUmaDistribution" Margin="Margin.Dense">
+                                        <MudSelect T="PenaltyDistribution" Label="精算方法" @bind-Value="EditingRules.SinkUmaDistribution" Margin="Margin.Dense">
                                             <MudSelectItem Value="PenaltyDistribution.WinnerTakeAll">1着総取り</MudSelectItem>
                                             <MudSelectItem Value="PenaltyDistribution.Split">浮きで分配</MudSelectItem>
                                         </MudSelect>
                                     </MudItem>
                                     <MudItem xs="12" sm="4">
-                                        <MudNumericField Label="ペナルティ(pt)" @bind-Value="EditingRules.SunkenUmaPenalty"
-                                                         Step="5" Margin="Margin.Dense" />
+                                        <MudNumericField Label="ペナルティ(pt)" @bind-Value="EditingRules.SinkUmaPenalty" Step="5" Margin="Margin.Dense" />
                                     </MudItem>
                                 </MudGrid>
                             </MudPaper>
@@ -166,26 +152,23 @@
                     </MudItem>
 
                     <MudItem xs="12" Class="mt-4">
-                        <MudSwitch @bind-Value="EditingRules.IsYakitoriEnabled" Color="Color.Primary" Label="焼き鳥ルール" />
-                        @if (EditingRules.IsYakitoriEnabled)
+                        <MudSwitch @bind-Value="EditingRules.IsYakiEnabled" Color="Color.Primary" Label="焼き鳥" />
+                        @if (EditingRules.IsYakiEnabled)
                         {
                             <MudPaper Class="pa-3 mt-2" Outlined="true">
                                 <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">
-                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small"
-                                             Style="vertical-align: bottom; font-size: 14px;" />
-                                    🍗にチェックが入ったプレイヤーを焼き鳥として計算します
+                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
+                                    🍗にチェックが入った焼き鳥プレイヤーにペナルティを課します
                                 </MudText>
                                 <MudGrid Spacing="2">
                                     <MudItem xs="12" sm="6">
-                                        <MudSelect T="PenaltyDistribution" Label="精算方法"
-                                                   @bind-Value="EditingRules.YakitoriDistribution" Margin="Margin.Dense">
+                                        <MudSelect T="PenaltyDistribution" Label="精算方法" @bind-Value="EditingRules.YakiDistribution" Margin="Margin.Dense">
                                             <MudSelectItem Value="PenaltyDistribution.WinnerTakeAll">1着総取り</MudSelectItem>
                                             <MudSelectItem Value="PenaltyDistribution.Split">回避者で分配</MudSelectItem>
                                         </MudSelect>
                                     </MudItem>
                                     <MudItem xs="12" sm="6">
-                                        <MudNumericField Label="ペナルティ(pt)" @bind-Value="EditingRules.YakitoriPenalty"
-                                                         Step="5" Margin="Margin.Dense" />
+                                        <MudNumericField Label="ペナルティ(pt)" @bind-Value="EditingRules.YakiPenalty" Step="5" Margin="Margin.Dense" />
                                     </MudItem>
                                 </MudGrid>
                             </MudPaper>
@@ -207,25 +190,21 @@
                         {
                             <MudPaper Class="pa-3 mt-2" Outlined="true">
                                 <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">
-                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small"
-                                             Style="vertical-align: bottom; font-size: 14px;" />
+                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
                                     🚀にチェックが入ったプレイヤーにトビボーナスを分配します
                                 </MudText>
                                 <MudGrid Spacing="2">
                                     <MudItem xs="12" sm="4">
-                                        <MudNumericField Label="トビ点数" @bind-Value="EditingRules.TobiPoint" Step="100"
-                                                         Margin="Margin.Dense" />
+                                        <MudNumericField Label="トビ点数" @bind-Value="EditingRules.TobiPoint" Step="100" Margin="Margin.Dense" />
                                     </MudItem>
                                     <MudItem xs="12" sm="4">
-                                        <MudSelect T="bool" Label="条件" @bind-Value="EditingRules.TobiJustIsTobi"
-                                                   Margin="Margin.Dense">
-                                            <MudSelectItem Value="true">ジャストトビ</MudSelectItem>
+                                        <MudSelect T="bool" Label="条件" @bind-Value="EditingRules.TobiJustIsTobi" Margin="Margin.Dense">
+                                            <MudSelectItem Value="true">ジャストもトビ</MudSelectItem>
                                             <MudSelectItem Value="false">マイナスでトビ</MudSelectItem>
                                         </MudSelect>
                                     </MudItem>
                                     <MudItem xs="12" sm="4">
-                                        <MudNumericField Label="ペナルティ(pt)" @bind-Value="EditingRules.TobiPenalty" Step="5"
-                                                         Margin="Margin.Dense" />
+                                        <MudNumericField Label="ペナルティ(pt)" @bind-Value="EditingRules.TobiPenalty" Step="5" Margin="Margin.Dense" />
                                     </MudItem>
                                 </MudGrid>
                             </MudPaper>
@@ -238,25 +217,21 @@
                         {
                             <MudPaper Class="pa-3 mt-2" Outlined="true">
                                 <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">
-                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small"
-                                             Style="vertical-align: bottom; font-size: 14px;" />
+                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
                                     コールド達成時にボーナスを他家全員から徴収します
                                 </MudText>
                                 <MudGrid Spacing="2">
                                     <MudItem xs="12" sm="4">
-                                        <MudNumericField Label="コールド点数" @bind-Value="EditingRules.ColdPoint" Step="1000"
-                                                         Margin="Margin.Dense" />
+                                        <MudNumericField Label="コールド点数" @bind-Value="EditingRules.ColdPoint" Step="1000" Margin="Margin.Dense" />
                                     </MudItem>
                                     <MudItem xs="12" sm="4">
-                                        <MudSelect T="bool" Label="条件" @bind-Value="EditingRules.ColdJustIsCold"
-                                                   Margin="Margin.Dense">
+                                        <MudSelect T="bool" Label="条件" @bind-Value="EditingRules.ColdJustIsCold" Margin="Margin.Dense">
                                             <MudSelectItem Value="true">ジャスト終了</MudSelectItem>
                                             <MudSelectItem Value="false">超過で終了</MudSelectItem>
                                         </MudSelect>
                                     </MudItem>
                                     <MudItem xs="12" sm="4">
-                                        <MudNumericField Label="ボーナス(pt)" @bind-Value="EditingRules.ColdBonus" Step="5"
-                                                         Margin="Margin.Dense" />
+                                        <MudNumericField Label="ボーナス(pt)" @bind-Value="EditingRules.ColdBonus" Step="5" Margin="Margin.Dense" />
                                     </MudItem>
                                 </MudGrid>
                             </MudPaper>
@@ -270,8 +245,7 @@
     <DialogActions>
         <MudButton OnClick="ResetToDefault" Color="Color.Error" Variant="Variant.Text" Class="mr-auto">初期化</MudButton>
         <MudButton OnClick="Cancel" Color="Color.Default">キャンセル</MudButton>
-        <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled"
-                   Disabled="@(!IsUmaValid || !HasChanges())">変更を保存</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled" Disabled="@(!IsUmaValid || !HasChanges())">変更を保存</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -289,8 +263,7 @@
     protected override void OnInitialized()
     {
         EditingRules = OriginalRules.DeepClone();
-        
-        // 初めて開いた時など、両方の基本ウマの値をデフォルトセットしておく
+        // 初めて開いた時など、両方の基本ウマの値をデフォルトセット
         if (!EditingRules.IsCustomUma)
         {
             // 四麻用
@@ -298,13 +271,11 @@
             EditingRules.CustomUma4_2 = EditingRules.Uma1;
             EditingRules.CustomUma4_3 = -EditingRules.Uma1;
             EditingRules.CustomUma4_4 = -EditingRules.Uma2;
-
             // 三麻用
             EditingRules.CustomUma3_1 = EditingRules.Uma1 + EditingRules.Uma2;
             EditingRules.CustomUma3_2 = -EditingRules.Uma1;
             EditingRules.CustomUma3_3 = -EditingRules.Uma2;
         }
-
         _originalJson = JsonSerializer.Serialize(EditingRules);
     }
 
@@ -335,7 +306,6 @@
 
     private void Submit()
     {
-        // 以前のようにUma1, Uma2を上書きする処理は不要になりました
         MudDialog.Close(DialogResult.Ok(EditingRules));
     }
 
@@ -352,16 +322,16 @@
         EditingRules.TieBreaker = TieBreakerRule.Kamicha;
         EditingRules.Rounding = RoundingRule.GoshaRokunyu;
 
-        EditingRules.IsSunkenUmaEnabled = false;
-        EditingRules.IsSunkenBaseCustom = false;
-        EditingRules.SunkenUmaBasePoint = 30000;
-        EditingRules.SunkenJustIsUki = true;
-        EditingRules.SunkenUmaDistribution = PenaltyDistribution.WinnerTakeAll;
-        EditingRules.SunkenUmaPenalty = 10;
+        EditingRules.IsSinkEnabled = false;
+        EditingRules.IsSinkBaseCustom = false;
+        EditingRules.SinkUmaBasePoint = 30000;
+        EditingRules.SinkJustIsUki = true;
+        EditingRules.SinkUmaDistribution = PenaltyDistribution.WinnerTakeAll;
+        EditingRules.SinkUmaPenalty = 10;
 
-        EditingRules.IsYakitoriEnabled = false;
-        EditingRules.YakitoriDistribution = PenaltyDistribution.Split;
-        EditingRules.YakitoriPenalty = 10;
+        EditingRules.IsYakiEnabled = false;
+        EditingRules.YakiDistribution = PenaltyDistribution.Split;
+        EditingRules.YakiPenalty = 10;
 
         EditingRules.IsTobiEnabled = false;
         EditingRules.TobiPoint = 0;
@@ -373,7 +343,6 @@
         EditingRules.ColdJustIsCold = true;
         EditingRules.ColdBonus = 10;
 
-        // 初期化時は両方とも綺麗にしておく
         EditingRules.CustomUma4_1 = EditingRules.Uma2;
         EditingRules.CustomUma4_2 = EditingRules.Uma1;
         EditingRules.CustomUma4_3 = -EditingRules.Uma1;
