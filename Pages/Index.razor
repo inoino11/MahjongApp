@@ -3,6 +3,7 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 
 @* 素点入力欄のスタイル *@
 <style>
@@ -160,40 +161,47 @@
                     <MudButton Variant="@(displayMode == 0 ? Variant.Filled : Variant.Outlined)" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 0">素点</MudButton>
                     <MudButton Variant="@(displayMode == 1 ? Variant.Filled : Variant.Outlined)" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 1">+/−</MudButton>
                     <MudButton Variant="@(displayMode == 2 ? Variant.Filled : Variant.Outlined)" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 2">円</MudButton>
-                    @if (rules.IsSinkEnabled)
-                    {
-                        <MudButton Variant="@(displayMode == 3 ? Variant.Filled : Variant.Outlined)" Color="Color.Tertiary" Size="Size.Small" OnClick="() => displayMode = 3">沈み</MudButton>
-                    }
-                    @if (rules.IsYakiEnabled)
-                    {
-                        <MudButton Variant="@(displayMode == 4 ? Variant.Filled : Variant.Outlined)" Color="Color.Warning" Size="Size.Small" OnClick="() => displayMode = 4">焼き鳥</MudButton>
-                    }
-                    @if (rules.IsTobiEnabled)
-                    {
-                        <MudButton Variant="@(displayMode == 5 ? Variant.Filled : Variant.Outlined)" Color="Color.Info" Size="Size.Small" OnClick="() => displayMode = 5">トビ</MudButton>
-                    }
-                    @if (rules.IsColdEnabled)
-                    {
-                        <MudButton Variant="@(displayMode == 6 ? Variant.Filled : Variant.Outlined)" Color="Color.Info" Size="Size.Small" OnClick="() => displayMode = 6">コールド</MudButton>
-                    }
                 </MudStack>
+                @if (rules.IsSinkEnabled || rules.IsYakiEnabled || rules.IsTobiEnabled || rules.IsColdEnabled)
+                {
+                    <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                        @if (rules.IsSinkEnabled)
+                        {
+                            <MudButton Variant="@(displayMode == 3 ? Variant.Filled : Variant.Outlined)" Color="Color.Warning" Size="Size.Small" OnClick="() => displayMode = 3">沈み</MudButton>
+                        }
+                        @if (rules.IsYakiEnabled)
+                        {
+                            <MudButton Variant="@(displayMode == 4 ? Variant.Filled : Variant.Outlined)" Color="Color.Warning" Size="Size.Small" OnClick="() => displayMode = 4">焼き鳥</MudButton>
+                        }
+                        @if (rules.IsTobiEnabled)
+                        {
+                            <MudButton Variant="@(displayMode == 5 ? Variant.Filled : Variant.Outlined)" Color="Color.Info" Size="Size.Small" OnClick="() => displayMode = 5">トビ</MudButton>
+                        }
+                        @if (rules.IsColdEnabled)
+                        {
+                            <MudButton Variant="@(displayMode == 6 ? Variant.Filled : Variant.Outlined)" Color="Color.Info" Size="Size.Small" OnClick="() => displayMode = 6">コールド</MudButton>
+                        }
+                    </MudStack>
+                }
                 <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="ConfirmReset">記録リセット</MudButton>
             </MudStack>
             <MudCard Class="mb-4" Elevation="0" Outlined="true">
                 <MudCardContent Class="pa-3">
                     <MudText Typo="Typo.subtitle2" Class="mb-2">チップ集計</MudText>
-                    <MudGrid Spacing="1">
+                    <div style="display: flex; width: 100%; flex-wrap: nowrap; align-items: center; gap: 8px;">
                         @{
                             bool isChipError = ActiveSessionChips.Take(rules.PlayerCount).Sum() != 0;
                         }
+                        <div style="width: 25px; flex-shrink: 0;"></div>
                         @for (int i = 0; i < rules.PlayerCount; i++)
                         {
                             var idx = i;
-                            <MudItem xs="3">
+                            <div style="flex: 1; min-width: 0;">
                                 <MudNumericField T="int" Label="@(string.IsNullOrWhiteSpace(currentPlayers[idx]) ? " " : currentPlayers[idx])" Value="ActiveSessionChips[idx]" ValueChanged="@(v => OnChipChanged(idx, v))" Step="1" HideSpinButtons="true" Margin="Margin.Dense" Style="@(isChipError ? "color:#ff0000; font-weight:bold;" : "")" />
-                            </MudItem>
+                            </div>
                         }
-                    </MudGrid>
+                        <div style="width: 25px; flex-shrink: 0;"></div>
+                    </div>
                 </MudCardContent>
             </MudCard>
             <div style="width: 100%; overflow-x: hidden;">
@@ -259,6 +267,9 @@
                     <div class="d-flex justify-end mt-4">
                         <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Share" OnClick="ShareImageAsync" Disabled="isSharing">
                             @(isSharing ? "画像を作成中..." : "結果を画像でシェア")
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Link" OnClick="CopyShareUrlAsync" Class="mr-2">
+                            閲覧用URLをコピー
                         </MudButton>
                     </div>
                 </div>
@@ -1093,29 +1104,24 @@
             0 => res.RawScores.Select(x => (double)x).ToList(),
             1 => res.Points,
             2 => res.Yen.Select(x => (double)x).ToList(),
-            3 => res.SinkPoints,
-            4 => res.YakiPoints,
-            5 => res.TobiPoints,
-            6 => res.ColdPoints,
+            3 => (res.SinkPoints?.Count > idx) ? res.SinkPoints : new(),
+            4 => (res.YakiPoints?.Count > idx) ? res.YakiPoints : new(),
+            5 => (res.TobiPoints?.Count > idx) ? res.TobiPoints : new(),
+            6 => (res.ColdPoints?.Count > idx) ? res.ColdPoints : new(),
             _ => null
         };
         if (valList == null || idx >= valList.Count) return "";
         double val = valList[idx];
         string boxWidth = displayMode switch { 0 => "3.4rem", 2 => "4.2rem", _ => "3.2rem" };
         string style = $"display:inline-block; width:{boxWidth}; text-align:right; font-variant-numeric:tabular-nums; font-size:0.8rem; letter-spacing:-0.5px; ";
-        if (displayMode >= 3 && val == 0)
-        {
-            return "color: #9e9e9e; font-weight: bold;";
-        }
+        if (displayMode >= 3 && val == 0) return "color: #9e9e9e; font-weight: bold;";
         else
         {
             bool isPositive = (displayMode == 0) ? res.Points[idx] >= 0 : val >= 0;
             style += $"color:{(isPositive ? "#ff0000" : "#1976d2")}; ";
-            if (valList.Distinct().Count() > 1 && (val == valList.Max() || val == valList.Min()))
-            {
-                style += "font-weight:bold;";
-            }
+            if (valList.Distinct().Count() > 1 && (val == valList.Max() || val == valList.Min())) style += "font-weight:bold;";
         }
+        if (displayMode == 1) style += "position: relative; right: 0.7rem; ";
         return style;
     }
 
@@ -1174,6 +1180,7 @@
             bool isPositive = (displayMode == 0) ? (ActiveHistory.Sum(h => h.Points[idx]) >= 0) : (val >= 0);
             style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
         }
+        if (displayMode == 1) style += "position: relative; right: 0.7rem; ";
         return style;
     }
 
@@ -1246,5 +1253,47 @@
             style += "font-weight: bold; ";
         }
         return style;
+    }
+
+    @* 結果共有用のURLを生成してクリップボードにコピー *@
+    private async Task CopyShareUrlAsync()
+    {
+        try
+        {
+            // 共有したいデータをまとめる
+            var payload = new
+            {
+                Rules = rules,
+                Players = currentPlayers.Take(rules.PlayerCount).ToList(),
+                History = ActiveHistory,
+                SessionChips = ActiveSessionChips.Take(rules.PlayerCount).ToList()
+            };
+
+            // JSON化
+            string json = System.Text.Json.JsonSerializer.Serialize(payload);
+            byte[] jsonBytes = System.Text.Encoding.UTF8.GetBytes(json);
+
+            // 局数が多くなるとURLの文字数制限（約2000文字）に引っかかるため、GZipで圧縮する
+            using var ms = new System.IO.MemoryStream();
+            using (var gzip = new System.IO.Compression.GZipStream(ms, System.IO.Compression.CompressionLevel.Optimal))
+            {
+                gzip.Write(jsonBytes, 0, jsonBytes.Length);
+            }
+            
+            // Base64文字列に変換してURLエンコード
+            string base64 = Convert.ToBase64String(ms.ToArray());
+            string urlEncoded = Uri.EscapeDataString(base64);
+
+            // 共有用URLの完成
+            string shareUrl = $"{NavigationManager.BaseUri}shared?d={urlEncoded}";
+
+            // クリップボードにコピー (JSInterop経由)
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", shareUrl);
+            Snackbar.Add("閲覧用URLをクリップボードにコピーしました！", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"URLの生成に失敗しました: {ex.Message}", Severity.Error);
+        }
     }
 }
