@@ -27,89 +27,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 
-<script>
-    // 画像シェア機能
-    window.exportAndShareResult = async (elementId) => {
-        const element = document.getElementById(elementId);
-        if (!element) return "ERROR: Element not found";
-        try {
-            const canvas = await html2canvas(element, {
-                backgroundColor: "#1a1a27",
-                scale: 2,
-                logging: false
-            });
-            return new Promise((resolve) => {
-                canvas.toBlob(async (blob) => {
-                    if (!blob) {
-                        resolve("ERROR: Blob creation failed");
-                        return;
-                    }
-                    const file = new File([blob], 'mahjong_result.png', { type: 'image/png' });
-                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                    // 2. 【スマホ向け】モバイル端末 ＆ Web Share APIが使える場合
-                    if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
-                        navigator.share({
-                            files: [file],
-                            title: '麻雀対局結果'
-                        }).catch(e => console.log("Share aborted", e));
-                        resolve("SHARED");
-                        return;
-                    }
-                    // 3. 【PC向け】クリップボードに画像を直接コピー
-                    try {
-                        if (navigator.clipboard && window.ClipboardItem) {
-                            await navigator.clipboard.write([
-                                new ClipboardItem({ [file.type]: blob })
-                            ]);
-                            resolve("COPIED");
-                            return;
-                        }
-                    } catch (e) {
-                        console.log("Clipboard error fallback", e);
-                    }
-                    // 4. 【最終手段】未対応ブラウザの場合はダウンロード
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'mahjong_result.png';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    resolve("DOWNLOADED");
-                }, 'image/png');
-            });
-        } catch (error) {
-            return "ERROR: " + error.message;
-        }
-    };
-
-    // URLシェア機能
-    window.shareUrlNative = async (title, url) => {
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        // 1. 【スマホ向け】モバイル端末 ＆ Web Share APIが使える場合
-        if (isMobile && navigator.share) {
-            navigator.share({
-                title: title,
-                url: url
-            }).catch(err => console.log("Share aborted", err));
-            return "SHARED";
-        } else {
-            // 2. 【PC向け】クリップボードにURLを直接コピー
-            try {
-                if (navigator.clipboard) {
-                    await navigator.clipboard.writeText(url);
-                    return "COPIED";
-                } else {
-                    return "ERROR: Clipboard API not available";
-                }
-            } catch (err) {
-                return "ERROR: " + err.message;
-            }
-        }
-    };
-</script>
-
 <body>
     <div id="app">
         <style>
@@ -206,6 +123,89 @@
                 }
             });
         }
+    </script>
+
+    <script>
+        // 画像シェア機能
+        window.exportAndShareResult = async (elementId) => {
+            const element = document.getElementById(elementId);
+            if (!element) return "ERROR: Element not found";
+            try {
+                const canvas = await html2canvas(element, {
+                    backgroundColor: "#1a1a27",
+                    scale: 2,
+                    logging: false
+                });
+                return new Promise((resolve) => {
+                    canvas.toBlob(async (blob) => {
+                        if (!blob) {
+                            resolve("ERROR: Blob creation failed");
+                            return;
+                        }
+                        const file = new File([blob], 'mahjong_result.png', { type: 'image/png' });
+                        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                        // 2. 【スマホ向け】モバイル端末 ＆ Web Share APIが使える場合
+                        if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+                            navigator.share({
+                                files: [file],
+                                title: '麻雀対局結果'
+                            }).catch(e => console.log("Share aborted", e));
+                            resolve("SHARED");
+                            return;
+                        }
+                        // 3. 【PC向け】クリップボードに画像を直接コピー
+                        try {
+                            if (navigator.clipboard && window.ClipboardItem) {
+                                await navigator.clipboard.write([
+                                    new ClipboardItem({ [file.type]: blob })
+                                ]);
+                                resolve("COPIED");
+                                return;
+                            }
+                        } catch (e) {
+                            console.log("Clipboard error fallback", e);
+                        }
+                        // 4. 【最終手段】未対応ブラウザの場合はダウンロード
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'mahjong_result.png';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        resolve("DOWNLOADED");
+                    }, 'image/png');
+                });
+            } catch (error) {
+                return "ERROR: " + error.message;
+            }
+        };
+
+        // URLシェア機能
+        window.shareUrlNative = async (title, url) => {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            // 1. 【スマホ向け】モバイル端末 ＆ Web Share APIが使える場合
+            if (isMobile && navigator.share) {
+                navigator.share({
+                    title: title,
+                    url: url
+                }).catch(err => console.log("Share aborted", err));
+                return "SHARED";
+            } else {
+                // 2. 【PC向け】クリップボードにURLを直接コピー
+                try {
+                    if (navigator.clipboard) {
+                        await navigator.clipboard.writeText(url);
+                        return "COPIED";
+                    } else {
+                        return "ERROR: Clipboard API not available";
+                    }
+                } catch (err) {
+                    return "ERROR: " + err.message;
+                }
+            }
+        };
     </script>
 </body>
 
