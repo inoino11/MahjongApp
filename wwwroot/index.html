@@ -5,27 +5,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>麻雀集計ツール</title>
-    
-    <!-- <script>
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            document.write('<base href="/" />');
-        } else {
-            document.write('<base href="/MahjongApp/" />');
-        }
-    </script> -->
+
     <base href="/" />
-    
+
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <link href="MahjongApp.styles.css" rel="stylesheet" />
-    
+
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@400;700&family=Klee+One:wght@400;600&family=Zen+Kaku+Gothic+Antique:wght@400;700&display=swap" rel="stylesheet">
-    
+
     <link href="manifest.json" rel="manifest" />
     <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
     <meta name="theme-color" content="#1b5e20" />
@@ -35,45 +28,33 @@
 </head>
 
 <script>
+    // 画像シェア機能
     window.exportAndShareResult = async (elementId) => {
         const element = document.getElementById(elementId);
         if (!element) return "ERROR: Element not found";
-
         try {
-            // 1. 指定された隠しDOMを画像(Canvas)化
             const canvas = await html2canvas(element, {
-                backgroundColor: "#1a1a27", // アプリの背景色に合わせる
-                scale: 2, // 高画質化
+                backgroundColor: "#1a1a27",
+                scale: 2,
                 logging: false
             });
-
             return new Promise((resolve) => {
                 canvas.toBlob(async (blob) => {
                     if (!blob) {
                         resolve("ERROR: Blob creation failed");
                         return;
                     }
-
                     const file = new File([blob], 'mahjong_result.png', { type: 'image/png' });
-
-                    // ▼ スマホ・タブレットかどうかの判定 ▼
                     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
                     // 2. 【スマホ向け】モバイル端末 ＆ Web Share APIが使える場合
                     if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try {
-                            await navigator.share({
-                                files: [file],
-                                title: '麻雀対局結果'
-                            });
-                            resolve("SHARED");
-                            return;
-                        } catch (e) {
-                            resolve("CANCELLED");
-                            return;
-                        }
+                        navigator.share({
+                            files: [file],
+                            title: '麻雀対局結果'
+                        }).catch(e => console.log("Share aborted", e));
+                        resolve("SHARED");
+                        return;
                     }
-
                     // 3. 【PC向け】クリップボードに画像を直接コピー
                     try {
                         if (navigator.clipboard && window.ClipboardItem) {
@@ -86,7 +67,6 @@
                     } catch (e) {
                         console.log("Clipboard error fallback", e);
                     }
-
                     // 4. 【最終手段】未対応ブラウザの場合はダウンロード
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -103,6 +83,31 @@
             return "ERROR: " + error.message;
         }
     };
+
+    // URLシェア機能
+    window.shareUrlNative = async (title, url) => {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // 1. 【スマホ向け】モバイル端末 ＆ Web Share APIが使える場合
+        if (isMobile && navigator.share) {
+            navigator.share({
+                title: title,
+                url: url
+            }).catch(err => console.log("Share aborted", err));
+            return "SHARED";
+        } else {
+            // 2. 【PC向け】クリップボードにURLを直接コピー
+            try {
+                if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(url);
+                    return "COPIED";
+                } else {
+                    return "ERROR: Clipboard API not available";
+                }
+            } catch (err) {
+                return "ERROR: " + err.message;
+            }
+        }
+    };
 </script>
 
 <body>
@@ -114,14 +119,17 @@
                 justify-content: center;
                 align-items: center;
                 height: 100vh;
-                background-color: #0d140d; /* アプリ背景と同じ深い緑 */
+                background-color: #0d140d;
+                /* アプリ背景と同じ深い緑 */
                 color: #e0e0e0;
                 font-family: 'Kaisei Decol', serif;
             }
+
             .loading-tile {
                 font-size: 4rem;
                 animation: float 2s ease-in-out infinite;
             }
+
             .loading-text {
                 margin-top: 20px;
                 font-size: 1.2rem;
@@ -129,18 +137,36 @@
                 letter-spacing: 0.1em;
                 animation: pulse 1.5s ease-in-out infinite;
             }
+
             @keyframes float {
-                0% { transform: translateY(0px); }
-                50% { transform: translateY(-15px); }
-                100% { transform: translateY(0px); }
+                0% {
+                    transform: translateY(0px);
+                }
+
+                50% {
+                    transform: translateY(-15px);
+                }
+
+                100% {
+                    transform: translateY(0px);
+                }
             }
+
             @keyframes pulse {
-                0% { opacity: 0.5; }
-                50% { opacity: 1; }
-                100% { opacity: 0.5; }
+                0% {
+                    opacity: 0.5;
+                }
+
+                50% {
+                    opacity: 1;
+                }
+
+                100% {
+                    opacity: 0.5;
+                }
             }
         </style>
-        
+
         <div class="mahjong-loading-container">
             <div class="loading-tile">🀄</div>
             <div class="loading-text">雀卓準備中...</div>
@@ -152,9 +178,9 @@
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
-    
+
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+    <script src="_framework/blazor.webassembly.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js').then(registration => {
@@ -182,4 +208,5 @@
         }
     </script>
 </body>
+
 </html>

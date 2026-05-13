@@ -158,7 +158,7 @@
                             <MudPaper Class="pa-3 mt-2" Outlined="true">
                                 <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">
                                     <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
-                                    🍗にチェックが入った焼き鳥プレイヤーにペナルティを課します
+                                    🍗にチェックが入ったプレイヤーにペナルティを課します
                                 </MudText>
                                 <MudGrid Spacing="2">
                                     <MudItem xs="12" sm="6">
@@ -198,9 +198,9 @@
                                         <MudNumericField Label="トビ点数" @bind-Value="EditingRules.TobiPoint" Step="100" Margin="Margin.Dense" />
                                     </MudItem>
                                     <MudItem xs="12" sm="4">
-                                        <MudSelect T="bool" Label="条件" @bind-Value="EditingRules.TobiJustIsTobi" Margin="Margin.Dense">
-                                            <MudSelectItem Value="true">ジャストもトビ</MudSelectItem>
-                                            <MudSelectItem Value="false">マイナスでトビ</MudSelectItem>
+                                        <MudSelect T="bool" Label="トビ点数ジャスト" @bind-Value="EditingRules.TobiJustIsTobi" Margin="Margin.Dense">
+                                            <MudSelectItem Value="true">トビ</MudSelectItem>
+                                            <MudSelectItem Value="false">続行</MudSelectItem>
                                         </MudSelect>
                                     </MudItem>
                                     <MudItem xs="12" sm="4">
@@ -225,9 +225,9 @@
                                         <MudNumericField Label="コールド点数" @bind-Value="EditingRules.ColdPoint" Step="1000" Margin="Margin.Dense" />
                                     </MudItem>
                                     <MudItem xs="12" sm="4">
-                                        <MudSelect T="bool" Label="条件" @bind-Value="EditingRules.ColdJustIsCold" Margin="Margin.Dense">
-                                            <MudSelectItem Value="true">ジャスト終了</MudSelectItem>
-                                            <MudSelectItem Value="false">超過で終了</MudSelectItem>
+                                        <MudSelect T="bool" Label="コールド点数ジャスト" @bind-Value="EditingRules.ColdJustIsCold" Margin="Margin.Dense">
+                                            <MudSelectItem Value="true">コールド</MudSelectItem>
+                                            <MudSelectItem Value="false">続行</MudSelectItem>
                                         </MudSelect>
                                     </MudItem>
                                     <MudItem xs="12" sm="4">

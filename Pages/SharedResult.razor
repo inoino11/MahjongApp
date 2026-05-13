@@ -3,10 +3,11 @@
 @using System.Text.Json
 @using System.IO.Compression
 @using System.Text
+@using System.Text.Json.Serialization
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 pb-10">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white;">
-        対局結果（共有ビュー）
+        対局結果<br />（共有ビュー）
     </MudText>
 
     @if (isLoading)
@@ -148,25 +149,45 @@
     private int displayMode = 1;
     private SharedPayload? sharedData;
 
-    // URLの "?d=..." の値をこのプロパティに自動でバインドします
     [SupplyParameterFromQuery(Name = "d")]
     public string? SharedDataParam { get; set; }
 
-    // URLからデータを受け取って復元する
     protected override void OnInitialized()
     {
         if (!string.IsNullOrEmpty(SharedDataParam))
         {
             try
             {
-                // URL用の文字列をデコードして展開
                 byte[] compressedBytes = Convert.FromBase64String(Uri.UnescapeDataString(SharedDataParam));
                 using var ms = new MemoryStream(compressedBytes);
                 using var gzip = new GZipStream(ms, CompressionMode.Decompress);
                 using var reader = new StreamReader(gzip, Encoding.UTF8);
                 string json = reader.ReadToEnd();
-
-                sharedData = JsonSerializer.Deserialize<SharedPayload>(json);
+                // 短縮キーでデシリアライズ
+                var minData = JsonSerializer.Deserialize<MinifiedPayload>(json);
+                if (minData != null)
+                {
+                    // 元のデータ構造にマッピングして復元
+                    sharedData = new SharedPayload
+                    {
+                        Rules = minData.Rules,
+                        Players = minData.Players,
+                        SessionChips = minData.SessionChips,
+                        History = minData.History?.Select(m => new GameResult
+                        {
+                            Timestamp = new DateTime(m.Ticks),
+                            RawScores = m.RawScores ?? new(),
+                            Points = m.Points ?? new(),
+                            YakiPlayers = m.YakiPlayers ?? new(),
+                            TobiBonusRecipients = m.TobiBonusRecipients ?? new(),
+                            SinkPoints = m.SinkPoints ?? new(),
+                            YakiPoints = m.YakiPoints ?? new(),
+                            TobiPoints = m.TobiPoints ?? new(),
+                            ColdPoints = m.ColdPoints ?? new(),
+                            Yen = m.Yen ?? new()
+                        }).ToList()
+                    };
+                }
                 isLoading = false;
             }
             catch
@@ -182,7 +203,8 @@
         }
     }
 
-    // データ受け渡し用のクラス定義
+    // --- データ受け渡し・復元用のクラス定義 ---
+
     public class SharedPayload
     {
         public RuleSet? Rules { get; set; }
@@ -191,6 +213,31 @@
         public List<int>? SessionChips { get; set; }
     }
 
+    // JSONの短いキー名と紐付けるための受信用DTO
+    public class MinifiedPayload
+    {
+        [JsonPropertyName("r")] public RuleSet? Rules { get; set; }
+        [JsonPropertyName("p")] public List<string>? Players { get; set; }
+        [JsonPropertyName("c")] public List<int>? SessionChips { get; set; }
+        [JsonPropertyName("h")] public List<MinifiedGame>? History { get; set; }
+    }
+
+    public class MinifiedGame
+    {
+        [JsonPropertyName("t")] public long Ticks { get; set; }
+        [JsonPropertyName("s")] public List<int>? RawScores { get; set; }
+        [JsonPropertyName("pt")] public List<double>? Points { get; set; }
+        [JsonPropertyName("yp")] public List<bool>? YakiPlayers { get; set; }
+        [JsonPropertyName("tb")] public List<bool>? TobiBonusRecipients { get; set; }
+        [JsonPropertyName("sp")] public List<double>? SinkPoints { get; set; }
+        [JsonPropertyName("ypt")] public List<double>? YakiPoints { get; set; }
+        [JsonPropertyName("tpt")] public List<double>? TobiPoints { get; set; }
+        [JsonPropertyName("cp")] public List<double>? ColdPoints { get; set; }
+        [JsonPropertyName("y")] public List<int>? Yen { get; set; }
+    }
+
+    // --- UI表示用ヘルパーメソッド（変更なし） ---
+    
     private string GetDisplayValue(GameResult res, int idx)
     {
         if (displayMode == 0) return res.RawScores[idx].ToString("N0");
@@ -252,10 +299,7 @@
         return "";
     }
 
-    private string GetTotalTdStyle(int idx)
-    {
-        return "background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; ";
-    }
+    private string GetTotalTdStyle(int idx) => "background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; ";
 
     private string GetTotalSpanStyle(int idx)
     {
