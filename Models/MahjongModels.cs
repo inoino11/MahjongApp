@@ -122,7 +122,7 @@ public class RuleSet
 public class GameResult
 {
     public List<string> PlayerNames { get; set; } = new();
-    public List<int> RawScores { get; set; } = new();
+    public List<int?> RawScores { get; set; } = new();
     public List<double> Points { get; set; } = new();
     public List<int> Yen { get; set; } = new();
     public DateTime Timestamp { get; set; } = DateTime.Now;

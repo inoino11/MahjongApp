@@ -25,378 +25,399 @@
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 pb-10" @onclick="CancelDelete">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
-        麻雀集計ツール</MudText>
+        麻雀集計ツール
+    </MudText>
 
-        @* --- セクション1: 設定 (折りたたみ可) --- *@
-        <MudExpansionPanels Class="mb-6" @onclick:stopPropagation="true">
-            <MudExpansionPanel Text="ルール・対局者設定" @bind-Expanded="isSettingsExpanded">
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mb-4" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="OpenPresetDialog">
-                    保存済みの設定を呼び出し
-                </MudButton>
-                <MudGrid>
-                    <MudItem xs="12" md="8" Class="d-flex">
-                        <MudCard Outlined="true" Class="flex-grow-1">
-                            <MudCardHeader Class="pb-0">
-                                <CardHeaderContent>
-                                    <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                                        <MudText Typo="Typo.subtitle1" Style="font-weight:bold; white-space: nowrap;">ルール設定</MudText>
-                                        <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
-                                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Settings" OnClick="OpenCustomRuleDialog">
-                                                カスタム<span class="d-none d-sm-inline">ルール</span>
-                                            </MudButton>
-                                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Save" OnClick="SavePreset">
-                                                <span class="d-none d-sm-inline">現在の</span>設定保存
-                                            </MudButton>
-                                        </MudStack>
+    @* --- セクション1: 設定 (折りたたみ可) --- *@
+    <MudExpansionPanels Class="mb-6" @onclick:stopPropagation="true">
+        <MudExpansionPanel Text="ルール・対局者設定" @bind-Expanded="isSettingsExpanded">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mb-4" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="OpenPresetDialog">
+                保存済みの設定を呼び出し
+            </MudButton>
+            <MudGrid>
+                <MudItem xs="12" md="8" Class="d-flex">
+                    <MudCard Outlined="true" Class="flex-grow-1">
+                        <MudCardHeader Class="pb-0">
+                            <CardHeaderContent>
+                                <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.subtitle1" Style="font-weight:bold; white-space: nowrap;">ルール設定</MudText>
+                                    <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Settings" OnClick="OpenCustomRuleDialog">
+                                            カスタム<span class="d-none d-sm-inline">ルール</span>
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Save" OnClick="SavePreset">
+                                            <span class="d-none d-sm-inline">現在の</span>設定保存
+                                        </MudButton>
                                     </MudStack>
-                                </CardHeaderContent>
-                            </MudCardHeader>
-                            <MudCardContent Class="pa-3 pt-1 mt-2">
-                                <MudGrid Spacing="1">
-                                    <MudItem xs="6" sm="4" Class="pr-3">
-                                        <MudSelect T="int" Label="対局人数" @bind-Value="rules.PlayerCount" Margin="Margin.Dense">
-                                            <MudSelectItem Value="@(4)">四人麻雀</MudSelectItem>
-                                            <MudSelectItem Value="@(3)">三人麻雀</MudSelectItem>
-                                        </MudSelect>
-                                    </MudItem>
-                                    <MudItem xs="6" sm="8" Class="pr-3">
-                                        <MudTextField Label="ルール名" @bind-Value="rules.Name" Margin="Margin.Dense" />
-                                    </MudItem>
-                                    <MudItem xs="6" sm="4" Class="pr-3">
-                                        <MudNumericField T="int" Label="持ち点" Value="rules.StartingPoints" ValueChanged="OnStartingPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" />
-                                    </MudItem>
-                                    <MudItem xs="6" sm="4" Class="pr-3">
-                                        <MudNumericField T="int" Label="返し点" Value="rules.ReturnPoints" ValueChanged="OnReturnPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" />
-                                    </MudItem>
-                                    <MudItem xs="6" sm="4" Class="pr-3">
-                                        <MudNumericField Label="レート(円/1k)" @bind-Value="rules.Rate" Step="10" Min="0" Margin="Margin.Dense" />
-                                    </MudItem>
-                                    <MudItem xs="6" sm="4" Class="pr-3">
-                                        <MudNumericField Label="チップ(円/枚)" @bind-Value="rules.ChipRate" Step="50" Min="0" Margin="Margin.Dense" />
-                                    </MudItem>
-                                    @if (rules.IsCustomUma)
-                                    {
-                                        <MudItem xs="12" sm="8">
-                                            <MudTextField Label="カスタム順位ウマ" Value="@rules.GetUmaDisplayText(true)" ReadOnly="true" Margin="Margin.Dense" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Close" OnAdornmentClick="DisableCustomUma" Style="font-variant-numeric: tabular-nums;" />
-                                        </MudItem>
-                                    }
-                                    else
-                                    {
-                                        <MudItem xs="6" sm="4" Class="pr-3">
-                                            <MudNumericField Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←2)" : "順位ウマ(2←3)")" @bind-Value="rules.Uma1" Step="5" Min="0" Margin="Margin.Dense" />
-                                        </MudItem>
-                                        <MudItem xs="6" sm="4" Class="pr-3">
-                                            <MudNumericField Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←3)" : "順位ウマ(1←4)")" @bind-Value="rules.Uma2" Step="5" Min="0" Margin="Margin.Dense" />
-                                        </MudItem>
-                                    }
-                                </MudGrid>
-                            </MudCardContent>
-                        </MudCard>
-                    </MudItem>
-                    <MudItem xs="12" md="4" Class="d-flex">
-                        <MudCard Outlined="true" Class="flex-grow-1">
-                            <MudCardHeader Class="pb-0">
-                                <CardHeaderContent>
-                                    <MudText Typo="Typo.subtitle1" Style="font-weight:bold;">対局者名</MudText>
-                                </CardHeaderContent>
-                            </MudCardHeader>
-                            <MudCardContent Class="pa-3 pt-1">
-                                <MudStack Spacing="0">
-                                    @for (int i = 0; i < 4; i++)
-                                    {
-                                        var index = i;
-                                        <MudTextField Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index]" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" Disabled="@(index >= rules.PlayerCount)" Margin="Margin.Dense" />
-                                    }
                                 </MudStack>
-                            </MudCardContent>
-                        </MudCard>
-                    </MudItem>
-                </MudGrid>
-            </MudExpansionPanel>
-        </MudExpansionPanels>
-
-        @* --- セクション2: 素点入力 --- *@
-        <MudPaper Class="pa-4 mb-6" Elevation="2" @onclick:stopPropagation="true">
-            <MudStack Row="true" AlignItems="AlignItems.Baseline" Class="mb-2">
-                <MudText Typo="Typo.h6">素点入力</MudText>
-            </MudStack>
-            <MudGrid Spacing="1" AlignItems="AlignItems.Center">
-                @for (int i = 0; i < rules.PlayerCount; i++)
-                {
-                    var index = i;
-                    <MudItem xs="12" sm="6" Class="pa-2">
-                        <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center px-3 py-1" Style="background-color: rgba(255,255,255,0.02);">
-                            <MudText Typo="Typo.body1" Style="font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%;">
-                                @(string.IsNullOrWhiteSpace(currentPlayers[index]) ? " " : currentPlayers[index])
-                            </MudText>
-                            <MudSpacer />
-                            <div class="d-flex align-center">
-                                @* 焼き鳥 *@
-                                @if (rules.IsYakiEnabled)
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent Class="pa-3 pt-1 mt-2">
+                            <MudGrid Spacing="1">
+                                <MudItem xs="6" sm="4" Class="pr-3">
+                                    <MudSelect T="int" Label="対局人数" Value="rules.PlayerCount" ValueChanged="OnPlayerCountChanged" Margin="Margin.Dense">
+                                        <MudSelectItem Value="@(4)">四人麻雀</MudSelectItem>
+                                        <MudSelectItem Value="@(3)">三人麻雀</MudSelectItem>
+                                    </MudSelect>
+                                </MudItem>
+                                <MudItem xs="6" sm="8" Class="pr-3">
+                                    <MudTextField Label="ルール名" @bind-Value="rules.Name" Margin="Margin.Dense" />
+                                </MudItem>
+                                <MudItem xs="6" sm="4" Class="pr-3">
+                                    <MudNumericField T="int" Label="持ち点" Value="rules.StartingPoints" ValueChanged="OnStartingPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" />
+                                </MudItem>
+                                <MudItem xs="6" sm="4" Class="pr-3">
+                                    <MudNumericField T="int" Label="返し点" Value="rules.ReturnPoints" ValueChanged="OnReturnPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" />
+                                </MudItem>
+                                <MudItem xs="6" sm="4" Class="pr-3">
+                                    <MudNumericField Label="レート(円/1k)" @bind-Value="rules.Rate" Step="10" Min="0" Margin="Margin.Dense" />
+                                </MudItem>
+                                <MudItem xs="6" sm="4" Class="pr-3">
+                                    <MudNumericField Label="チップ(円/枚)" @bind-Value="rules.ChipRate" Step="50" Min="0" Margin="Margin.Dense" />
+                                </MudItem>
+                                @if (rules.IsCustomUma)
                                 {
-                                    <MudToggleIconButton @bind-Toggled="currentYaki[index]" Icon="@Icons.Material.Filled.NoMeals" Color="Color.Default" Title="焼き鳥ではありません" ToggledIcon="@YakiIcon" ToggledColor="Color.Warning" ToggledTitle="🍗 焼き鳥です" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" />
+                                    <MudItem xs="12" sm="8">
+                                        <MudTextField Label="カスタム順位ウマ" Value="@rules.GetUmaDisplayText(true)" ReadOnly="true" Margin="Margin.Dense" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Close" OnAdornmentClick="DisableCustomUma" Style="font-variant-numeric: tabular-nums;" />
+                                    </MudItem>
                                 }
-                                @* トビ *@
-                                @if (rules.IsTobiEnabled)
+                                else
                                 {
-                                    <MudToggleIconButton @bind-Toggled="currentTobiBonus[index]" Icon="@Icons.Material.Filled.Rocket" Color="Color.Default" Title="トビ賞を獲得しません" ToggledIcon="@Icons.Material.Filled.RocketLaunch" ToggledColor="Color.Error" ToggledTitle="🚀 トビ賞を獲得します" Size="Size.Small" ToggledSize="Size.Small" Class="mr-2" />
+                                    <MudItem xs="6" sm="4" Class="pr-3">
+                                        <MudNumericField Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←2)" : "順位ウマ(2←3)")" @bind-Value="rules.Uma1" Step="5" Min="0" Margin="Margin.Dense" />
+                                    </MudItem>
+                                    <MudItem xs="6" sm="4" Class="pr-3">
+                                        <MudNumericField Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←3)" : "順位ウマ(1←4)")" @bind-Value="rules.Uma2" Step="5" Min="0" Margin="Margin.Dense" />
+                                    </MudItem>
                                 }
-                                @* 素点 *@
-                                <div class="d-flex align-baseline">
-                                    <MudNumericField T="int?" Value="currentScores[index]" ValueChanged="@(v => HandleScoreInputWithAutoFill(index, v))" HideSpinButtons="true" DisableUnderLine="true" Margin="Margin.Dense" Class="score-input" Style="width: 70px;" />
-                                    <span class="score-zeros">00</span>
-                                </div>
-                            </div>
-                        </MudPaper>
-                    </MudItem>
-                }
+                            </MudGrid>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+                <MudItem xs="12" md="4" Class="d-flex">
+                    <MudCard Outlined="true" Class="flex-grow-1">
+                        <MudCardHeader Class="pb-0">
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.subtitle1" Style="font-weight:bold;">対局者名</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent Class="pa-3 pt-1">
+                            <MudStack Spacing="0">
+                                @for (int i = 0; i < activeParticipantCount; i++)
+                                {
+                                    var index = i;
+                                    <MudTextField Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index]" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" Margin="Margin.Dense" />
+                                }
+                            </MudStack>
+                            @* 抜け番（参加枠）の追加・削除ボタン *@
+                            <MudStack Row="true" Justify="Justify.Center" Class="mt-2" Spacing="1">
+                                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="AddParticipant" Disabled="@(activeParticipantCount >= MaxParticipants)">
+                                    枠を追加
+                                </MudButton>
+                                <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonRemove" OnClick="RemoveParticipant" Disabled="@(activeParticipantCount <= rules.PlayerCount)">
+                                    枠を削除
+                                </MudButton>
+                            </MudStack>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
             </MudGrid>
-            <MudButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true" Class="mt-4 py-3" Disabled="@(!IsTotalCorrect)" OnClick="CalculateAndRecordGame">結果を記録する</MudButton>
-        </MudPaper>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
 
-        @* --- セクション3: 集計結果 --- *@
-        <MudPaper Class="pa-2 px-sm-4" Elevation="2" @onclick="CancelDelete">
-            <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4 gap-2">
-                <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
-                    <MudButton Variant="@(displayMode == 0 ? Variant.Filled : Variant.Outlined)" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 0">素点</MudButton>
-                    <MudButton Variant="@(displayMode == 1 ? Variant.Filled : Variant.Outlined)" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 1">+/−</MudButton>
-                    <MudButton Variant="@(displayMode == 2 ? Variant.Filled : Variant.Outlined)" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 2">円</MudButton>
-                </MudStack>
-                @if (rules.IsSinkEnabled || rules.IsYakiEnabled || rules.IsTobiEnabled || rules.IsColdEnabled)
-                {
-                    <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
-                        @if (rules.IsSinkEnabled)
-                        {
-                            <MudButton Variant="@(displayMode == 3 ? Variant.Filled : Variant.Outlined)" Color="Color.Warning" Size="Size.Small" OnClick="() => displayMode = 3">沈み</MudButton>
-                        }
-                        @if (rules.IsYakiEnabled)
-                        {
-                            <MudButton Variant="@(displayMode == 4 ? Variant.Filled : Variant.Outlined)" Color="Color.Warning" Size="Size.Small" OnClick="() => displayMode = 4">焼き鳥</MudButton>
-                        }
-                        @if (rules.IsTobiEnabled)
-                        {
-                            <MudButton Variant="@(displayMode == 5 ? Variant.Filled : Variant.Outlined)" Color="Color.Info" Size="Size.Small" OnClick="() => displayMode = 5">トビ</MudButton>
-                        }
-                        @if (rules.IsColdEnabled)
-                        {
-                            <MudButton Variant="@(displayMode == 6 ? Variant.Filled : Variant.Outlined)" Color="Color.Info" Size="Size.Small" OnClick="() => displayMode = 6">コールド</MudButton>
-                        }
-                    </MudStack>
-                }
-                <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="ConfirmReset">記録リセット</MudButton>
-            </MudStack>
-            <MudCard Class="mb-4" Elevation="0" Outlined="true">
-                <MudCardContent Class="pa-3">
-                    <MudText Typo="Typo.subtitle2" Class="mb-2">チップ集計</MudText>
-                    <div style="display: flex; width: 100%; flex-wrap: nowrap; align-items: center; gap: 8px;">
-                        @{
-                            bool isChipError = ActiveSessionChips.Take(rules.PlayerCount).Sum() != 0;
-                        }
-                        <div style="width: 25px; flex-shrink: 0;"></div>
-                        @for (int i = 0; i < rules.PlayerCount; i++)
-                        {
-                            var idx = i;
-                            <div style="flex: 1; min-width: 0;">
-                                <MudNumericField T="int" Label="@(string.IsNullOrWhiteSpace(currentPlayers[idx]) ? " " : currentPlayers[idx])" Value="ActiveSessionChips[idx]" ValueChanged="@(v => OnChipChanged(idx, v))" Step="1" HideSpinButtons="true" Margin="Margin.Dense" Style="@(isChipError ? "max-width: 4.0rem; color:#ff0000; font-weight:bold;" : "max-width: 4.5rem;")" />
+    @* --- セクション2: 素点入力 --- *@
+    <MudPaper Class="pa-4 mb-6" Elevation="2" @onclick:stopPropagation="true">
+        <MudStack Row="true" AlignItems="AlignItems.Baseline" Class="mb-2">
+            <MudText Typo="Typo.h6">素点入力</MudText>
+        </MudStack>
+        <MudGrid Spacing="1" AlignItems="AlignItems.Center">
+            @for (int i = 0; i < activeParticipantCount; i++)
+            {
+                var index = i;
+                bool isSitOut = currentSitOuts[index];
+                <MudItem xs="12" sm="6" Class="pa-2">
+                    @* 抜け番の時は透明度を下げる *@
+                    <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center px-3 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
+                        <MudText Typo="Typo.body1" Style="font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%;">
+                            @(string.IsNullOrWhiteSpace(currentPlayers[index]) ? " " : currentPlayers[index])
+                        </MudText>
+                        <MudSpacer />
+                        <div class="d-flex align-center">
+                            @* 抜け番 *@
+                            @if (activeParticipantCount > rules.PlayerCount)
+                            {
+                                <MudToggleIconButton Toggled="currentSitOuts[index]" ToggledChanged="@((bool v) => OnSitOutChanged(index, v))" Icon="@Icons.Material.Filled.Person" Color="Color.Default" Title="参加中" ToggledIcon="@Icons.Material.Filled.LocalCafe" ToggledColor="Color.Default" ToggledTitle="☕ 抜け番" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" />
+                            }
+                            @* 焼き鳥 *@
+                            @if (rules.IsYakiEnabled)
+                            {
+                                <MudToggleIconButton @bind-Toggled="currentYaki[index]" Icon="@Icons.Material.Filled.NoMeals" Color="Color.Default" Title="焼き鳥ではありません" ToggledIcon="@YakiIcon" ToggledColor="Color.Warning" ToggledTitle="🍗 焼き鳥です" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
+                            }
+                            @* トビ *@
+                            @if (rules.IsTobiEnabled)
+                            {
+                                <MudToggleIconButton @bind-Toggled="currentTobiBonus[index]" Icon="@Icons.Material.Filled.Rocket" Color="Color.Default" Title="トビ賞を獲得しません" ToggledIcon="@Icons.Material.Filled.RocketLaunch" ToggledColor="Color.Error" ToggledTitle="🚀 トビ賞を獲得します" Size="Size.Small" ToggledSize="Size.Small" Class="mr-2" Disabled="isSitOut" />
+                            }
+                            @* 素点 *@
+                            <div class="d-flex align-baseline">
+                                <MudNumericField T="int?" Value="currentScores[index]" ValueChanged="@(v => HandleScoreInputWithAutoFill(index, v))" HideSpinButtons="true" DisableUnderLine="true" Margin="Margin.Dense" Class="score-input" Style="width: 70px;" Disabled="isSitOut" />
+                                <span class="score-zeros">00</span>
                             </div>
-                        }
-                        <div style="width: 25px; flex-shrink: 0;"></div>
-                    </div>
-                </MudCardContent>
-            </MudCard>
-            <div style="width: 100%; overflow-x: hidden;">
-                <MudTable Items="@ActiveHistory" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="width: 100%; table-layout: fixed;">
-                    <ColGroup>
-                        <col style="width: 25px;" />
-                        @for (int i = 0; i < rules.PlayerCount; i++)
-                        {
-                            <col />
-                        }
-                        <col style="width: 25px;" />
-                    </ColGroup>
-                    <HeaderContent>
-                        <MudTh Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.65rem; letter-spacing: -0.5px;">
-                            時刻</MudTh>
-                            @for (int i = 0; i < rules.PlayerCount; i++)
-                            {
-                                var idx = i;
-                                <MudTh Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.75rem; letter-spacing: -0.5px;">
-                                    @(string.IsNullOrWhiteSpace(currentPlayers[idx]) ? " " : currentPlayers[idx])
-                                </MudTh>
-                            }
-                            <MudTh Style="padding: 4px 0px;"></MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.6rem; color: #666; letter-spacing: -0.5px;">
-                                @context.Timestamp.ToString("HH:mm")
-                            </MudTd>
-                            @for (int i = 0; i < rules.PlayerCount; i++)
-                            {
-                                var idx = i;
-                                <MudTd Style="text-align: center; padding: 4px 0px; white-space: nowrap;">
-                                    <span style="@GetTdStyle(context, idx)">
-                                        @GetDisplayValue(context, idx)
-                                    </span>
-                                </MudTd>
-                            }
-                            <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px;">
-                                <span @onclick="() => { }" @onclick:stopPropagation="true">
-                                    <MudIconButton Icon="@(armedDeleteTarget == context ? @DeleteEmpty : Icons.Material.Filled.Delete)" Color="@(armedDeleteTarget == context ? Color.Error : Color.Default)" Size="Size.Small" Style="@(armedDeleteTarget == context ? "padding: 0px;" : "padding: 0px; color: #9e9e9e;")" OnClick="() => HandleDeleteRequest(context)" />
-                                </span>
-                            </MudTd>
-                        </RowTemplate>
-                        <FooterContent>
-                            <MudTd Style="text-align: center; background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 6px 0px; font-size: 0.75rem;">
-                                <MudIcon Icon="@(displayMode == 0 ? Icons.Material.Filled.Calculate : Icons.Material.Filled.Functions)" Style="font-size: 1rem; vertical-align: text-bottom; margin-right: 2px; color: #2e7d32;" />
-                                @(displayMode == 0 ? "平均" : "合計")
-                            </MudTd>
-                            @for (int i = 0; i < rules.PlayerCount; i++)
-                            {
-                                var idx = i;
-                                <MudTd Style="@($"{GetTotalTdStyle(idx)} text-align: center; padding: 6px 0px; white-space: nowrap;")">
-                                    <span style="@GetTotalSpanStyle(idx)">
-                                        @GetTotalDisplayValue(idx)
-                                    </span>
-                                </MudTd>
-                            }
-                            <MudTd Style="background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; padding: 6px 0px;">
-                            </MudTd>
-                        </FooterContent>
-                    </MudTable>
-                    @* 共有ボタン *@
-                    <div class="d-flex justify-end mt-4 gap-2">
-                        <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Share" OnClick="ShareImageAsync" Disabled="isSharing" Style="white-space: nowrap;">
-                            @(isSharing ? "画像を作成中..." : "結果を画像でシェア")
-                        </MudButton>
-                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Link" OnClick="CopyShareUrlAsync" Style="white-space: nowrap;">
-                            閲覧用URLをシェア
-                        </MudButton>
-                    </div>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true" Class="mt-4 py-3" Disabled="@(!IsTotalCorrect)" OnClick="CalculateAndRecordGame">結果を記録する</MudButton>
+    </MudPaper>
+
+    @* --- セクション3: 集計結果 --- *@
+    <MudPaper Class="pa-2 px-sm-4" Elevation="2" @onclick="CancelDelete">
+        <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4 gap-2">
+            <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                <MudButton Variant="@(displayMode == 0 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 0">素点</MudButton>
+                <MudButton Variant="@(displayMode == 1 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 1">+/−</MudButton>
+                <MudButton Variant="@(displayMode == 2 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 2">円</MudButton>
+            </MudStack>
+            @if (rules.IsSinkEnabled || rules.IsYakiEnabled || rules.IsTobiEnabled || rules.IsColdEnabled)
+            {
+                <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                    @if (rules.IsSinkEnabled)
+                    {
+                        <MudButton Variant="@(displayMode == 3 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Warning" Size="Size.Small" OnClick="() => displayMode = 3">沈み</MudButton>
+                    }
+                    @if (rules.IsYakiEnabled)
+                    {
+                        <MudButton Variant="@(displayMode == 4 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Warning" Size="Size.Small" OnClick="() => displayMode = 4">焼き鳥</MudButton>
+                    }
+                    @if (rules.IsTobiEnabled)
+                    {
+                        <MudButton Variant="@(displayMode == 5 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Info" Size="Size.Small" OnClick="() => displayMode = 5">トビ</MudButton>
+                    }
+                    @if (rules.IsColdEnabled)
+                    {
+                        <MudButton Variant="@(displayMode == 6 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Info" Size="Size.Small" OnClick="() => displayMode = 6">コールド</MudButton>
+                    }
+                </MudStack>
+            }
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="ConfirmReset">記録リセット</MudButton>
+        </MudStack>
+        <MudCard Class="mb-4" Elevation="0" Outlined="true">
+            <MudCardContent Class="pa-3">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">チップ集計</MudText>
+                <div style="display: flex; width: 100%; flex-wrap: nowrap; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 4px;">
+                    @{
+                        bool isChipError = ActiveSessionChips.Take(activeParticipantCount).Sum() != 0;
+                    }
+                    <div style="width: 25px; flex-shrink: 0;"></div>
+                    @for (int i = 0; i < activeParticipantCount; i++)
+                    {
+                        var idx = i;
+                        <div style="flex: 1; min-width: 4.5rem;">
+                            <MudNumericField T="int" Label="@(string.IsNullOrWhiteSpace(currentPlayers[idx]) ? " " : currentPlayers[idx])" Value="ActiveSessionChips[idx]" ValueChanged="@(v => OnChipChanged(idx, v))" Step="1" HideSpinButtons="true" Margin="Margin.Dense" Style="@(isChipError ? "max-width: 4.0rem; color:#ff0000; font-weight:bold;" : "max-width: 4.5rem;")" />
+                        </div>
+                    }
+                    <div style="width: 25px; flex-shrink: 0;"></div>
                 </div>
-            </MudPaper>
+            </MudCardContent>
+        </MudCard>
 
-            @* --- セクションX: シェア用の裏DOM（画面外に隠す） --- *@
-            <div style="position: absolute; left: -9999px; top: 0;">
-                <div id="share-target" style="width: 800px; padding: 40px; background-color: #1a1a27; color: white; border-radius: 12px; font-family: 'Kaisei Decol', sans-serif;">
-                
-                    <h2 style="text-align: center; margin-bottom: 20px; font-weight: bold; border-bottom: 2px solid #444; padding-bottom: 10px;">
-                        🀄 対局結果
-                    </h2>
+        @* overflow-x: auto に変更 *@
+        <div style="width: 100%; overflow-x: auto;">
+            <MudTable Items="@ActiveHistory" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="width: 100%; table-layout: fixed;">
+                <ColGroup>
+                    <col style="width: 30px;" />
+                    @for (int i = 0; i < activeParticipantCount; i++)
+                    {
+                        <col style="width: 60px;" />
+                    }
+                    <col style="width: 30px;" />
+                </ColGroup>
+                <HeaderContent>
+                    <MudTh Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.65rem; letter-spacing: -0.5px;">時刻</MudTh>
+                    @for (int i = 0; i < activeParticipantCount; i++)
+                    {
+                        var idx = i;
+                        <MudTh Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.75rem; letter-spacing: -0.5px;">
+                            @(string.IsNullOrWhiteSpace(currentPlayers[idx]) ? " " : currentPlayers[idx])
+                        </MudTh>
+                    }
+                    <MudTh Style="padding: 4px 0px;"></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.6rem; color: #666; letter-spacing: -0.5px;">
+                        @context.Timestamp.ToString("HH:mm")
+                    </MudTd>
+                    @for (int i = 0; i < activeParticipantCount; i++)
+                    {
+                        var idx = i;
+                        <MudTd Style="text-align: center; padding: 4px 0px; white-space: nowrap;">
+                            <span style="@GetTdStyle(context, idx)">
+                                @GetDisplayValue(context, idx)
+                            </span>
+                        </MudTd>
+                    }
+                    <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px;">
+                        <span @onclick="() => { }" @onclick:stopPropagation="true">
+                            <MudIconButton Icon="@(armedDeleteTarget == context ? @DeleteEmpty : Icons.Material.Filled.Delete)" Color="@(armedDeleteTarget == context ? Color.Error : Color.Default)" Size="Size.Small" Style="@(armedDeleteTarget == context ? "padding: 0px;" : "padding: 0px; color: #9e9e9e;")" OnClick="() => HandleDeleteRequest(context)" />
+                        </span>
+                    </MudTd>
+                </RowTemplate>
+                <FooterContent>
+                    <MudTd Style="text-align: center; background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 6px 0px; font-size: 0.75rem;">
+                        <MudIcon Icon="@(displayMode == 0 ? Icons.Material.Filled.Calculate : Icons.Material.Filled.Functions)" Style="font-size: 1rem; vertical-align: text-bottom; margin-right: 2px; color: #2e7d32;" />
+                        @(displayMode == 0 ? "平均" : "合計")
+                    </MudTd>
+                    @for (int i = 0; i < activeParticipantCount; i++)
+                    {
+                        var idx = i;
+                        <MudTd Style="@($"{GetTotalTdStyle(idx)} text-align: center; padding: 6px 0px; white-space: nowrap;")">
+                            <span style="@GetTotalSpanStyle(idx)">
+                                @GetTotalDisplayValue(idx)
+                            </span>
+                        </MudTd>
+                    }
+                    <MudTd Style="background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; padding: 6px 0px;"></MudTd>
+                </FooterContent>
+            </MudTable>
 
-                    @* ルール・レート情報の表示 *@
-                    <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; font-size: 0.95rem;">
-                        <div><strong>ルール名:</strong> @(string.IsNullOrWhiteSpace(rules.Name) ? "未設定" : rules.Name)</div>
-                        <div><strong>形式:</strong> @(rules.PlayerCount)人麻雀</div>
-                        <div><strong>設定:</strong> @(rules.StartingPoints)持ち / @(rules.ReturnPoints)返し</div>
-                        <div><strong>ウマ:</strong> @(rules.IsCustomUma? rules.GetUmaDisplayText(true) : $"{rules.Uma1} - {rules.Uma2}")</div>
-                        <div><strong>レート:</strong> @(rules.Rate)円/1k</div>
-                        @if (rules.ChipRate > 0)
-                        {
-                            <div><strong>チップ:</strong> @(rules.ChipRate)円/枚</div>
-                        }
-                    </div>
-
-                    @* 成績テーブル *@
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center; font-variant-numeric: tabular-nums;">
-                        <thead>
-                            <tr style="background-color: rgba(255,255,255,0.1); border-bottom: 2px solid #555;">
-                                <th style="padding: 12px; width: 80px; font-size: 0.9rem;">局</th>
-                                @for (int i = 0; i < rules.PlayerCount; i++)
-                                {
-                                    <th style="padding: 12px; font-size: 1.1rem;">@currentPlayers[i]</th>
-                                }
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @* 各局のポイント (+/-) 固定表示 *@
-                            @for (int row = 0; row < ActiveHistory.Count; row++)
-                            {
-                                var game = ActiveHistory[row];
-                                <tr style="border-bottom: 1px solid #333;">
-                                    <td style="padding: 10px; color: #aaa; font-size: 0.85rem; white-space: nowrap;">@(row + 1)局目</td>
-                                    @for (int i = 0; i < rules.PlayerCount; i++)
-                                    {
-                                        @* 各局のフォントサイズ: 1.1rem *@
-                                        <td style="padding: 10px; font-size: 1.1rem; white-space: nowrap;">
-                                            <span style="@GetSharePointStyle(game, i)">@GetSharePointValue(game, i)</span>
-                                        </td>
-                                    }
-                                </tr>
-                            }
-                        </tbody>
-                        <tfoot>
-                            @* ポイント合計行 *@
-                            <tr style="background-color: rgba(46, 125, 50, 0.1); border-bottom: 2px solid #555;">
-                                <td style="padding: 15px 10px; font-size: 0.9rem; color: #81c784; font-weight: bold; white-space: nowrap;">
-                                    Pt 合計
-                                </td>
-                                @for (int i = 0; i < rules.PlayerCount; i++)
-                                {
-                                    @* Pt合計のフォントサイズ: 1.2rem *@
-                                    <td style="padding: 15px 10px; font-size: 1.2rem; white-space: nowrap;">
-                                        <span style="@GetShareTotalPointStyle(i)">@GetShareTotalPointValue(i)</span>
-                                    </td>
-                                }
-                            </tr>
-
-                            @* チップ行 (チップあり設定の場合のみ表示) *@
-                            @if (rules.ChipRate > 0)
-                            {
-                                <tr style="background-color: rgba(46, 125, 50, 0.1); border-bottom: 2px solid #555;">
-                                    <td style="padding: 15px 10px; color: #ddd; font-size: 0.9rem; font-weight: bold; white-space: nowrap;">チップ</td>
-                                    @for (int i = 0; i < rules.PlayerCount; i++)
-                                    {
-                                        int chip = ActiveSessionChips[i];
-                                        @* チップのフォントサイズ: 1.2rem (Pt合計と同等) *@
-                                        <td style="padding: 15px 10px; font-size: 1.2rem; white-space: nowrap;">
-                                            <span style="display: inline-block; width: 4.5rem; text-align: right; @(chip > 0 ? "color: #ff6b6b;" : (chip < 0 ? "color: #4dabf7;" : "color: #9e9e9e;"))">
-                                                @(chip > 0 ? $"+{chip}" : chip.ToString())枚
-                                            </span>
-                                        </td>
-                                    }
-                                </tr>
-                            }
-
-                            @* 円合計行 *@
-                            <tr style="background-color: rgba(156, 39, 176, 0.1); font-weight: bold;">
-                                <td style="padding: 15px 10px; font-size: 0.9rem; color: #ce93d8; white-space: nowrap;">
-                                    円 合計
-                                </td>
-                                @for (int i = 0; i < rules.PlayerCount; i++)
-                                {
-                                    @* 円合計のフォントサイズ: 1.4rem *@
-                                    <td style="padding: 15px 10px; font-size: 1.4rem; white-space: nowrap;">
-                                        <span style="@GetShareTotalYenStyle(i)">@GetShareTotalYenValue(i)</span>
-                                    </td>
-                                }
-                            </tr>
-                        </tfoot>
-                    </table>
-
-                    @* フッター情報 *@
-                    <div style="display: flex; justify-content: flex-end; font-size: 0.9rem; color: #888;">
-                        <span>@DateTime.Now.ToString("yyyy/MM/dd HH:mm") - 麻雀集計ツール</span>
-                    </div>
-                
-                </div>
+            @* 共有ボタン *@
+            <div class="d-flex justify-end mt-4 gap-2">
+                <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Share" OnClick="ShareImageAsync" Disabled="isSharing" Style="white-space: nowrap;">
+                    @(isSharing ? "画像を作成中..." : "結果を画像でシェア")
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Link" OnClick="CopyShareUrlAsync" Style="white-space: nowrap;">
+                    閲覧用URLをシェア
+                </MudButton>
             </div>
-        </MudContainer>
+        </div>
+    </MudPaper>
+
+    @* --- セクションX: シェア用の裏DOM（画面外に隠す） --- *@
+    <div style="position: absolute; left: -9999px; top: 0;">
+        <div id="share-target" style="width: @(800 + Math.Max(0, activeParticipantCount - 4) * 150)px; padding: 40px; background-color: #1a1a27; color: white; border-radius: 12px; font-family: 'Kaisei Decol', sans-serif;">
+            <h2 style="text-align: center; margin-bottom: 20px; font-weight: bold; border-bottom: 2px solid #444; padding-bottom: 10px;">
+                🀄 対局結果
+            </h2>
+            @* ルール・レート情報の表示 *@
+            <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; font-size: 0.95rem;">
+                <div><strong>ルール名:</strong> @(string.IsNullOrWhiteSpace(rules.Name) ? "未設定" : rules.Name)</div>
+                <div><strong>形式:</strong> @(rules.PlayerCount)人麻雀</div>
+                <div><strong>設定:</strong> @(rules.StartingPoints)持ち / @(rules.ReturnPoints)返し</div>
+                <div><strong>ウマ:</strong> @(rules.IsCustomUma? rules.GetUmaDisplayText(true) : $"{rules.Uma1} - {rules.Uma2}")</div>
+                <div><strong>レート:</strong> @(rules.Rate)円/1k</div>
+                @if (rules.ChipRate > 0)
+                {
+                    <div><strong>チップ:</strong> @(rules.ChipRate)円/枚</div>
+                }
+            </div>
+            @* 成績テーブル *@
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center; font-variant-numeric: tabular-nums;">
+                <thead>
+                    <tr style="background-color: rgba(255,255,255,0.1); border-bottom: 2px solid #555;">
+                        <th style="padding: 12px; width: 80px; font-size: 0.9rem;">局</th>
+                        @for (int i = 0; i < activeParticipantCount; i++)
+                        {
+                            <th style="padding: 12px; font-size: 1.1rem;">@(string.IsNullOrWhiteSpace(currentPlayers[i]) ? " " : currentPlayers[i])</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @* 各局のポイント (+/-) 固定表示 *@
+                    @for (int row = 0; row < ActiveHistory.Count; row++)
+                    {
+                        var game = ActiveHistory[row];
+                        <tr style="border-bottom: 1px solid #333;">
+                            <td style="padding: 10px; color: #aaa; font-size: 0.85rem; white-space: nowrap;">@(row + 1)局目</td>
+                            @for (int i = 0; i < activeParticipantCount; i++)
+                            {
+                                @* 各局のフォントサイズ: 1.1rem *@
+                                <td style="padding: 10px; font-size: 1.1rem; white-space: nowrap;">
+                                    <span style="@GetSharePointStyle(game, i)">@GetSharePointValue(game, i)</span>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    @* ポイント合計行 *@
+                    <tr style="background-color: rgba(46, 125, 50, 0.1); border-bottom: 2px solid #555;">
+                        <td style="padding: 15px 10px; font-size: 0.9rem; color: #81c784; font-weight: bold; white-space: nowrap;">
+                            Pt 合計
+                        </td>
+                        @for (int i = 0; i < activeParticipantCount; i++)
+                        {
+                            @* Pt合計のフォントサイズ: 1.2rem *@
+                            <td style="padding: 15px 10px; font-size: 1.2rem; white-space: nowrap;">
+                                <span style="@GetShareTotalPointStyle(i)">@GetShareTotalPointValue(i)</span>
+                            </td>
+                        }
+                    </tr>
+                    @* チップ行 (チップあり設定の場合のみ表示) *@
+                    @if (rules.ChipRate > 0)
+                    {
+                        <tr style="background-color: rgba(46, 125, 50, 0.1); border-bottom: 2px solid #555;">
+                            <td style="padding: 15px 10px; color: #ddd; font-size: 0.9rem; font-weight: bold; white-space: nowrap;">チップ</td>
+                            @for (int i = 0; i < activeParticipantCount; i++)
+                            {
+                                int chip = ActiveSessionChips[i];
+                                @* チップのフォントサイズ: 1.2rem (Pt合計と同等) *@
+                                <td style="padding: 15px 10px; font-size: 1.2rem; white-space: nowrap;">
+                                    <span style="display: inline-block; width: 4.5rem; text-align: right; @(chip > 0 ? "color: #ff6b6b;" : (chip < 0 ? "color: #4dabf7;" : "color: #9e9e9e;"))">
+                                        @(chip > 0 ? $"+{chip}" : chip.ToString())枚
+                                    </span>
+                                </td>
+                            }
+                        </tr>
+                    }
+                    @* 円合計行 *@
+                    <tr style="background-color: rgba(156, 39, 176, 0.1); font-weight: bold;">
+                        <td style="padding: 15px 10px; font-size: 0.9rem; color: #ce93d8; white-space: nowrap;">
+                            円 合計
+                        </td>
+                        @for (int i = 0; i < activeParticipantCount; i++)
+                        {
+                            @* 円合計のフォントサイズ: 1.4rem *@
+                            <td style="padding: 15px 10px; font-size: 1.4rem; white-space: nowrap;">
+                                <span style="@GetShareTotalYenStyle(i)">@GetShareTotalYenValue(i)</span>
+                            </td>
+                        }
+                    </tr>
+                </tfoot>
+            </table>
+            @* フッター情報 *@
+            <div style="display: flex; justify-content: flex-end; font-size: 0.9rem; color: #888;">
+                <span>@DateTime.Now.ToString("yyyy/MM/dd HH:mm") - 麻雀集計ツール</span>
+            </div>
+        </div>
+    </div>
+</MudContainer>
 
 @code {
     private RuleSet rules = new();
     private List<RuleSet> rulePresets = new();
-    private List<string> currentPlayers = new() { "Aさん", "Bさん", "Cさん", "Dさん" };
+    private const int MaxParticipants = 7;
+    private int activeParticipantCount = 4;
+    private List<string> currentPlayers = new() { "Aさん", "Bさん", "Cさん", "Dさん", "Eさん", "Fさん", "Gさん" };
     private List<int?> currentScores = new() { null, null, null, null };
     private Dictionary<int, List<GameResult>> histories = new() { { 3, new() }, { 4, new() } };
-    private Dictionary<int, List<int>> sessionChipsMap = new() { { 3, new() { 0, 0, 0 } }, { 4, new() { 0, 0, 0, 0 } } };
+    private Dictionary<int, List<int>> sessionChipsMap = new() { { 3, new int[MaxParticipants].ToList() }, { 4, new int[MaxParticipants].ToList() } };
     private int displayMode = 1;
     private bool isSettingsExpanded = true;
     private List<GameResult> ActiveHistory => histories[rules.PlayerCount];
     private List<int> ActiveSessionChips => sessionChipsMap[rules.PlayerCount];
-    private bool IsTotalCorrect => currentScores.Take(rules.PlayerCount).All(x => x.HasValue) &&
-                                   currentScores.Take(rules.PlayerCount).Sum(x => x ?? 0) == (rules.StartingPoints * rules.PlayerCount) / 100;
+    private bool IsTotalCorrect
+    {
+        get
+        {
+            var activeScores = currentScores.Take(activeParticipantCount).Where((s, i) => !currentSitOuts[i]).ToList();
+            if (activeScores.Count(x => x.HasValue) != rules.PlayerCount) return false;
+            return activeScores.Sum(x => x ?? 0) == (rules.StartingPoints * rules.PlayerCount) / 100;
+        }
+    }
     private List<bool> currentYaki = new() { false, false, false, false };
     private List<bool> currentTobiBonus = new() { false, false, false, false };
+    private List<bool> currentSitOuts = new(new bool[MaxParticipants]);
     private const string YakiIcon = "<g transform=\"matrix(0.025, 0, 0, 0.025, 0, 24)\"><path d=\"M843-60 670-234l-85 85q-23 23-56.5 23T472-149l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23 23-56.5 23T246-375l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23-23-23-56.5t23-56.5l28-28L60-844l56-56 102 102 28-28q23-23 57-23t57 23l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l-85 84 172 173-56 57ZM529-205l227-226-57-57-227 227 57 56Zm-57-170 114-113-57-56-113 113 56 56Zm-170-56 227-227-57-56-226 226 56 57Zm-56-170 114-113-57-57-113 113 56 57Zm368 255ZM501-460ZM388-573ZM275-686Z\"/></g>";
     private const string DeleteEmpty = "<path d=\"M20.37,8.91L19.37,10.64L7.24,3.64L8.24,1.91L11.28,3.66L12.64,3.29L16.97,5.79L17.34,7.16L20.37,8.91M6,19V7H11.07L18,11V19A2,2 0 0,1 16,21H8A2,2 0 0,1 6,19Z\"/>";
     private int? armedDeleteIndex = null;
@@ -409,20 +430,35 @@
         var savedRules = await LocalStorage.GetItemAsync<RuleSet>("rules");
         if (savedRules != null) rules = savedRules;
         var savedPlayers = await LocalStorage.GetItemAsync<List<string>>("currentPlayers");
-        if (savedPlayers != null && savedPlayers.Count >= 4)
+        if (savedPlayers != null)
         {
-            currentPlayers = savedPlayers;
+            for (int i = 0; i < savedPlayers.Count && i < MaxParticipants; i++)
+            {
+                currentPlayers[i] = savedPlayers[i];
+            }
         }
+        var savedActiveCount = await LocalStorage.GetItemAsync<int?>("activeParticipantCount");
+        activeParticipantCount = savedActiveCount ?? rules.PlayerCount;
         var savedPresets = await LocalStorage.GetItemAsync<List<RuleSet>>("rulePresets");
         if (savedPresets != null) rulePresets = savedPresets;
         var dictHistories = await LocalStorage.GetItemAsync<Dictionary<int, List<GameResult>>>("histories_dict");
         if (dictHistories != null) histories = dictHistories;
         var dictChips = await LocalStorage.GetItemAsync<Dictionary<int, List<int>>>("sessionChips_dict");
-        if (dictChips != null) sessionChipsMap = dictChips;
+        if (dictChips != null)
+        {
+            sessionChipsMap = dictChips;
+            foreach (var key in sessionChipsMap.Keys.ToList())
+            {
+                while (sessionChipsMap[key].Count < MaxParticipants)
+                {
+                    sessionChipsMap[key].Add(0);
+                }
+            }
+        }
         if (!histories.ContainsKey(3)) histories[3] = new();
         if (!histories.ContainsKey(4)) histories[4] = new();
-        if (!sessionChipsMap.ContainsKey(3)) sessionChipsMap[3] = new() { 0, 0, 0 };
-        if (!sessionChipsMap.ContainsKey(4)) sessionChipsMap[4] = new() { 0, 0, 0, 0 };
+        if (!sessionChipsMap.ContainsKey(3)) sessionChipsMap[3] = new int[MaxParticipants].ToList();
+        if (!sessionChipsMap.ContainsKey(4)) sessionChipsMap[4] = new int[MaxParticipants].ToList();
         ResetInputForms();
     }
 
@@ -446,15 +482,25 @@
     private void HandleScoreInputWithAutoFill(int index, int? val)
     {
         currentScores[index] = val;
-        int pCount = rules.PlayerCount;
-        var activeScores = currentScores.Take(pCount).ToList();
-        var nullIndices = activeScores.Select((v, i) => new { v, i }).Where(x => !x.v.HasValue).Select(x => x.i).ToList();
-        if (val.HasValue && nullIndices.Count == 1)
+
+        // 表示されている参加者のうち、抜け番アイコンがOFFの人だけを抽出
+        var activeIndices = Enumerable.Range(0, activeParticipantCount)
+         .Where(i => !currentSitOuts[i])
+         .ToList();
+
+        // 自動計算の発動条件:
+        // 1. 抜け番以外のアクティブな人数が、ルール上の対局人数（3 or 4）と正確に一致していること
+        // 2. その中で空欄が「残り1人」であること
+        if (activeIndices.Count == rules.PlayerCount)
         {
-            int lastIndex = nullIndices[0];
-            int targetTotal = (rules.StartingPoints * pCount) / 100;
-            int currentTotal = activeScores.Sum(x => x ?? 0);
-            currentScores[lastIndex] = targetTotal - currentTotal;
+            var nullIndices = activeIndices.Where(i => !currentScores[i].HasValue).ToList();
+            if (nullIndices.Count == 1)
+            {
+                int lastIndex = nullIndices[0];
+                int targetTotal = (rules.StartingPoints * rules.PlayerCount) / 100;
+                int currentTotal = activeIndices.Where(i => i != lastIndex).Sum(i => currentScores[i] ?? 0);
+                currentScores[lastIndex] = targetTotal - currentTotal;
+            }
         }
     }
 
@@ -537,22 +583,32 @@
     private async Task CalculateAndRecordGame()
     {
         int pCount = rules.PlayerCount;
-        var activeScores = currentScores.Take(pCount).Select(x => (x ?? 0) * 100).ToList();
-        var activePlayers = currentPlayers.Take(pCount).ToList();
+
+        // 変更: 抜け番ではないアクティブな参加者のインデックスを抽出
+        var activeIndices = Enumerable.Range(0, activeParticipantCount).Where(i => !currentSitOuts[i]).ToList();
+        if (activeIndices.Count != pCount) return;
+
+        // 計算用の抽出配列
+        var activeScores = activeIndices.Select(i => (currentScores[i] ?? 0) * 100).ToList();
+        var activePlayers = activeIndices.Select(i => currentPlayers[i]).ToList();
+        var activeYaki = activeIndices.Select(i => currentYaki[i]).ToList();
+        var activeTobiBonus = activeIndices.Select(i => currentTobiBonus[i]).ToList();
+
         // 簡易入力ミスチェック
         if (rules.IsTobiEnabled)
         {
             bool hasTobi = activeScores.Any(s => rules.TobiJustIsTobi ? s <= rules.TobiPoint : s < rules.TobiPoint);
-            bool hasTobiBonus = currentTobiBonus.Take(pCount).Any(b => b);
+            bool hasTobiBonus = activeTobiBonus.Any(b => b);
             if (hasTobi != hasTobiBonus)
             {
                 string msg = hasTobi
-                    ? "トビが発生していますが、ボーナス獲得者（🚀）が選択されていません。"
-                    : "トビが発生していないのに、ボーナス獲得者（🚀）が選択されています。";
+                ? "トビが発生していますが、ボーナス獲得者（🚀）が選択されていません。"
+                : "トビが発生していないのに、ボーナス獲得者（🚀）が選択されています。";
                 Snackbar.Add(msg, Severity.Error);
                 return;
             }
         }
+
         // オカ・順位ウマのベースポイント算出
         double[] baseUmaOka = new double[pCount];
         double oka = (rules.ReturnPoints - rules.StartingPoints) * pCount / 1000.0;
@@ -575,6 +631,7 @@
             }
             baseUmaOka[rank] += uma;
         }
+
         // 各個人の素点と端数処理
         double[] points = new double[pCount];
         double totalPts = 0;
@@ -585,19 +642,20 @@
             totalPts += points[i];
         }
         int fractionsToAdjust = (int)Math.Round(-(totalPts + oka) * 10);
+
         // 同着グループの分析と「席順入力ダイアログ」の要否判定
         var groupedScores = activeScores.Select((score, index) => new { score, index })
-                                        .GroupBy(x => x.score)
-                                        .OrderByDescending(g => g.Key)
-                                        .ToList();
+        .GroupBy(x => x.score)
+        .OrderByDescending(g => g.Key)
+        .ToList();
         bool needsTieBreaker = false;
         if (groupedScores.Any(g => g.Count() > 1))
         {
             if (rules.TieBreaker == TieBreakerRule.Kamicha)
             {
-                needsTieBreaker = true; // 上家取りルールの場合は同着があれば必ず必要
+                needsTieBreaker = true;
             }
-            else // ポイント折半の場合
+            else
             {
                 int currentRank = 0;
                 foreach (var group in groupedScores)
@@ -605,10 +663,8 @@
                     int count = group.Count();
                     if (count > 1)
                     {
-                        // 返し点の端数チェック
                         if (fractionsToAdjust > currentRank && fractionsToAdjust < currentRank + count) needsTieBreaker = true;
-                        
-                        // オカ・ウマの端数チェック
+
                         double sumUmaOka = 0;
                         for (int i = 0; i < count; i++) sumUmaOka += baseUmaOka[currentRank + i];
                         double splitBase = Math.Floor(sumUmaOka / count * 10) / 10.0;
@@ -617,13 +673,11 @@
                     }
                     currentRank += count;
                 }
-                // 沈みウマ・焼き鳥の「1着総取り」における端数チェック
                 if (!needsTieBreaker)
                 {
                     int topCount = groupedScores.First().Count();
                     if (topCount > 1)
                     {
-                        // 沈みウマの端数チェック
                         if (rules.IsSinkEnabled && rules.SinkUmaDistribution == PenaltyDistribution.WinnerTakeAll)
                         {
                             int borderPoint = rules.IsSinkBaseCustom ? rules.SinkUmaBasePoint : rules.StartingPoints;
@@ -631,10 +685,9 @@
                             if (shizumiCount > 0 && shizumiCount < pCount && (shizumiCount * rules.SinkUmaPenalty * 10) % topCount != 0)
                                 needsTieBreaker = true;
                         }
-                        // 焼き鳥の端数チェック
                         if (!needsTieBreaker && rules.IsYakiEnabled && rules.YakiDistribution == PenaltyDistribution.WinnerTakeAll)
                         {
-                            int yakiCount = currentYaki.Take(pCount).Count(y => y);
+                            int yakiCount = activeYaki.Count(y => y);
                             if (yakiCount > 0 && yakiCount < pCount && (yakiCount * rules.YakiPenalty * 10) % topCount != 0)
                                 needsTieBreaker = true;
                         }
@@ -642,18 +695,18 @@
                 }
             }
         }
-        // 席順の決定
+
         Dictionary<int, int>? priority = needsTieBreaker
-            ? await OpenTieBreakerIfNeeded(activeScores, activePlayers)
-            : Enumerable.Range(0, pCount).ToDictionary(i => i, i => i);
-        if (priority == null) return; // キャンセルされたら戻る
-        // 最終的な順位付け
+        ? await OpenTieBreakerIfNeeded(activeScores, activePlayers)
+        : Enumerable.Range(0, pCount).ToDictionary(i => i, i => i);
+        if (priority == null) return;
+
         var rankedIndices = activeScores.Select((score, index) => new { score, index })
-                                        .OrderByDescending(x => x.score)
-                                        .ThenBy(x => priority[x.index])
-                                        .Select(x => x.index)
-                                        .ToList();
-        // 順位ウマ・オカの分配
+        .OrderByDescending(x => x.score)
+        .ThenBy(x => priority[x.index])
+        .Select(x => x.index)
+        .ToList();
+
         int currentR = 0;
         while (currentR < pCount)
         {
@@ -666,7 +719,6 @@
             }
             if (rules.TieBreaker == TieBreakerRule.Split && tieCount > 1)
             {
-                // 折半処理
                 double sumUmaOka = 0;
                 for (int i = 0; i < tieCount; i++) sumUmaOka += baseUmaOka[currentR + i];
                 double splitBase = Math.Floor(sumUmaOka / tieCount * 10) / 10.0;
@@ -674,19 +726,18 @@
                 int remainderUnits = (int)Math.Round(remainder * 10);
                 for (int i = 0; i < tieCount; i++)
                 {
-                    double addPt = splitBase + (i < remainderUnits ? 0.1 : 0); // 割り切れなかった分は上家優先
+                    double addPt = splitBase + (i < remainderUnits ? 0.1 : 0);
                     points[rankedIndices[currentR + i]] += addPt;
                 }
             }
             else
             {
-                // 上家取り、または同点なし
                 for (int i = 0; i < tieCount; i++) points[rankedIndices[currentR + i]] += baseUmaOka[currentR + i];
             }
             currentR += tieCount;
         }
         AdjustFractions(points, rankedIndices);
-        // 【沈みウマ】
+
         double[] preSinkPts = points.ToArray();
         if (rules.IsSinkEnabled)
         {
@@ -716,32 +767,23 @@
                         double splitBase = Math.Floor((double)totalPenalty / topCount * 10) / 10.0;
                         double remainder = Math.Round(totalPenalty - (splitBase * topCount), 1);
                         int remainderUnits = (int)Math.Round(remainder * 10);
-                        for (int i = 0; i < topCount; i++)
-                        {
-                            points[rankedIndices[i]] += splitBase + (i < remainderUnits ? 0.1 : 0);
-                        }
+                        for (int i = 0; i < topCount; i++) points[rankedIndices[i]] += splitBase + (i < remainderUnits ? 0.1 : 0);
                         AdjustFractions(points, rankedIndices);
                     }
-                    else
-                    {
-                        points[rankedIndices[0]] += totalPenalty;
-                    }
+                    else points[rankedIndices[0]] += totalPenalty;
                 }
-                else // 分配
+                else
                 {
                     double splitBase = Math.Floor((double)totalPenalty / ukiIndices.Count * 10) / 10.0;
                     double remainder = Math.Round(totalPenalty - (splitBase * ukiIndices.Count), 1);
                     int remainderUnits = (int)Math.Round(remainder * 10);
                     var orderedUki = rankedIndices.Where(idx => ukiIndices.Contains(idx)).ToList();
-                    for (int j = 0; j < orderedUki.Count; j++)
-                    {
-                        points[orderedUki[j]] += splitBase + (j < remainderUnits ? 0.1 : 0);
-                    }
+                    for (int j = 0; j < orderedUki.Count; j++) points[orderedUki[j]] += splitBase + (j < remainderUnits ? 0.1 : 0);
                 }
             }
         }
         var currentSinkPts = points.Select((p, i) => Math.Round(p - preSinkPts[i], 1)).ToList();
-        // 【焼き鳥】
+
         double[] preYakiPts = points.ToArray();
         if (rules.IsYakiEnabled)
         {
@@ -749,9 +791,9 @@
             var safeIndices = new List<int>();
             for (int i = 0; i < pCount; i++)
             {
-                if (currentYaki[i]) yakiIndices.Add(i); else safeIndices.Add(i);
+                if (activeYaki[i]) yakiIndices.Add(i); else safeIndices.Add(i);
             }
-            if (yakiIndices.Count > 0 && yakiIndices.Count < pCount) // 全員焼き鳥はペナルティなし
+            if (yakiIndices.Count > 0 && yakiIndices.Count < pCount)
             {
                 int totalPenalty = yakiIndices.Count * rules.YakiPenalty;
                 foreach (var i in yakiIndices) points[i] -= rules.YakiPenalty;
@@ -769,32 +811,23 @@
                         double splitBase = Math.Floor((double)totalPenalty / topCount * 10) / 10.0;
                         double remainder = Math.Round(totalPenalty - (splitBase * topCount), 1);
                         int remainderUnits = (int)Math.Round(remainder * 10);
-                        for (int i = 0; i < topCount; i++)
-                        {
-                            points[rankedIndices[i]] += splitBase + (i < remainderUnits ? 0.1 : 0);
-                        }
+                        for (int i = 0; i < topCount; i++) points[rankedIndices[i]] += splitBase + (i < remainderUnits ? 0.1 : 0);
                         AdjustFractions(points, rankedIndices);
                     }
-                    else
-                    {
-                        points[rankedIndices[0]] += totalPenalty;
-                    }
+                    else points[rankedIndices[0]] += totalPenalty;
                 }
-                else // 分配
+                else
                 {
                     double splitBase = Math.Floor((double)totalPenalty / safeIndices.Count * 10) / 10.0;
                     double remainder = Math.Round(totalPenalty - (splitBase * safeIndices.Count), 1);
                     int remainderUnits = (int)Math.Round(remainder * 10);
                     var orderedSafe = rankedIndices.Where(idx => safeIndices.Contains(idx)).ToList();
-                    for (int j = 0; j < orderedSafe.Count; j++)
-                    {
-                        points[orderedSafe[j]] += splitBase + (j < remainderUnits ? 0.1 : 0);
-                    }
+                    for (int j = 0; j < orderedSafe.Count; j++) points[orderedSafe[j]] += splitBase + (j < remainderUnits ? 0.1 : 0);
                 }
             }
         }
         var yakiPts = points.Select((p, i) => Math.Round(p - preYakiPts[i], 1)).ToList();
-        // 【トビ】
+
         double[] preTobiPts = points.ToArray();
         if (rules.IsTobiEnabled)
         {
@@ -803,25 +836,22 @@
             for (int i = 0; i < pCount; i++)
             {
                 if (rules.TobiJustIsTobi ? activeScores[i] <= rules.TobiPoint : activeScores[i] < rules.TobiPoint) tobiIndices.Add(i);
-                if (currentTobiBonus[i]) bonusIndices.Add(i);
+                if (activeTobiBonus[i]) bonusIndices.Add(i);
             }
             if (tobiIndices.Count > 0 && bonusIndices.Count > 0)
             {
                 int totalPenalty = tobiIndices.Count * rules.TobiPenalty;
                 foreach (var i in tobiIndices) points[i] -= rules.TobiPenalty;
-                
+
                 double splitBase = Math.Floor((double)totalPenalty / bonusIndices.Count * 10) / 10.0;
                 double remainder = Math.Round(totalPenalty - (splitBase * bonusIndices.Count), 1);
                 int remainderUnits = (int)Math.Round(remainder * 10);
                 var orderedBonus = rankedIndices.Where(idx => bonusIndices.Contains(idx)).ToList();
-                for (int j = 0; j < orderedBonus.Count; j++)
-                {
-                    points[orderedBonus[j]] += splitBase + (j < remainderUnits ? 0.1 : 0);
-                }
+                for (int j = 0; j < orderedBonus.Count; j++) points[orderedBonus[j]] += splitBase + (j < remainderUnits ? 0.1 : 0);
             }
         }
         var tobiPts = points.Select((p, i) => Math.Round(p - preTobiPts[i], 1)).ToList();
-        // 【コールド】
+
         double[] preColdPts = points.ToArray();
         if (rules.IsColdEnabled)
         {
@@ -841,7 +871,7 @@
             }
         }
         var currentColdPts = points.Select((p, i) => Math.Round(p - preColdPts[i], 1)).ToList();
-        // 円の計算
+
         double[] exactYen = new double[pCount];
         int[] baseYen = new int[pCount];
         double[] fractions = new double[pCount];
@@ -855,27 +885,53 @@
         }
         int shortage = 0 - totalBaseYen;
         var yenDistributionOrder = Enumerable.Range(0, pCount)
-            .OrderByDescending(i => fractions[i])
-            .ThenBy(i => rankedIndices.IndexOf(i))
-            .ToList();
-            
+        .OrderByDescending(i => fractions[i])
+        .ThenBy(i => rankedIndices.IndexOf(i))
+        .ToList();
+
         for (int i = 0; i < shortage; i++) baseYen[yenDistributionOrder[i]] += 1;
-        // 結果オブジェクト構築と保存処理
+
+        // ==================================================
+        // 変更: 結果を「元の参加枠インデックス」へマッピングして保存
+        // ==================================================
+        List<int?> finalRawScores = Enumerable.Repeat((int?)null, activeParticipantCount).ToList();
+        List<double> finalPoints = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
+        List<double> finalSinkPts = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
+        List<double> finalYakiPts = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
+        List<double> finalTobiPts = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
+        List<double> finalColdPts = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
+        List<int> finalYen = Enumerable.Repeat(0, activeParticipantCount).ToList();
+        List<bool> finalTobiPlayers = Enumerable.Repeat(false, activeParticipantCount).ToList();
+
+        for (int i = 0; i < pCount; i++)
+        {
+            int originalIdx = activeIndices[i];
+            finalRawScores[originalIdx] = currentScores[originalIdx];
+            finalPoints[originalIdx] = points[i];
+            finalSinkPts[originalIdx] = currentSinkPts[i];
+            finalYakiPts[originalIdx] = yakiPts[i];
+            finalTobiPts[originalIdx] = tobiPts[i];
+            finalColdPts[originalIdx] = currentColdPts[i];
+            finalYen[originalIdx] = baseYen[i];
+            finalTobiPlayers[originalIdx] = rules.TobiJustIsTobi ? activeScores[i] <= rules.TobiPoint : activeScores[i] < rules.TobiPoint;
+        }
+
         ActiveHistory.Add(new GameResult
         {
             Timestamp = DateTime.Now,
-            PlayerNames = activePlayers,
-            RawScores = activeScores,
-            Points = points.ToList(),
-            YakiPlayers = currentYaki.Take(pCount).ToList(),
-            TobiPlayers = activeScores.Select(s => rules.TobiJustIsTobi ? s <= rules.TobiPoint : s < rules.TobiPoint).ToList(),
-            TobiBonusRecipients = currentTobiBonus.Take(pCount).ToList(),
-            SinkPoints = currentSinkPts,
-            YakiPoints = yakiPts,
-            TobiPoints = tobiPts,
-            ColdPoints = currentColdPts,
-            Yen = baseYen.ToList()
+            PlayerNames = currentPlayers.Take(activeParticipantCount).ToList(),
+            RawScores = finalRawScores,
+            Points = finalPoints,
+            YakiPlayers = currentYaki.Take(activeParticipantCount).ToList(),
+            TobiPlayers = finalTobiPlayers,
+            TobiBonusRecipients = currentTobiBonus.Take(activeParticipantCount).ToList(),
+            SinkPoints = finalSinkPts,
+            YakiPoints = finalYakiPts,
+            TobiPoints = finalTobiPts,
+            ColdPoints = finalColdPts,
+            Yen = finalYen
         });
+
         await LocalStorage.SetItemAsync("histories_dict", histories);
         await LocalStorage.SetItemAsync("rules", rules);
         ResetInputForms();
@@ -887,13 +943,13 @@
     {
         string players = rules.PlayerCount == 3 ? "三" : "四";
         bool? result = await DialogService.ShowMessageBoxAsync(
-            "記録のリセット",
-            (MarkupString)$"{players}人麻雀の記録をリセットしますか？<br />（この操作は取り消せません）",
-            yesText: "リセットする", cancelText: "キャンセル");
+        "記録のリセット",
+        (MarkupString)$"{players}人麻雀の記録をリセットしますか？<br />（この操作は取り消せません）",
+        yesText: "リセットする", cancelText: "キャンセル");
         if (result == true)
         {
             ActiveHistory.Clear();
-            sessionChipsMap[rules.PlayerCount] = Enumerable.Repeat(0, rules.PlayerCount).ToList();
+            sessionChipsMap[rules.PlayerCount] = Enumerable.Repeat(0, MaxParticipants).ToList();
             await LocalStorage.SetItemAsync("histories_dict", histories);
             await LocalStorage.SetItemAsync("sessionChips_dict", sessionChipsMap);
             Snackbar.Add($"{players}人麻雀の記録をリセットしました", Severity.Info);
@@ -953,9 +1009,11 @@
     @* 素点入力欄を初期化 *@
     private void ResetInputForms()
     {
-        currentScores = Enumerable.Repeat((int?)null, 4).ToList();
-        currentYaki = new() { false, false, false, false };
-        currentTobiBonus = new() { false, false, false, false };
+        // 最大人数分リセット
+        currentScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
+        currentYaki = new(new bool[MaxParticipants]);
+        currentTobiBonus = new(new bool[MaxParticipants]);
+        currentSitOuts = new(new bool[MaxParticipants]);
     }
 
     @* 特殊ルールOFF時のスコア表示モード切替 *@
@@ -1019,9 +1077,12 @@
     @* 結果表示モード *@
     private string GetDisplayValue(GameResult res, int idx)
     {
+        // 変更: 過去の履歴などでインデックスが範囲外の場合はハイフン
+        if (idx >= res.RawScores.Count || res.RawScores[idx] == null) return "-";
+
         return displayMode switch
         {
-            0 => res.RawScores[idx].ToString("N0"),
+            0 => (res.RawScores[idx] * 100)?.ToString("N0") ?? "-",
             1 => FormatPlus(res.Points[idx]),
             2 => $"{FormatPlus(res.Yen[idx], "N0")}円",
             3 => FormatExtra(res.SinkPoints, idx, "📈", "📉"),
@@ -1043,7 +1104,7 @@
     {
         var valList = displayMode switch
         {
-            0 => res.RawScores.Select(x => (double)x).ToList(),
+            0 => res.RawScores.Select(x => (double)(x ?? 0)).ToList(),
             1 => res.Points,
             2 => res.Yen.Select(x => (double)x).ToList(),
             3 => res.SinkPoints?.Count > idx ? res.SinkPoints : new(),
@@ -1056,6 +1117,7 @@
         double val = valList[idx];
         string boxWidth = displayMode switch { 0 => "3.4rem", 2 => "4.2rem", _ => "3.2rem" };
         string style = $"display:inline-block; width:{boxWidth}; text-align:right; font-variant-numeric:tabular-nums; font-size:0.8rem; letter-spacing:-0.5px; ";
+        if (res.RawScores[idx] == null) return style + "color: #9e9e9e; font-weight: normal; text-align: center;";
         if (displayMode >= 3 && val == 0) return style + "color: #9e9e9e; font-weight: bold;";
         bool isPositive = (displayMode == 0) ? res.Points[idx] >= 0 : val >= 0;
         style += $"color:{(isPositive ? "#ff0000" : "#1976d2")}; ";
@@ -1070,9 +1132,11 @@
         if (ActiveHistory.Count == 0 && ActiveSessionChips[idx] == 0) return 0;
         return displayMode switch
         {
-            0 => ActiveHistory.Count == 0 ? 0 : ActiveHistory.Average(h => h.RawScores[idx]),
-            1 => ActiveHistory.Sum(h => h.Points[idx]),
-            2 => ActiveHistory.Sum(h => h.Yen[idx]) + (ActiveSessionChips[idx] * rules.ChipRate),
+            0 => ActiveHistory.Any(h => h.RawScores.Count > idx && h.RawScores[idx].HasValue)
+                ? ActiveHistory.Where(h => h.RawScores.Count > idx && h.RawScores[idx].HasValue).Average(h => h.RawScores[idx]!.Value) * 100
+                : 0,
+            1 => ActiveHistory.Sum(h => h.Points.Count > idx ? h.Points[idx] : 0),
+            2 => ActiveHistory.Sum(h => h.Yen.Count > idx ? h.Yen[idx] : 0) + (ActiveSessionChips[idx] * rules.ChipRate),
             3 => ActiveHistory.Sum(h => h.SinkPoints?.Count > idx ? h.SinkPoints[idx] : 0),
             4 => ActiveHistory.Sum(h => h.YakiPoints?.Count > idx ? h.YakiPoints[idx] : 0),
             5 => ActiveHistory.Sum(h => h.TobiPoints?.Count > idx ? h.TobiPoints[idx] : 0),
@@ -1100,17 +1164,17 @@
         string boxWidth = displayMode == 0 ? "3.4rem" : (displayMode == 2 ? "4.2rem" : "3.2rem");
         string style = $"display: inline-block; width: {boxWidth}; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; letter-spacing: -0.5px; ";
         if (ActiveHistory.Count == 0 && ActiveSessionChips[idx] == 0) return style;
-        var allValues = Enumerable.Range(0, rules.PlayerCount).Select(GetTotalNumericValue).ToList();
+        var allValues = Enumerable.Range(0, activeParticipantCount).Select(GetTotalNumericValue).ToList();
         double val = allValues[idx];
         if (displayMode >= 3 && val == 0) return style + "color: #9e9e9e; font-weight: normal; ";
         if (allValues.Distinct().Count() > 1 && (val == allValues.Max() || val == allValues.Min())) style += "font-weight: bold; ";
-        bool isPositive = displayMode == 0 ? ActiveHistory.Sum(h => h.Points[idx]) >= 0 : val >= 0;
+        bool isPositive = displayMode == 0 ? ActiveHistory.Sum(h => h.Points.Count > idx ? h.Points[idx] : 0) >= 0 : val >= 0;
         style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
         if (displayMode == 1) style += "position: relative; right: 0.7rem; ";
         return style;
     }
 
-    @* --- シェア画像専用ヘルパーメソッド（共通化） --- *@
+    @* シェア画像専用ヘルパーメソッド *@
     private string BuildShareStyle(double val, IEnumerable<double> allVals, string width)
     {
         string style = $"display: inline-block; width: {width}; text-align: right; font-variant-numeric: tabular-nums; ";
@@ -1120,26 +1184,33 @@
         return style;
     }
 
-    private string GetSharePointValue(GameResult res, int idx) => FormatPlus(res.Points[idx]);
-    private string GetSharePointStyle(GameResult res, int idx) => BuildShareStyle(res.Points[idx], res.Points, "4.5rem");
+    private string GetSharePointValue(GameResult res, int idx) => (idx >= res.RawScores.Count || res.RawScores[idx] == null) ? "-" : FormatPlus(res.Points[idx]);
+    
+    private string GetSharePointStyle(GameResult res, int idx)
+    {
+        double pt = (idx < res.Points.Count) ? res.Points[idx] : 0;
+        return BuildShareStyle(pt, res.Points, "4.5rem");
+    }
 
-    private string GetShareTotalPointValue(int idx) => ActiveHistory.Count == 0 ? "0.0" : FormatPlus(ActiveHistory.Sum(h => h.Points[idx]));
+    private string GetShareTotalPointValue(int idx) => ActiveHistory.Count == 0 ? "0.0" : FormatPlus(ActiveHistory.Sum(h => h.Points.Count > idx ? h.Points[idx] : 0));
     private string GetShareTotalPointStyle(int idx)
     {
         if (ActiveHistory.Count == 0) return "display: inline-block; width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
-        var allTotalPts = Enumerable.Range(0, rules.PlayerCount).Select(i => ActiveHistory.Sum(h => h.Points[i])).ToList();
+        var allTotalPts = Enumerable.Range(0, activeParticipantCount).Select(i => ActiveHistory.Sum(h => h.Points.Count > i ? h.Points[i] : 0)).ToList();
         return BuildShareStyle(allTotalPts[idx], allTotalPts, "4.5rem");
     }
 
     private string GetShareTotalYenValue(int idx)
     {
         if (ActiveHistory.Count == 0 && ActiveSessionChips[idx] == 0) return "0円";
-        return $"{FormatPlus(ActiveHistory.Sum(h => h.Yen[idx]) + (ActiveSessionChips[idx] * rules.ChipRate), "N0")}円";
+        double totalYen = ActiveHistory.Sum(h => h.Yen.Count > idx ? h.Yen[idx] : 0) + (ActiveSessionChips[idx] * rules.ChipRate);
+        return $"{FormatPlus(totalYen, "N0")}円";
     }
+
     private string GetShareTotalYenStyle(int idx)
     {
         if (ActiveHistory.Count == 0 && ActiveSessionChips[idx] == 0) return "display: inline-block; width: 6.0rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
-        var allTotalYen = Enumerable.Range(0, rules.PlayerCount).Select(i => (double)(ActiveHistory.Sum(h => h.Yen[i]) + (ActiveSessionChips[i] * rules.ChipRate))).ToList();
+        var allTotalYen = Enumerable.Range(0, activeParticipantCount).Select(i => (double)(ActiveHistory.Sum(h => h.Yen.Count > i ? h.Yen[i] : 0) + (ActiveSessionChips[i] * rules.ChipRate))).ToList();
         return BuildShareStyle(allTotalYen[idx], allTotalYen, "6.0rem");
     }
 
@@ -1148,15 +1219,14 @@
     {
         try
         {
-            // プロパティ名を極限まで短縮した匿名オブジェクトでペイロードを作成
             var payload = new
             {
                 r = rules,
-                p = currentPlayers.Take(rules.PlayerCount).ToList(),
-                c = ActiveSessionChips.Take(rules.PlayerCount).ToList(),
+                p = currentPlayers.Take(activeParticipantCount).ToList(),
+                c = ActiveSessionChips.Take(activeParticipantCount).ToList(),
                 h = ActiveHistory.Select(g => new
                 {
-                    t = g.Timestamp.Ticks, // 時刻は文字列ではなくlong数値にして短縮
+                    t = g.Timestamp.Ticks,
                     s = g.RawScores,
                     pt = g.Points,
                     yp = g.YakiPlayers,
@@ -1186,5 +1256,58 @@
         {
             Snackbar.Add($"URLの生成に失敗しました: {ex.Message}", Severity.Error);
         }
+    }
+
+    @* 対局人数変更時の処理 (参加枠をリセット) *@
+    private async Task OnPlayerCountChanged(int val)
+    {
+        rules.PlayerCount = val;
+        activeParticipantCount = val; // 枠数をルール人数に強制同期
+        ResetInputForms();
+        await LocalStorage.SetItemAsync("rules", rules);
+        await LocalStorage.SetItemAsync("activeParticipantCount", activeParticipantCount);
+        ValidateDisplayMode();
+        StateHasChanged();
+    }
+
+    @* 参加者枠を増やす *@
+    private async Task AddParticipant()
+    {
+        if (activeParticipantCount < MaxParticipants)
+        {
+            activeParticipantCount++;
+            await LocalStorage.SetItemAsync("activeParticipantCount", activeParticipantCount);
+        }
+    }
+
+    @* 参加者枠を減らす *@
+    private async Task RemoveParticipant()
+    {
+        if (activeParticipantCount > rules.PlayerCount)
+        {
+            activeParticipantCount--;
+            // 隠れる枠の入力状態をリセット
+            currentScores[activeParticipantCount] = null;
+            currentSitOuts[activeParticipantCount] = false;
+            currentYaki[activeParticipantCount] = false;
+            currentTobiBonus[activeParticipantCount] = false;
+            await LocalStorage.SetItemAsync("activeParticipantCount", activeParticipantCount);
+            // 枠が減ることで残り1人が確定する可能性があるため、自動計算を再評価
+            HandleScoreInputWithAutoFill(0, currentScores[0]);
+        }
+    }
+
+    @* 抜け番状態の変更処理 *@
+    private void OnSitOutChanged(int index, bool isSitOut)
+    {
+        currentSitOuts[index] = isSitOut;
+        if (isSitOut)
+        {
+            currentScores[index] = null;
+            currentYaki[index] = false;
+            currentTobiBonus[index] = false;
+        }
+        // 抜け番が確定することで残り1人が確定する可能性があるため、自動計算をフック
+        HandleScoreInputWithAutoFill(index, currentScores[index]);
     }
 }

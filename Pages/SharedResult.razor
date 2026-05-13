@@ -56,13 +56,13 @@
                 <MudCard Class="mb-4" Elevation="0" Outlined="true">
                     <MudCardContent Class="pa-3">
                         <MudText Typo="Typo.subtitle2" Class="mb-2">チップ集計</MudText>
-                        <div style="display: flex; width: 100%; flex-wrap: nowrap; align-items: center;">
+                        <div style="display: flex; width: 100%; flex-wrap: nowrap; align-items: center; overflow-x: auto; padding-bottom: 4px;">
                             <div style="width: 35px; flex-shrink: 0;"></div>
-                            @for (int i = 0; i < (sharedData?.Rules?.PlayerCount ?? 0); i++)
+                            @for (int i = 0; i < (sharedData?.Players?.Count ?? 0); i++)
                             {
                                 var idx = i;
                                 int chip = sharedData?.SessionChips?[idx] ?? 0;
-                                <div style="flex: 1; text-align: center; min-width: 0;">
+                                <div style="flex: 1; text-align: center; min-width: 4.5rem;">
                                     <MudText Align="Align.Center" Typo="Typo.caption" Class="d-block mud-text-secondary" Style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;">
                                         @(string.IsNullOrWhiteSpace(sharedData?.Players?[idx]) ? " " : sharedData.Players[idx])
                                     </MudText>
@@ -83,65 +83,64 @@
                             width: 100% !important;
                         }
             </style>
-            <div style="width: 100%; overflow-x: hidden;">
+            <div style="width: 100%; overflow-x: auto;">
                 <MudTable Items="@(sharedData?.History ?? new())" Class="fixed-table-layout" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None">
                     <ColGroup>
                         <col style="width: 35px;" />
-                        @for (int i = 0; i < (sharedData?.Rules?.PlayerCount ?? 0); i++)
+                        @for (int i = 0; i < (sharedData?.Players?.Count ?? 0); i++)
                         {
-                            <col style="width: calc((100% - 35px) / @(sharedData?.Rules?.PlayerCount ?? 1));" />
+                            <col style="width: 60px;" />
                         }
                     </ColGroup>
                     <HeaderContent>
-                        <MudTh Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.65rem; letter-spacing: -0.5px;">
-                            時刻</MudTh>
-                            @for (int i = 0; i < (sharedData?.Rules?.PlayerCount ?? 0); i++)
-                            {
-                                var idx = i;
-                                <MudTh Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.75rem; letter-spacing: -0.5px;">
-                                    @(string.IsNullOrWhiteSpace(sharedData?.Players?[idx]) ? " " : sharedData?.Players?[idx])
-                                </MudTh>
-                            }
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.6rem; color: #666; letter-spacing: -0.5px;">
-                                @context.Timestamp.ToString("HH:mm")
+                        <MudTh Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.65rem; letter-spacing: -0.5px;">時刻</MudTh>
+                        @for (int i = 0; i < (sharedData?.Players?.Count ?? 0); i++)
+                        {
+                            var idx = i;
+                            <MudTh Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.75rem; letter-spacing: -0.5px;">
+                                @(string.IsNullOrWhiteSpace(sharedData?.Players?[idx]) ? " " : sharedData?.Players?[idx])
+                            </MudTh>
+                        }
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.6rem; color: #666; letter-spacing: -0.5px;">
+                            @context.Timestamp.ToString("HH:mm")
+                        </MudTd>
+                        @for (int i = 0; i < (sharedData?.Players?.Count ?? 0); i++)
+                        {
+                            var idx = i;
+                            <MudTd Style="text-align: center; padding: 4px 0px; white-space: nowrap;">
+                                <span style="@GetTdStyle(context, idx)">
+                                    @GetDisplayValue(context, idx)
+                                </span>
                             </MudTd>
-                            @for (int i = 0; i < sharedData?.Rules?.PlayerCount; i++)
-                            {
-                                var idx = i;
-                                <MudTd Style="text-align: center; padding: 4px 0px; white-space: nowrap;">
-                                    <span style="@GetTdStyle(context, idx)">
-                                        @GetDisplayValue(context, idx)
-                                    </span>
-                                </MudTd>
-                            }
-                        </RowTemplate>
-                        <FooterContent>
-                            <MudTd Style="text-align: center; background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 6px 0px; font-size: 0.75rem;">
-                                <MudIcon Icon="@(displayMode == 0 ? Icons.Material.Filled.Calculate : Icons.Material.Filled.Functions)" Style="font-size: 1rem; vertical-align: text-bottom; margin-right: 2px; color: #2e7d32;" />
-                                @(displayMode == 0 ? "平均" : "合計")
+                        }
+                    </RowTemplate>
+                    <FooterContent>
+                        <MudTd Style="text-align: center; background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 6px 0px; font-size: 0.75rem;">
+                            <MudIcon Icon="@(displayMode == 0 ? Icons.Material.Filled.Calculate : Icons.Material.Filled.Functions)" Style="font-size: 1rem; vertical-align: text-bottom; margin-right: 2px; color: #2e7d32;" />
+                            @(displayMode == 0 ? "平均" : "合計")
+                        </MudTd>
+                        @for (int i = 0; i < (sharedData?.Players?.Count ?? 0); i++)
+                        {
+                            var idx = i;
+                            <MudTd Style="@($"{GetTotalTdStyle(idx)} text-align: center; padding: 6px 0px; white-space: nowrap;")">
+                                <span style="@GetTotalSpanStyle(idx)">
+                                    @GetTotalDisplayValue(idx)
+                                </span>
                             </MudTd>
-                            @for (int i = 0; i < sharedData?.Rules?.PlayerCount; i++)
-                            {
-                                var idx = i;
-                                <MudTd Style="@($"{GetTotalTdStyle(idx)} text-align: center; padding: 6px 0px; white-space: nowrap;")">
-                                    <span style="@GetTotalSpanStyle(idx)">
-                                        @GetTotalDisplayValue(idx)
-                                    </span>
-                                </MudTd>
-                            }
-                        </FooterContent>
-                    </MudTable>
-                </div>
+                        }
+                    </FooterContent>
+                </MudTable>
+            </div>
             
-                <MudAlert Severity="Severity.Info" Class="mt-4">
-                    これは共有された閲覧専用ページです。
-                    <MudLink Href="/" Color="Color.Primary" Underline="Underline.Always">自分のツールを開く</MudLink>
-                </MudAlert>
-            </MudPaper>
-        }
-    </MudContainer>
+            <MudAlert Severity="Severity.Info" Class="mt-4">
+                これは共有された閲覧専用ページです。
+                <MudLink Href="/" Color="Color.Primary" Underline="Underline.Always">自分のツールを開く</MudLink>
+            </MudAlert>
+        </MudPaper>
+    }
+</MudContainer>
 
 @code {
     private bool isLoading = true;
@@ -204,7 +203,6 @@
     }
 
     // --- データ受け渡し・復元用のクラス定義 ---
-
     public class SharedPayload
     {
         public RuleSet? Rules { get; set; }
@@ -225,7 +223,7 @@
     public class MinifiedGame
     {
         [JsonPropertyName("t")] public long Ticks { get; set; }
-        [JsonPropertyName("s")] public List<int>? RawScores { get; set; }
+        [JsonPropertyName("s")] public List<int?>? RawScores { get; set; }
         [JsonPropertyName("pt")] public List<double>? Points { get; set; }
         [JsonPropertyName("yp")] public List<bool>? YakiPlayers { get; set; }
         [JsonPropertyName("tb")] public List<bool>? TobiBonusRecipients { get; set; }
@@ -236,56 +234,77 @@
         [JsonPropertyName("y")] public List<int>? Yen { get; set; }
     }
 
-    // --- UI表示用ヘルパーメソッド（変更なし） ---
-    
+    // --- UI表示用ヘルパーメソッド ---
     private string GetDisplayValue(GameResult res, int idx)
     {
-        if (displayMode == 0) return res.RawScores[idx].ToString("N0");
-        if (displayMode == 1) return res.Points[idx] > 0 ? $"+{res.Points[idx]:F1}" : res.Points[idx].ToString("F1");
-        if (displayMode == 2) return res.Yen[idx] > 0 ? $"+{res.Yen[idx]:N0}円" : $"{res.Yen[idx]:N0}円";
-        if (displayMode == 3) { if (res.SinkPoints == null || res.SinkPoints.Count <= idx || res.SinkPoints[idx] == 0) return "-"; return res.SinkPoints[idx] > 0 ? $"📈 +{res.SinkPoints[idx]:F1}" : $"📉 {res.SinkPoints[idx]:F1}"; }
-        if (displayMode == 4) { if (res.YakiPoints == null || res.YakiPoints.Count <= idx || res.YakiPoints[idx] == 0) return "-"; return res.YakiPoints[idx] > 0 ? $"🍴 +{res.YakiPoints[idx]:F1}" : $"🍗 {res.YakiPoints[idx]:F1}"; }
-        if (displayMode == 5) { if (res.TobiPoints == null || res.TobiPoints.Count <= idx || res.TobiPoints[idx] == 0) return "-"; return res.TobiPoints[idx] > 0 ? $"🚀 +{res.TobiPoints[idx]:F1}" : $"💥 {res.TobiPoints[idx]:F1}"; }
-        if (displayMode == 6) { if (res.ColdPoints == null || res.ColdPoints.Count <= idx || res.ColdPoints[idx] == 0) return "-"; return res.ColdPoints[idx] > 0 ? $"👑 +{res.ColdPoints[idx]:F1}" : $"🏳️ {res.ColdPoints[idx]:F1}"; }
-        return "";
+        bool IsInvalid<T>(System.Collections.Generic.List<T> list) => list == null || idx >= list.Count || list[idx] == null;
+        if (IsInvalid(res.RawScores)) return "-";
+        return displayMode switch
+        {
+            0 => (res.RawScores[idx] * 100)?.ToString("N0") ?? "-",
+            1 => res.Points[idx].ToString("+0.0;-0.0;0.0"),
+            2 => res.Yen[idx].ToString("+#,##0円;-#,##0円;0円"),
+            3 when !IsInvalid(res.SinkPoints) && res.SinkPoints[idx] != 0 => res.SinkPoints[idx] > 0 ? $"📈 +{res.SinkPoints[idx]:F1}" : $"📉 {res.SinkPoints[idx]:F1}",
+            4 when !IsInvalid(res.YakiPoints) && res.YakiPoints[idx] != 0 => res.YakiPoints[idx] > 0 ? $"🍴 +{res.YakiPoints[idx]:F1}" : $"🍗 {res.YakiPoints[idx]:F1}",
+            5 when !IsInvalid(res.TobiPoints) && res.TobiPoints[idx] != 0 => res.TobiPoints[idx] > 0 ? $"🚀 +{res.TobiPoints[idx]:F1}" : $"💥 {res.TobiPoints[idx]:F1}",
+            6 when !IsInvalid(res.ColdPoints) && res.ColdPoints[idx] != 0 => res.ColdPoints[idx] > 0 ? $"👑 +{res.ColdPoints[idx]:F1}" : $"🏳️ {res.ColdPoints[idx]:F1}",
+            _ when displayMode >= 3 && displayMode <= 6 => "-",
+            _ => ""
+        };
     }
 
     private string GetTdStyle(GameResult res, int idx)
     {
-        double val = 0;
-        List<double> valList = new();
-        if (displayMode == 0) { val = res.RawScores[idx]; valList = res.RawScores.Select(x => (double)x).ToList(); }
-        else if (displayMode == 1) { val = res.Points[idx]; valList = res.Points; }
-        else if (displayMode == 2) { val = res.Yen[idx]; valList = res.Yen.Select(x => (double)x).ToList(); }
-        else if (displayMode == 3) { val = (res.SinkPoints?.Count > idx) ? res.SinkPoints[idx] : 0; valList = res.SinkPoints ?? new(); }
-        else if (displayMode == 4) { val = (res.YakiPoints?.Count > idx) ? res.YakiPoints[idx] : 0; valList = res.YakiPoints ?? new(); }
-        else if (displayMode == 5) { val = (res.TobiPoints?.Count > idx) ? res.TobiPoints[idx] : 0; valList = res.TobiPoints ?? new(); }
-        else if (displayMode == 6) { val = (res.ColdPoints?.Count > idx) ? res.ColdPoints[idx] : 0; valList = res.ColdPoints ?? new(); }
-        if (displayMode >= 3 && val == 0) return "color: #9e9e9e; font-weight: normal;";
-        string boxWidth = (displayMode >= 3) ? "3.2rem" : (displayMode == 2 ? "4.2rem" : "3.4rem");
-        string style = $"display: inline-block; width: {boxWidth}; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.8rem; letter-spacing: -0.5px; ";
-        bool isPositive = (displayMode == 0) ? (res.Points[idx] >= 0) : (val >= 0);
-        style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
-        if (valList.Count > 0 && valList.Distinct().Count() > 1 && (val == valList.Max() || val == valList.Min()))
+        if (idx >= res.RawScores.Count) return "";
+        var (val, valList) = displayMode switch
         {
-            style += "font-weight: bold; ";
-        }
-        if (displayMode == 1) style += "position: relative; right: 0.7rem; ";
-        return style;
+            0 => ((double)(res.RawScores[idx] ?? 0), res.RawScores.Select(x => (double)(x ?? 0)).ToList()),
+            1 => (res.Points[idx], res.Points),
+            2 => (res.Yen[idx], res.Yen.Select(x => (double)x).ToList()),
+            _ when displayMode >= 3 && displayMode <= 6 => displayMode switch
+            {
+                3 => (res.SinkPoints?.Count > idx ? res.SinkPoints[idx] : 0, res.SinkPoints),
+                4 => (res.YakiPoints?.Count > idx ? res.YakiPoints[idx] : 0, res.YakiPoints),
+                5 => (res.TobiPoints?.Count > idx ? res.TobiPoints[idx] : 0, res.TobiPoints),
+                6 => (res.ColdPoints?.Count > idx ? res.ColdPoints[idx] : 0, res.ColdPoints),
+                _ => (0.0, null)
+            },
+            _ => (0.0, null)
+        };
+        valList ??= new();
+        string boxWidth = displayMode >= 3 ? "3.2rem" : (displayMode == 2 ? "4.2rem" : "3.4rem");
+        string baseStyle = $"display: inline-block; width: {boxWidth}; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.8rem; letter-spacing: -0.5px; ";
+        if (res.RawScores[idx] == null) return baseStyle + "color: #9e9e9e; font-weight: normal; text-align: center;";
+        if (displayMode >= 3 && val == 0) return baseStyle + "color: #9e9e9e; font-weight: normal;";
+        bool isPositive = displayMode == 0 ? (res.Points[idx] >= 0) : (val >= 0);
+        string color = isPositive ? "color: #ff0000; " : "color: #1976d2; ";
+        bool isMaxOrMin = valList.Count > 0 && valList.Distinct().Count() > 1 && (val == valList.Max() || val == valList.Min());
+        string weight = isMaxOrMin ? "font-weight: bold; " : "";
+        string position = displayMode == 1 ? "position: relative; right: 0.7rem; " : "";
+        return $"{baseStyle}{color}{weight}{position}";
     }
 
     private double GetTotalNumericValue(int idx)
     {
-        if (sharedData == null || sharedData.History == null || sharedData.SessionChips == null || sharedData.Rules == null) return 0;
-        if (sharedData.History.Count == 0 && sharedData.SessionChips[idx] == 0) return 0;
-        if (displayMode == 0) return sharedData.History.Count == 0 ? 0 : sharedData.History.Average(h => h.RawScores[idx]);
-        if (displayMode == 1) return sharedData.History.Sum(h => h.Points[idx]);
-        if (displayMode == 2) return sharedData.History.Sum(h => h.Yen[idx]) + (sharedData.SessionChips[idx] * sharedData.Rules.ChipRate);
-        if (displayMode == 3) return sharedData.History.Sum(h => h.SinkPoints != null && h.SinkPoints.Count > idx ? h.SinkPoints[idx] : 0);
-        if (displayMode == 4) return sharedData.History.Sum(h => h.YakiPoints != null && h.YakiPoints.Count > idx ? h.YakiPoints[idx] : 0);
-        if (displayMode == 5) return sharedData.History.Sum(h => h.TobiPoints != null && h.TobiPoints.Count > idx ? h.TobiPoints[idx] : 0);
-        if (displayMode == 6) return sharedData.History.Sum(h => h.ColdPoints != null && h.ColdPoints.Count > idx ? h.ColdPoints[idx] : 0);
-        return 0;
+        var sd = sharedData;
+        if (sd?.History == null || sd.SessionChips == null || sd.Rules == null) return 0;
+        if (sd.History.Count == 0 && sd.SessionChips[idx] == 0) return 0;
+        return displayMode switch
+        {
+            0 => sd.History
+                   .Select(h => h.RawScores.ElementAtOrDefault(idx))
+                   .Where(score => score.HasValue)
+                   .Select(score => score!.Value * 100)
+                   .DefaultIfEmpty(0)
+                   .Average(),
+            1 => sd.History.Sum(h => h.Points.ElementAtOrDefault(idx)),
+            2 => sd.History.Sum(h => h.Yen.ElementAtOrDefault(idx)) + (sd.SessionChips[idx] * sd.Rules.ChipRate),
+            3 => sd.History.Sum(h => h.SinkPoints?.ElementAtOrDefault(idx) ?? 0),
+            4 => sd.History.Sum(h => h.YakiPoints?.ElementAtOrDefault(idx) ?? 0),
+            5 => sd.History.Sum(h => h.TobiPoints?.ElementAtOrDefault(idx) ?? 0),
+            6 => sd.History.Sum(h => h.ColdPoints?.ElementAtOrDefault(idx) ?? 0),
+            _ => 0
+        };
     }
 
     private string GetTotalDisplayValue(int idx)
@@ -307,11 +326,11 @@
         string style = $"display: inline-block; width: {boxWidth}; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; letter-spacing: -0.5px; ";
         if (sharedData == null || sharedData.History == null || sharedData.SessionChips == null || sharedData.Rules == null) return style;
         if (sharedData.History.Count == 0 && sharedData.SessionChips[idx] == 0) return style;
-        var allValues = Enumerable.Range(0, sharedData.Rules.PlayerCount).Select(i => GetTotalNumericValue(i)).ToList();
+        var allValues = Enumerable.Range(0, sharedData.Players?.Count ?? 0).Select(i => GetTotalNumericValue(i)).ToList();
         double val = allValues[idx];
-        if (displayMode >= 3 && val == 0) return "color: #9e9e9e; font-weight: normal; ";
+        if (displayMode >= 3 && val == 0) return style + "color: #9e9e9e; font-weight: normal; ";
         if (allValues.Distinct().Count() > 1 && (val == allValues.Max() || val == allValues.Min())) style += "font-weight: bold; ";
-        bool isPositive = (displayMode == 0) ? (sharedData.History.Sum(h => h.Points[idx]) >= 0) : (val >= 0);
+        bool isPositive = (displayMode == 0) ? (sharedData.History.Sum(h => h.Points.Count > idx ? h.Points[idx] : 0) >= 0) : (val >= 0);
         style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
         if (displayMode == 1) style += "position: relative; right: 0.7rem; ";
         return style;

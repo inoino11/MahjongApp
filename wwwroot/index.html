@@ -48,12 +48,10 @@
                 color: #e0e0e0;
                 font-family: 'Kaisei Decol', serif;
             }
-
             .loading-tile {
                 font-size: 4rem;
                 animation: float 2s ease-in-out infinite;
             }
-
             .loading-text {
                 margin-top: 20px;
                 font-size: 1.2rem;
@@ -61,36 +59,29 @@
                 letter-spacing: 0.1em;
                 animation: pulse 1.5s ease-in-out infinite;
             }
-
             @keyframes float {
                 0% {
                     transform: translateY(0px);
                 }
-
                 50% {
                     transform: translateY(-15px);
                 }
-
                 100% {
                     transform: translateY(0px);
                 }
             }
-
             @keyframes pulse {
                 0% {
                     opacity: 0.5;
                 }
-
                 50% {
                     opacity: 1;
                 }
-
                 100% {
                     opacity: 0.5;
                 }
             }
         </style>
-
         <div class="mahjong-loading-container">
             <div class="loading-tile">🀄</div>
             <div class="loading-text">雀卓準備中...</div>
