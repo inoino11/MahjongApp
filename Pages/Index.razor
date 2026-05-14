@@ -173,123 +173,15 @@
 
     @* --- セクション3: 集計結果 --- *@
     <MudPaper Class="pa-2 px-sm-4" Elevation="2" @onclick="CancelDelete">
-        <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4 gap-2">
-            <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
-                <MudButton Variant="@(displayMode == 0 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 0">素点</MudButton>
-                <MudButton Variant="@(displayMode == 1 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 1">+/−</MudButton>
-                <MudButton Variant="@(displayMode == 2 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => displayMode = 2">円</MudButton>
-            </MudStack>
-            @if (rules.IsSinkEnabled || rules.IsYakiEnabled || rules.IsTobiEnabled || rules.IsColdEnabled)
-            {
-                <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
-                    @if (rules.IsSinkEnabled)
-                    {
-                        <MudButton Variant="@(displayMode == 3 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Warning" Size="Size.Small" OnClick="() => displayMode = 3">沈み</MudButton>
-                    }
-                    @if (rules.IsYakiEnabled)
-                    {
-                        <MudButton Variant="@(displayMode == 4 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Warning" Size="Size.Small" OnClick="() => displayMode = 4">焼き鳥</MudButton>
-                    }
-                    @if (rules.IsTobiEnabled)
-                    {
-                        <MudButton Variant="@(displayMode == 5 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Info" Size="Size.Small" OnClick="() => displayMode = 5">トビ</MudButton>
-                    }
-                    @if (rules.IsColdEnabled)
-                    {
-                        <MudButton Variant="@(displayMode == 6 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Info" Size="Size.Small" OnClick="() => displayMode = 6">コールド</MudButton>
-                    }
-                </MudStack>
-            }
-            <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="ConfirmReset">記録リセット</MudButton>
-        </MudStack>
-        <MudCard Class="mb-4" Elevation="0" Outlined="true">
-            <MudCardContent Class="pa-3">
-                <MudText Typo="Typo.subtitle2" Class="mb-2">チップ集計</MudText>
-                <div style="display: flex; width: 100%; flex-wrap: nowrap; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 4px;">
-                    @{
-                        bool isChipError = ActiveSessionChips.Take(activeParticipantCount).Sum() != 0;
-                    }
-                    <div style="width: 25px; flex-shrink: 0;"></div>
-                    @for (int i = 0; i < activeParticipantCount; i++)
-                    {
-                        var idx = i;
-                        <div style="flex: 1; min-width: 4.5rem;">
-                            <MudNumericField T="int" Label="@(string.IsNullOrWhiteSpace(currentPlayers[idx]) ? " " : currentPlayers[idx])" Value="ActiveSessionChips[idx]" ValueChanged="@(v => OnChipChanged(idx, v))" Step="1" HideSpinButtons="true" Margin="Margin.Dense" Style="@(isChipError ? "max-width: 4.0rem; color:#ff0000; font-weight:bold;" : "max-width: 4.5rem;")" />
-                        </div>
-                    }
-                    <div style="width: 25px; flex-shrink: 0;"></div>
-                </div>
-            </MudCardContent>
-        </MudCard>
-
-        @* overflow-x: auto に変更 *@
-        <div style="width: 100%; overflow-x: auto;">
-            <MudTable Items="@ActiveHistory" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="width: 100%; table-layout: fixed;">
-                <ColGroup>
-                    <col style="width: 30px;" />
-                    @for (int i = 0; i < activeParticipantCount; i++)
-                    {
-                        <col style="width: 60px;" />
-                    }
-                    <col style="width: 30px;" />
-                </ColGroup>
-                <HeaderContent>
-                    <MudTh Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.65rem; letter-spacing: -0.5px;">時刻</MudTh>
-                    @for (int i = 0; i < activeParticipantCount; i++)
-                    {
-                        var idx = i;
-                        <MudTh Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.75rem; letter-spacing: -0.5px;">
-                            @(string.IsNullOrWhiteSpace(currentPlayers[idx]) ? " " : currentPlayers[idx])
-                        </MudTh>
-                    }
-                    <MudTh Style="padding: 4px 0px;"></MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.6rem; color: #666; letter-spacing: -0.5px;">
-                        @context.Timestamp.ToString("HH:mm")
-                    </MudTd>
-                    @for (int i = 0; i < activeParticipantCount; i++)
-                    {
-                        var idx = i;
-                        <MudTd Style="text-align: center; padding: 4px 0px; white-space: nowrap;">
-                            <span style="@GetTdStyle(context, idx)">
-                                @GetDisplayValue(context, idx)
-                            </span>
-                        </MudTd>
-                    }
-                    <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px;">
-                        <span @onclick="() => { }" @onclick:stopPropagation="true">
-                            <MudIconButton Icon="@(armedDeleteTarget == context ? @DeleteEmpty : Icons.Material.Filled.Delete)" Color="@(armedDeleteTarget == context ? Color.Error : Color.Default)" Size="Size.Small" Style="@(armedDeleteTarget == context ? "padding: 0px;" : "padding: 0px; color: #9e9e9e;")" OnClick="() => HandleDeleteRequest(context)" />
-                        </span>
-                    </MudTd>
-                </RowTemplate>
-                <FooterContent>
-                    <MudTd Style="text-align: center; background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 6px 0px; font-size: 0.75rem;">
-                        <MudIcon Icon="@(displayMode == 0 ? Icons.Material.Filled.Calculate : Icons.Material.Filled.Functions)" Style="font-size: 1rem; vertical-align: text-bottom; margin-right: 2px; color: #2e7d32;" />
-                        @(displayMode == 0 ? "平均" : "合計")
-                    </MudTd>
-                    @for (int i = 0; i < activeParticipantCount; i++)
-                    {
-                        var idx = i;
-                        <MudTd Style="@($"{GetTotalTdStyle(idx)} text-align: center; padding: 6px 0px; white-space: nowrap;")">
-                            <span style="@GetTotalSpanStyle(idx)">
-                                @GetTotalDisplayValue(idx)
-                            </span>
-                        </MudTd>
-                    }
-                    <MudTd Style="background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; padding: 6px 0px;"></MudTd>
-                </FooterContent>
-            </MudTable>
-
-            @* 共有ボタン *@
-            <div class="d-flex justify-end mt-4 gap-2">
-                <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Share" OnClick="ShareImageAsync" Disabled="isSharing" Style="white-space: nowrap;">
-                    @(isSharing ? "画像を作成中..." : "結果を画像でシェア")
-                </MudButton>
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Link" OnClick="CopyShareUrlAsync" Style="white-space: nowrap;">
-                    閲覧用URLをシェア
-                </MudButton>
-            </div>
+        <ResultTable History="ActiveHistory" Players="currentPlayers" ActiveParticipantCount="activeParticipantCount" @bind-DisplayMode="displayMode" Rules="rules" SessionChips="ActiveSessionChips" IsReadOnly="false" ArmedDeleteTarget="armedDeleteTarget" OnDeleteRequested="HandleDeleteRequest" OnResetRequested="ConfirmReset" OnChipChanged="HandleChipChangedCallback" />
+        @* 共有ボタン *@
+        <div class="d-flex justify-end mt-4 gap-2">
+            <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Share" OnClick="ShareImageAsync" Disabled="isSharing" Style="width: 170px; white-space: nowrap;">
+                @(isSharing ? "画像を作成中..." : "結果を画像でシェア")
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Link" OnClick="CopyShareUrlAsync" Style="white-space: nowrap;">
+                閲覧用URLをシェア
+            </MudButton>
         </div>
     </MudPaper>
 
@@ -297,7 +189,7 @@
     <div style="position: absolute; left: -9999px; top: 0;">
         <div id="share-target" style="width: @(800 + Math.Max(0, activeParticipantCount - 4) * 150)px; padding: 40px; background-color: #1a1a27; color: white; border-radius: 12px; font-family: 'Kaisei Decol', sans-serif;">
             <h2 style="text-align: center; margin-bottom: 20px; font-weight: bold; border-bottom: 2px solid #444; padding-bottom: 10px;">
-                🀄 対局結果
+                🀄 対局結果 🀄
             </h2>
             @* ルール・レート情報の表示 *@
             <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; font-size: 0.95rem;">
@@ -342,7 +234,7 @@
                 <tfoot>
                     @* ポイント合計行 *@
                     <tr style="background-color: rgba(46, 125, 50, 0.1); border-bottom: 2px solid #555;">
-                        <td style="padding: 15px 10px; font-size: 0.9rem; color: #81c784; font-weight: bold; white-space: nowrap;">
+                        <td style="padding: 15px 10px; font-size: 0.9rem; color: #ddd; font-weight: bold; white-space: nowrap;">
                             Pt 合計
                         </td>
                         @for (int i = 0; i < activeParticipantCount; i++)
@@ -357,7 +249,9 @@
                     @if (rules.ChipRate > 0)
                     {
                         <tr style="background-color: rgba(46, 125, 50, 0.1); border-bottom: 2px solid #555;">
-                            <td style="padding: 15px 10px; color: #ddd; font-size: 0.9rem; font-weight: bold; white-space: nowrap;">チップ</td>
+                            <td style="padding: 15px 10px; font-size: 0.9rem; color: #ddd; font-weight: bold; white-space: nowrap;">
+                                チップ
+                            </td>
                             @for (int i = 0; i < activeParticipantCount; i++)
                             {
                                 int chip = ActiveSessionChips[i];
@@ -371,8 +265,8 @@
                         </tr>
                     }
                     @* 円合計行 *@
-                    <tr style="background-color: rgba(156, 39, 176, 0.1); font-weight: bold;">
-                        <td style="padding: 15px 10px; font-size: 0.9rem; color: #ce93d8; white-space: nowrap;">
+                    <tr style="background-color: rgba(255, 255, 255, 0.06); font-weight: bold;">
+                        <td style="padding: 15px 10px; font-size: 0.9rem; color: #eeeeee; white-space: nowrap;">
                             円 合計
                         </td>
                         @for (int i = 0; i < activeParticipantCount; i++)
@@ -419,10 +313,10 @@
     private List<bool> currentTobiBonus = new() { false, false, false, false };
     private List<bool> currentSitOuts = new(new bool[MaxParticipants]);
     private const string YakiIcon = "<g transform=\"matrix(0.025, 0, 0, 0.025, 0, 24)\"><path d=\"M843-60 670-234l-85 85q-23 23-56.5 23T472-149l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23 23-56.5 23T246-375l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23-23-23-56.5t23-56.5l28-28L60-844l56-56 102 102 28-28q23-23 57-23t57 23l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l-85 84 172 173-56 57ZM529-205l227-226-57-57-227 227 57 56Zm-57-170 114-113-57-56-113 113 56 56Zm-170-56 227-227-57-56-226 226 56 57Zm-56-170 114-113-57-57-113 113 56 57Zm368 255ZM501-460ZM388-573ZM275-686Z\"/></g>";
-    private const string DeleteEmpty = "<path d=\"M20.37,8.91L19.37,10.64L7.24,3.64L8.24,1.91L11.28,3.66L12.64,3.29L16.97,5.79L17.34,7.16L20.37,8.91M6,19V7H11.07L18,11V19A2,2 0 0,1 16,21H8A2,2 0 0,1 6,19Z\"/>";
     private int? armedDeleteIndex = null;
     private GameResult? armedDeleteTarget = null;
     private bool isSharing = false;
+    private string FormatPlus(double val, string fmt = "F1") => val > 0 ? $"+{val.ToString(fmt)}" : val.ToString(fmt);
 
     @* ローカルストレージからのデータ復元と初期化 *@
     protected override async Task OnInitializedAsync()
@@ -1071,107 +965,10 @@
         _ => value
     };
 
-    @* 文字列フォーマット用の共通ヘルパー (正数に+を付与) *@
-    private string FormatPlus(double val, string fmt = "F1") => val > 0 ? $"+{val.ToString(fmt)}" : val.ToString(fmt);
-
-    @* 結果表示モード *@
-    private string GetDisplayValue(GameResult res, int idx)
+    @* コンポーネントからのチップ変更イベントを受け取るヘルパー *@
+    private async Task HandleChipChangedCallback((int Index, int Value) args)
     {
-        // 変更: 過去の履歴などでインデックスが範囲外の場合はハイフン
-        if (idx >= res.RawScores.Count || res.RawScores[idx] == null) return "-";
-
-        return displayMode switch
-        {
-            0 => (res.RawScores[idx] * 100)?.ToString("N0") ?? "-",
-            1 => FormatPlus(res.Points[idx]),
-            2 => $"{FormatPlus(res.Yen[idx], "N0")}円",
-            3 => FormatExtra(res.SinkPoints, idx, "📈", "📉"),
-            4 => FormatExtra(res.YakiPoints, idx, "🍴", "🍗"),
-            5 => FormatExtra(res.TobiPoints, idx, "🚀", "💥"),
-            6 => FormatExtra(res.ColdPoints, idx, "👑", "🏳️"),
-            _ => ""
-        };
-        string FormatExtra(List<double>? list, int i, string posIcon, string negIcon)
-        {
-            if (list == null || i >= list.Count || list[i] == 0) return "-";
-            double pt = list[i];
-            return pt > 0 ? $"{posIcon} +{pt:F1}" : $"{negIcon} {pt:F1}";
-        }
-    }
-
-    @* 結果表示モードに応じてスタイルを調整 *@
-    private string GetTdStyle(GameResult res, int idx)
-    {
-        var valList = displayMode switch
-        {
-            0 => res.RawScores.Select(x => (double)(x ?? 0)).ToList(),
-            1 => res.Points,
-            2 => res.Yen.Select(x => (double)x).ToList(),
-            3 => res.SinkPoints?.Count > idx ? res.SinkPoints : new(),
-            4 => res.YakiPoints?.Count > idx ? res.YakiPoints : new(),
-            5 => res.TobiPoints?.Count > idx ? res.TobiPoints : new(),
-            6 => res.ColdPoints?.Count > idx ? res.ColdPoints : new(),
-            _ => new()
-        };
-        if (idx >= valList.Count) return "";
-        double val = valList[idx];
-        string boxWidth = displayMode switch { 0 => "3.4rem", 2 => "4.2rem", _ => "3.2rem" };
-        string style = $"display:inline-block; width:{boxWidth}; text-align:right; font-variant-numeric:tabular-nums; font-size:0.8rem; letter-spacing:-0.5px; ";
-        if (res.RawScores[idx] == null) return style + "color: #9e9e9e; font-weight: normal; text-align: center;";
-        if (displayMode >= 3 && val == 0) return style + "color: #9e9e9e; font-weight: bold;";
-        bool isPositive = (displayMode == 0) ? res.Points[idx] >= 0 : val >= 0;
-        style += $"color:{(isPositive ? "#ff0000" : "#1976d2")}; ";
-        if (valList.Distinct().Count() > 1 && (val == valList.Max() || val == valList.Min())) style += "font-weight:bold;";
-        if (displayMode == 1) style += "position: relative; right: 0.7rem; ";
-        return style;
-    }
-
-    @* 結果表示モードに応じて集計値を算出 *@
-    private double GetTotalNumericValue(int idx)
-    {
-        if (ActiveHistory.Count == 0 && ActiveSessionChips[idx] == 0) return 0;
-        return displayMode switch
-        {
-            0 => ActiveHistory.Any(h => h.RawScores.Count > idx && h.RawScores[idx].HasValue)
-                ? ActiveHistory.Where(h => h.RawScores.Count > idx && h.RawScores[idx].HasValue).Average(h => h.RawScores[idx]!.Value) * 100
-                : 0,
-            1 => ActiveHistory.Sum(h => h.Points.Count > idx ? h.Points[idx] : 0),
-            2 => ActiveHistory.Sum(h => h.Yen.Count > idx ? h.Yen[idx] : 0) + (ActiveSessionChips[idx] * rules.ChipRate),
-            3 => ActiveHistory.Sum(h => h.SinkPoints?.Count > idx ? h.SinkPoints[idx] : 0),
-            4 => ActiveHistory.Sum(h => h.YakiPoints?.Count > idx ? h.YakiPoints[idx] : 0),
-            5 => ActiveHistory.Sum(h => h.TobiPoints?.Count > idx ? h.TobiPoints[idx] : 0),
-            6 => ActiveHistory.Sum(h => h.ColdPoints?.Count > idx ? h.ColdPoints[idx] : 0),
-            _ => 0
-        };
-    }
-
-    @* 結果表示モードに応じた単位を付加 *@
-    private string GetTotalDisplayValue(int idx)
-    {
-        if (ActiveHistory.Count == 0 && ActiveSessionChips[idx] == 0) return "0";
-        double val = GetTotalNumericValue(idx);
-        if (displayMode == 0) return Math.Round(val).ToString("N0");
-        if (displayMode == 2) return FormatPlus(val, "N0") + "円";
-        return FormatPlus(val, "F1");
-    }
-
-    @* 結果表示の集計行のスタイルを取得 *@
-    private string GetTotalTdStyle(int idx) => "background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; ";
-
-    @* 結果表示の集計値フォント切り替え *@
-    private string GetTotalSpanStyle(int idx)
-    {
-        string boxWidth = displayMode == 0 ? "3.4rem" : (displayMode == 2 ? "4.2rem" : "3.2rem");
-        string style = $"display: inline-block; width: {boxWidth}; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; letter-spacing: -0.5px; ";
-        if (ActiveHistory.Count == 0 && ActiveSessionChips[idx] == 0) return style;
-        var allValues = Enumerable.Range(0, activeParticipantCount).Select(GetTotalNumericValue).ToList();
-        double val = allValues[idx];
-        if (displayMode >= 3 && val == 0) return style + "color: #9e9e9e; font-weight: normal; ";
-        if (allValues.Distinct().Count() > 1 && (val == allValues.Max() || val == allValues.Min())) style += "font-weight: bold; ";
-        bool isPositive = displayMode == 0 ? ActiveHistory.Sum(h => h.Points.Count > idx ? h.Points[idx] : 0) >= 0 : val >= 0;
-        style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
-        if (displayMode == 1) style += "position: relative; right: 0.7rem; ";
-        return style;
+        await OnChipChanged(args.Index, args.Value);
     }
 
     @* シェア画像専用ヘルパーメソッド *@
@@ -1188,6 +985,7 @@
     
     private string GetSharePointStyle(GameResult res, int idx)
     {
+        if (idx >= res.RawScores.Count || res.RawScores[idx] == null) return "display: inline-block; width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: #9e9e9e;";
         double pt = (idx < res.Points.Count) ? res.Points[idx] : 0;
         return BuildShareStyle(pt, res.Points, "4.5rem");
     }
