@@ -61,7 +61,7 @@
                                     </MudSelect>
                                 </MudItem>
                                 <MudItem xs="6" sm="8" Class="pr-3">
-                                    <MudTextField Label="ルール名" @bind-Value="rules.Name" Margin="Margin.Dense" />
+                                    <MudTextField Label="ルール名" @bind-Value="rules.Name" Margin="Margin.Dense" onfocus="this.select();" />
                                 </MudItem>
                                 <MudItem xs="6" sm="4" Class="pr-3">
                                     <MudNumericField T="int" Label="持ち点" Value="rules.StartingPoints" ValueChanged="OnStartingPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" />
@@ -106,10 +106,10 @@
                                 @for (int i = 0; i < activeParticipantCount; i++)
                                 {
                                     var index = i;
-                                    <MudTextField Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index]" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" Margin="Margin.Dense" />
+                                    <MudTextField Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index]" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" Margin="Margin.Dense" onfocus="this.select();" />
                                 }
                             </MudStack>
-                            @* 抜け番（参加枠）の追加・削除ボタン *@
+                            @* 抜け番の追加・削除ボタン *@
                             <MudStack Row="true" Justify="Justify.Center" Class="mt-2" Spacing="1">
                                 <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="AddParticipant" Disabled="@(activeParticipantCount >= MaxParticipants)">
                                     枠を追加
@@ -321,9 +321,9 @@
     @* ローカルストレージからのデータ復元と初期化 *@
     protected override async Task OnInitializedAsync()
     {
-        var savedRules = await LocalStorage.GetItemAsync<RuleSet>("rules");
+        var savedRules = await LocalStorage.GetItemAsync<RuleSet>(StorageKeys.Rules);
         if (savedRules != null) rules = savedRules;
-        var savedPlayers = await LocalStorage.GetItemAsync<List<string>>("currentPlayers");
+        var savedPlayers = await LocalStorage.GetItemAsync<List<string>>(StorageKeys.CurrentPlayers);
         if (savedPlayers != null)
         {
             for (int i = 0; i < savedPlayers.Count && i < MaxParticipants; i++)
@@ -331,13 +331,13 @@
                 currentPlayers[i] = savedPlayers[i];
             }
         }
-        var savedActiveCount = await LocalStorage.GetItemAsync<int?>("activeParticipantCount");
+        var savedActiveCount = await LocalStorage.GetItemAsync<int?>(StorageKeys.ActiveParticipantCount);
         activeParticipantCount = savedActiveCount ?? rules.PlayerCount;
-        var savedPresets = await LocalStorage.GetItemAsync<List<RuleSet>>("rulePresets");
+        var savedPresets = await LocalStorage.GetItemAsync<List<RuleSet>>(StorageKeys.RulePresets);
         if (savedPresets != null) rulePresets = savedPresets;
-        var dictHistories = await LocalStorage.GetItemAsync<Dictionary<int, List<GameResult>>>("histories_dict");
+        var dictHistories = await LocalStorage.GetItemAsync<Dictionary<int, List<GameResult>>>(StorageKeys.HistoriesDict);
         if (dictHistories != null) histories = dictHistories;
-        var dictChips = await LocalStorage.GetItemAsync<Dictionary<int, List<int>>>("sessionChips_dict");
+        var dictChips = await LocalStorage.GetItemAsync<Dictionary<int, List<int>>>(StorageKeys.SessionChipsDict);
         if (dictChips != null)
         {
             sessionChipsMap = dictChips;
@@ -402,14 +402,14 @@
     private async Task OnPlayerNameChanged(int index, string value)
     {
         currentPlayers[index] = value;
-        await LocalStorage.SetItemAsync("currentPlayers", currentPlayers);
+        await LocalStorage.SetItemAsync(StorageKeys.CurrentPlayers, currentPlayers);
     }
 
     @* チップ数を保存 *@
     private async Task OnChipChanged(int index, int value)
     {
         ActiveSessionChips[index] = value;
-        await LocalStorage.SetItemAsync("sessionChips_dict", sessionChipsMap);
+        await LocalStorage.SetItemAsync(StorageKeys.SessionChipsDict, sessionChipsMap);
     }
 
     @* ルールプリセットを適用 *@
@@ -421,7 +421,7 @@
         if (result is not null && !result.Canceled && result.Data is RuleSet preset)
         {
             rules = preset.DeepClone();
-            await LocalStorage.SetItemAsync("rules", rules);
+            await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
             Snackbar.Add($"設定「{preset.Name}」を読み込みました", Severity.Success);
             ValidateDisplayMode();
             StateHasChanged();
@@ -435,8 +435,8 @@
         var newPreset = rules.DeepClone();
         rulePresets.Add(newPreset);
         
-        await LocalStorage.SetItemAsync("rulePresets", rulePresets);
-        await LocalStorage.SetItemAsync("rules", rules);
+        await LocalStorage.SetItemAsync(StorageKeys.RulePresets, rulePresets);
+        await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
         Snackbar.Add($"設定「{rules.Name}」を保存しました", Severity.Success);
     }
 
@@ -458,7 +458,7 @@
         if (result is not null && !result.Canceled && result.Data is RuleSet newRules)
         {
             rules = newRules;
-            await LocalStorage.SetItemAsync("rules", rules);
+            await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
             ValidateDisplayMode();
             StateHasChanged();
         }
@@ -468,7 +468,7 @@
     private async Task DisableCustomUma()
     {
         rules.IsCustomUma = false;
-        await LocalStorage.SetItemAsync("rules", rules);
+        await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
         Snackbar.Add("順位ウマの個別設定を解除しました", Severity.Info);
         StateHasChanged();
     }
@@ -476,18 +476,15 @@
     @* 各局の結果を保存 *@
     private async Task CalculateAndRecordGame()
     {
+        // 抜け番ではないプレイヤーのインデックスを抽出
         int pCount = rules.PlayerCount;
-
-        // 変更: 抜け番ではないアクティブな参加者のインデックスを抽出
         var activeIndices = Enumerable.Range(0, activeParticipantCount).Where(i => !currentSitOuts[i]).ToList();
         if (activeIndices.Count != pCount) return;
-
         // 計算用の抽出配列
         var activeScores = activeIndices.Select(i => (currentScores[i] ?? 0) * 100).ToList();
         var activePlayers = activeIndices.Select(i => currentPlayers[i]).ToList();
         var activeYaki = activeIndices.Select(i => currentYaki[i]).ToList();
         var activeTobiBonus = activeIndices.Select(i => currentTobiBonus[i]).ToList();
-
         // 簡易入力ミスチェック
         if (rules.IsTobiEnabled)
         {
@@ -502,7 +499,6 @@
                 return;
             }
         }
-
         // オカ・順位ウマのベースポイント算出
         double[] baseUmaOka = new double[pCount];
         double oka = (rules.ReturnPoints - rules.StartingPoints) * pCount / 1000.0;
@@ -525,7 +521,6 @@
             }
             baseUmaOka[rank] += uma;
         }
-
         // 各個人の素点と端数処理
         double[] points = new double[pCount];
         double totalPts = 0;
@@ -536,7 +531,6 @@
             totalPts += points[i];
         }
         int fractionsToAdjust = (int)Math.Round(-(totalPts + oka) * 10);
-
         // 同着グループの分析と「席順入力ダイアログ」の要否判定
         var groupedScores = activeScores.Select((score, index) => new { score, index })
         .GroupBy(x => x.score)
@@ -589,18 +583,16 @@
                 }
             }
         }
-
+        // 席順入力ダイアログ
         Dictionary<int, int>? priority = needsTieBreaker
         ? await OpenTieBreakerIfNeeded(activeScores, activePlayers)
         : Enumerable.Range(0, pCount).ToDictionary(i => i, i => i);
         if (priority == null) return;
-
         var rankedIndices = activeScores.Select((score, index) => new { score, index })
         .OrderByDescending(x => x.score)
         .ThenBy(x => priority[x.index])
         .Select(x => x.index)
         .ToList();
-
         int currentR = 0;
         while (currentR < pCount)
         {
@@ -631,7 +623,7 @@
             currentR += tieCount;
         }
         AdjustFractions(points, rankedIndices);
-
+        // 沈みウマ
         double[] preSinkPts = points.ToArray();
         if (rules.IsSinkEnabled)
         {
@@ -677,7 +669,7 @@
             }
         }
         var currentSinkPts = points.Select((p, i) => Math.Round(p - preSinkPts[i], 1)).ToList();
-
+        // 焼き鳥
         double[] preYakiPts = points.ToArray();
         if (rules.IsYakiEnabled)
         {
@@ -721,7 +713,7 @@
             }
         }
         var yakiPts = points.Select((p, i) => Math.Round(p - preYakiPts[i], 1)).ToList();
-
+        // トビ
         double[] preTobiPts = points.ToArray();
         if (rules.IsTobiEnabled)
         {
@@ -745,7 +737,7 @@
             }
         }
         var tobiPts = points.Select((p, i) => Math.Round(p - preTobiPts[i], 1)).ToList();
-
+        // コールド
         double[] preColdPts = points.ToArray();
         if (rules.IsColdEnabled)
         {
@@ -765,7 +757,7 @@
             }
         }
         var currentColdPts = points.Select((p, i) => Math.Round(p - preColdPts[i], 1)).ToList();
-
+        // 円算出
         double[] exactYen = new double[pCount];
         int[] baseYen = new int[pCount];
         double[] fractions = new double[pCount];
@@ -782,12 +774,8 @@
         .OrderByDescending(i => fractions[i])
         .ThenBy(i => rankedIndices.IndexOf(i))
         .ToList();
-
         for (int i = 0; i < shortage; i++) baseYen[yenDistributionOrder[i]] += 1;
-
-        // ==================================================
-        // 変更: 結果を「元の参加枠インデックス」へマッピングして保存
-        // ==================================================
+        // 結果を「元の参加枠インデックス」へマッピングして保存
         List<int?> finalRawScores = Enumerable.Repeat((int?)null, activeParticipantCount).ToList();
         List<double> finalPoints = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
         List<double> finalSinkPts = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
@@ -796,7 +784,6 @@
         List<double> finalColdPts = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
         List<int> finalYen = Enumerable.Repeat(0, activeParticipantCount).ToList();
         List<bool> finalTobiPlayers = Enumerable.Repeat(false, activeParticipantCount).ToList();
-
         for (int i = 0; i < pCount; i++)
         {
             int originalIdx = activeIndices[i];
@@ -809,7 +796,6 @@
             finalYen[originalIdx] = baseYen[i];
             finalTobiPlayers[originalIdx] = rules.TobiJustIsTobi ? activeScores[i] <= rules.TobiPoint : activeScores[i] < rules.TobiPoint;
         }
-
         ActiveHistory.Add(new GameResult
         {
             Timestamp = DateTime.Now,
@@ -825,9 +811,9 @@
             ColdPoints = finalColdPts,
             Yen = finalYen
         });
-
-        await LocalStorage.SetItemAsync("histories_dict", histories);
-        await LocalStorage.SetItemAsync("rules", rules);
+        // ローカルストレージに保存
+        await LocalStorage.SetItemAsync(StorageKeys.HistoriesDict, histories);
+        await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
         ResetInputForms();
         armedDeleteIndex = null;
     }
@@ -844,8 +830,8 @@
         {
             ActiveHistory.Clear();
             sessionChipsMap[rules.PlayerCount] = Enumerable.Repeat(0, MaxParticipants).ToList();
-            await LocalStorage.SetItemAsync("histories_dict", histories);
-            await LocalStorage.SetItemAsync("sessionChips_dict", sessionChipsMap);
+            await LocalStorage.SetItemAsync(StorageKeys.HistoriesDict, histories);
+            await LocalStorage.SetItemAsync(StorageKeys.SessionChipsDict, sessionChipsMap);
             Snackbar.Add($"{players}人麻雀の記録をリセットしました", Severity.Info);
             StateHasChanged();
         }
@@ -858,7 +844,7 @@
         {
             ActiveHistory.Remove(item);
             armedDeleteTarget = null;
-            await LocalStorage.SetItemAsync("histories_dict", histories);
+            await LocalStorage.SetItemAsync(StorageKeys.HistoriesDict, histories);
         }
         else
         {
@@ -1062,8 +1048,8 @@
         rules.PlayerCount = val;
         activeParticipantCount = val; // 枠数をルール人数に強制同期
         ResetInputForms();
-        await LocalStorage.SetItemAsync("rules", rules);
-        await LocalStorage.SetItemAsync("activeParticipantCount", activeParticipantCount);
+        await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
+        await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
         ValidateDisplayMode();
         StateHasChanged();
     }
@@ -1074,7 +1060,7 @@
         if (activeParticipantCount < MaxParticipants)
         {
             activeParticipantCount++;
-            await LocalStorage.SetItemAsync("activeParticipantCount", activeParticipantCount);
+            await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
         }
     }
 
@@ -1089,7 +1075,7 @@
             currentSitOuts[activeParticipantCount] = false;
             currentYaki[activeParticipantCount] = false;
             currentTobiBonus[activeParticipantCount] = false;
-            await LocalStorage.SetItemAsync("activeParticipantCount", activeParticipantCount);
+            await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
             // 枠が減ることで残り1人が確定する可能性があるため、自動計算を再評価
             HandleScoreInputWithAutoFill(0, currentScores[0]);
         }

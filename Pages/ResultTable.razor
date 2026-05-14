@@ -49,7 +49,7 @@
                 {
                     var idx = i;
                     int chip = SessionChips.Count > idx ? SessionChips[idx] : 0;
-                    string pName = string.IsNullOrWhiteSpace(Players.ElementAtOrDefault(idx)) ? " " : Players[idx];
+                    string pName = string.IsNullOrWhiteSpace(Players.ElementAtOrDefault(idx)) ? "　" : Players[idx];
 
                     <div style="flex: 1; min-width: 4.5rem; @(IsReadOnly ? "text-align: center;" : "")">
                         @if (!IsReadOnly)
@@ -88,7 +88,7 @@
             }
         </ColGroup>
         <HeaderContent>
-            <MudTh Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.65rem; letter-spacing: -0.5px;">時刻</MudTh>
+            <MudTh Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.65rem; letter-spacing: -0.5px;">時刻</MudTh>
             @for (int i = 0; i < ActiveParticipantCount; i++)
             {
                 var idx = i;
@@ -102,7 +102,7 @@
             }
         </HeaderContent>
         <RowTemplate>
-            <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.6rem; color: #666; letter-spacing: -0.5px;">
+            <MudTd Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1; text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.6rem; color: #666; letter-spacing: -0.5px;">
                 @context.Timestamp.ToString("HH:mm")
             </MudTd>
             @for (int i = 0; i < ActiveParticipantCount; i++)
@@ -124,7 +124,7 @@
             }
         </RowTemplate>
         <FooterContent>
-            <MudTd Style="text-align: center; background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 6px 0px; font-size: 0.75rem;">
+            <MudTd Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 6px 0px; font-size: 0.75rem;">
                 <MudIcon Icon="@(DisplayMode == 0 ? Icons.Material.Filled.Calculate : Icons.Material.Filled.Functions)" Style="font-size: 1rem; vertical-align: text-bottom; margin-right: 2px; color: #2e7d32;" />
                 @(DisplayMode == 0 ? "平均" : "合計")
             </MudTd>
@@ -186,7 +186,6 @@
             string totalS = GetTotalDisplayValue(i);
             double totalCh = CalculateWidthInCh(totalS);
             if (totalCh > maxCh) maxCh = totalCh;
-
             _columnWidths[i] = $"{maxCh + 0.5}ch";
         }
     }
@@ -230,7 +229,6 @@
             6 => FormatExtra(res.ColdPoints, idx, "👑", "🏳️"),
             _ => ""
         };
-
         string FormatExtra(List<double>? list, int i, string posIcon, string negIcon)
         {
             if (list == null || i >= list.Count || list[i] == 0) return "-";
