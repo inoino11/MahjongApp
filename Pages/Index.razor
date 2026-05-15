@@ -944,10 +944,10 @@
     @* 設定に応じた端数丸め *@
     private double ApplyRounding(double value, RoundingRule rule) => rule switch
     {
-        RoundingRule.ShishaGonyu => Math.Round(value, MidpointRounding.AwayFromZero),
-        RoundingRule.RoundDown => Math.Floor(value),
-        RoundingRule.RoundUp => Math.Ceiling(value),
-        RoundingRule.GoshaRokunyu => Math.Floor(value + 0.4),
+        RoundingRule.ShishaGonyu => Math.Round(value, 1, MidpointRounding.AwayFromZero),
+        RoundingRule.RoundDown => Math.Floor(value * 10) / 10.0,
+        RoundingRule.RoundUp => Math.Ceiling(value * 10) / 10.0,
+        RoundingRule.GoshaRokunyu => Math.Floor((value * 10) + 0.4) / 10.0,
         _ => value
     };
 
