@@ -45,7 +45,14 @@
         {
             try
             {
-                byte[] compressedBytes = Convert.FromBase64String(Uri.UnescapeDataString(SharedDataParam));
+                string base64 = SharedDataParam.Replace("-", "+").Replace("_", "/");
+                // 削除した = を元に戻す (4の倍数になるようにパディング)
+                switch (base64.Length % 4)
+                {
+                    case 2: base64 += "=="; break;
+                    case 3: base64 += "="; break;
+                }
+                byte[] compressedBytes = Convert.FromBase64String(base64);
                 using var ms = new MemoryStream(compressedBytes);
                 using var gzip = new GZipStream(ms, CompressionMode.Decompress);
                 using var reader = new StreamReader(gzip, Encoding.UTF8);

@@ -1034,7 +1034,7 @@
                 gzip.Write(jsonBytes, 0, jsonBytes.Length);
             }
             string base64 = Convert.ToBase64String(ms.ToArray());
-            string urlEncoded = Uri.EscapeDataString(base64);
+            string urlEncoded = base64.Replace("+", "-").Replace("/", "_").TrimEnd('=');
             string shareUrl = $"{NavigationManager.BaseUri}shared?d={urlEncoded}";
             string result = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 対局結果", shareUrl);
             if (result == "COPIED") Snackbar.Add("閲覧用URLをクリップボードにコピーしました！", Severity.Success);
