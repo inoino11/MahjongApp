@@ -280,7 +280,7 @@ else
         double minPt = 0;
         for (int i = 0; i < ActiveParticipantCount; i++)
         {
-            string pName = string.IsNullOrWhiteSpace(Players.ElementAtOrDefault(i)) ? $"P{i + 1}" : Players[i];
+            string pName = string.IsNullOrWhiteSpace(Players.ElementAtOrDefault(i)) ? "　" : Players[i];
             double cumulative = 0;
             double[] data = new double[gameCount + 1];
             data[0] = 0; // 0局目（開始時）は全員0pt
@@ -334,24 +334,20 @@ else
         {
             _columnWidths = new string[ActiveParticipantCount];
         }
-
         for (int i = 0; i < ActiveParticipantCount; i++)
         {
             string playerName = Players.ElementAtOrDefault(i) ?? "";
             double maxCh = CalculateWidthInCh(playerName);
             if (maxCh < 2.0) maxCh = 2.0;
-
             foreach (var res in History)
             {
                 string s = GetDisplayValue(res, i);
                 double ch = CalculateWidthInCh(s);
                 if (ch > maxCh) maxCh = ch;
             }
-
             string totalS = GetTotalDisplayValue(i);
             double totalCh = CalculateWidthInCh(totalS);
             if (totalCh > maxCh) maxCh = totalCh;
-
             _columnWidths[i] = $"{maxCh + 0.5}ch";
         }
     }
@@ -417,7 +413,6 @@ else
             6 => res.ColdPoints?.Count > idx ? res.ColdPoints : new(),
             _ => new()
         };
-
         if (idx >= valList.Count || idx >= _columnWidths.Length) return "";
         double val = valList[idx];
         string boxWidth = _columnWidths[idx];

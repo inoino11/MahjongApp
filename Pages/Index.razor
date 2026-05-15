@@ -14,12 +14,30 @@
         padding-right: 2px !important;
     }
 
+    .score-input.auto-filled input {
+        color: var(--mud-palette-info) !important;
+    }
+
+    .score-input.mud-input-control .mud-input-outlined {
+        height: 28px !important;
+        min-height: 28px !important;
+    }
+
+    .score-input.mud-input-control .mud-input-outlined .mud-input-adornment-start {
+        margin: 0 !important;
+    }
+
+    .score-input.mud-input-control .mud-input-outlined .mud-input-adornment-start svg {
+        font-size: 16px !important;
+    }
+
     .score-zeros {
         font-size: 1.3rem;
         font-weight: 500;
         color: #808080;
         margin-left: 2px;
         user-select: none;
+        transform: translateY(-1px);
     }
 </style>
 
@@ -159,8 +177,8 @@
                                 <MudToggleIconButton @bind-Toggled="currentTobiBonus[index]" Icon="@Icons.Material.Filled.Rocket" Color="Color.Default" Title="トビ賞を獲得しません" ToggledIcon="@Icons.Material.Filled.RocketLaunch" ToggledColor="Color.Error" ToggledTitle="🚀 トビ賞を獲得します" Size="Size.Small" ToggledSize="Size.Small" Class="mr-2" Disabled="isSitOut" />
                             }
                             @* 素点 *@
-                            <div class="d-flex align-baseline">
-                                <MudNumericField T="int?" Value="currentScores[index]" ValueChanged="@(v => HandleScoreInputWithAutoFill(index, v))" HideSpinButtons="true" DisableUnderLine="true" Margin="Margin.Dense" Class="score-input" Style="width: 70px;" Disabled="isSitOut" />
+                            <div class="d-flex align-center">
+                                <MudNumericField T="int?" Value="currentScores[index]" ValueChanged="@(v => HandleScoreInput(index, v))" HideSpinButtons="true" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == autoFilledIndex ? "auto-filled" : "")}")" Style="width: 70px;" Disabled="isSitOut" Adornment="@(index == autoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
                                 <span class="score-zeros">00</span>
                             </div>
                         </div>
@@ -362,6 +380,7 @@
         int diff = val - rules.StartingPoints;
         if (Math.Abs(diff) == 5000) rules.StartingPoints = val;
         else rules.StartingPoints = val * 100;
+        EvaluateAutoFill();
     }
 
     @* 返し点の100倍処理 *@
@@ -373,29 +392,13 @@
     }
 
     @* 最後の1人の素点自動入力 *@
-    private void HandleScoreInputWithAutoFill(int index, int? val)
+    private void HandleScoreInput(int index, int? val)
     {
+        // 自動枠をユーザーが手動で書き換えた場合、フラグを剥奪
+        if (index == autoFilledIndex) autoFilledIndex = null;
+
         currentScores[index] = val;
-
-        // 表示されている参加者のうち、抜け番アイコンがOFFの人だけを抽出
-        var activeIndices = Enumerable.Range(0, activeParticipantCount)
-         .Where(i => !currentSitOuts[i])
-         .ToList();
-
-        // 自動計算の発動条件:
-        // 1. 抜け番以外のアクティブな人数が、ルール上の対局人数（3 or 4）と正確に一致していること
-        // 2. その中で空欄が「残り1人」であること
-        if (activeIndices.Count == rules.PlayerCount)
-        {
-            var nullIndices = activeIndices.Where(i => !currentScores[i].HasValue).ToList();
-            if (nullIndices.Count == 1)
-            {
-                int lastIndex = nullIndices[0];
-                int targetTotal = (rules.StartingPoints * rules.PlayerCount) / 100;
-                int currentTotal = activeIndices.Where(i => i != lastIndex).Sum(i => currentScores[i] ?? 0);
-                currentScores[lastIndex] = targetTotal - currentTotal;
-            }
-        }
+        EvaluateAutoFill();
     }
 
     @* 対局者名を保存 *@
@@ -894,6 +897,7 @@
         currentYaki = new(new bool[MaxParticipants]);
         currentTobiBonus = new(new bool[MaxParticipants]);
         currentSitOuts = new(new bool[MaxParticipants]);
+        autoFilledIndex = null;
     }
 
     @* 特殊ルールOFF時のスコア表示モード切替 *@
@@ -1077,7 +1081,7 @@
             currentTobiBonus[activeParticipantCount] = false;
             await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
             // 枠が減ることで残り1人が確定する可能性があるため、自動計算を再評価
-            HandleScoreInputWithAutoFill(0, currentScores[0]);
+            EvaluateAutoFill();
         }
     }
 
@@ -1090,8 +1094,65 @@
             currentScores[index] = null;
             currentYaki[index] = false;
             currentTobiBonus[index] = false;
+            // 自動枠の人が抜け番にされた場合はフラグ消去
+            if (index == autoFilledIndex) autoFilledIndex = null;
         }
-        // 抜け番が確定することで残り1人が確定する可能性があるため、自動計算をフック
-        HandleScoreInputWithAutoFill(index, currentScores[index]);
+        EvaluateAutoFill();
+    }
+
+    // 自動入力された枠のインデックスを保持
+    private int? autoFilledIndex = null;
+
+    // 状態を評価し、矛盾を正すコアメソッド
+    private void EvaluateAutoFill()
+    {
+        var activeIndices = Enumerable.Range(0, activeParticipantCount).Where(i => !currentSitOuts[i]).ToList();
+
+        if (activeIndices.Count != rules.PlayerCount)
+        {
+            ClearAutoFill();
+            return;
+        }
+        var manualIndices = activeIndices.Where(i => i != autoFilledIndex).ToList();
+        var nullManualIndices = manualIndices.Where(i => !currentScores[i].HasValue).ToList();
+        if (nullManualIndices.Count == 0)
+        {
+            // 手動枠がすべて埋まっている場合、自動枠を再計算（追従）
+            if (autoFilledIndex.HasValue)
+            {
+                int targetTotal = (rules.StartingPoints * rules.PlayerCount) / 100;
+                int currentTotal = manualIndices.Sum(i => currentScores[i] ?? 0);
+                currentScores[autoFilledIndex.Value] = targetTotal - currentTotal;
+            }
+        }
+        else if (nullManualIndices.Count == 1)
+        {
+            if (autoFilledIndex.HasValue)
+            {
+                // 自動枠があるのに空欄ができた＝ユーザーが数値を消した（消去）
+                ClearAutoFill();
+            }
+            else
+            {
+                // 新規で自動計算を発動
+                autoFilledIndex = nullManualIndices[0];
+                int targetTotal = (rules.StartingPoints * rules.PlayerCount) / 100;
+                int currentTotal = activeIndices.Where(i => i != autoFilledIndex).Sum(i => currentScores[i] ?? 0);
+                currentScores[autoFilledIndex.Value] = targetTotal - currentTotal;
+            }
+        }
+        else
+        {
+            ClearAutoFill();
+        }
+    }
+
+    private void ClearAutoFill()
+    {
+        if (autoFilledIndex.HasValue)
+        {
+            currentScores[autoFilledIndex.Value] = null;
+            autoFilledIndex = null;
+        }
     }
 }
