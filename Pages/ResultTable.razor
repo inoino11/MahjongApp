@@ -7,22 +7,23 @@
             <MudButton Variant="@(DisplayMode == 2 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(2)">円</MudButton>
             <MudButton Variant="@(DisplayMode == 7 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(7)">グラフ</MudButton>
         </MudStack>
-        @if (Rules?.IsSinkEnabled == true || Rules?.IsYakiEnabled == true || Rules?.IsTobiEnabled == true || Rules?.IsColdEnabled == true)
+        @if (Rules?.IsSinkEnabled == true || Rules?.IsYakiEnabled == true || Rules?.IsTobiEnabled == true || Rules?.IsColdEnabled == true ||
+             HasAnySinkPoints || HasAnyYakiPoints || HasAnyTobiPoints || HasAnyColdPoints)
         {
             <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
-                @if (Rules?.IsSinkEnabled == true)
+                @if (Rules?.IsSinkEnabled == true || HasAnySinkPoints)
                 {
                     <MudButton Variant="@(DisplayMode == 3 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Warning" Size="Size.Small" OnClick="() => SetDisplayMode(3)">沈み</MudButton>
                 }
-                @if (Rules?.IsYakiEnabled == true)
+                @if (Rules?.IsYakiEnabled == true || HasAnyYakiPoints)
                 {
                     <MudButton Variant="@(DisplayMode == 4 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Warning" Size="Size.Small" OnClick="() => SetDisplayMode(4)">焼き鳥</MudButton>
                 }
-                @if (Rules?.IsTobiEnabled == true)
+                @if (Rules?.IsTobiEnabled == true || HasAnyTobiPoints)
                 {
                     <MudButton Variant="@(DisplayMode == 5 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Info" Size="Size.Small" OnClick="() => SetDisplayMode(5)">トビ</MudButton>
                 }
-                @if (Rules?.IsColdEnabled == true)
+                @if (Rules?.IsColdEnabled == true || HasAnyColdPoints)
                 {
                     <MudButton Variant="@(DisplayMode == 6 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Info" Size="Size.Small" OnClick="() => SetDisplayMode(6)">コールド</MudButton>
                 }
@@ -40,6 +41,7 @@
     .chip-input input {
         text-align: center !important;
     }
+
     #table-scroll .mud-table-container table {
         min-width: var(--table-min-width) !important;
     }
@@ -143,8 +145,8 @@ else
                                 <div style="display: table-cell; width: @boxWidth; vertical-align: bottom; padding: 0;">
                                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
                                         <div style="width: @boxWidth; min-width: @boxWidth; height: 0px;"></div>
-                                        <MudText Align="Align.Center" Typo="Typo.caption" Class="d-block mud-text-secondary" Style="@($"max-width: {boxWidth}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 auto 2px auto;")">
-                                            @pName
+                                        <MudText Align="Align.Center" Typo="Typo.caption" Class="d-block mud-text-secondary" Style="@($"max-width: {boxWidth}; white-space: nowrap; margin: 0 auto 2px auto; letter-spacing: -0.5px;")">
+                                            @GetShortName(Players.ElementAtOrDefault(idx))
                                         </MudText>
                                         @if (!IsReadOnly)
                                         {
@@ -186,7 +188,6 @@ else
                     <col style="width: 30px;" />
                 }
             </ColGroup>
-            
             <HeaderContent>
                 <MudTh Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; white-space: nowrap; padding: 4px 0px !important; font-size: 0.65rem; letter-spacing: -0.5px;">時刻</MudTh>
                 @for (int i = 0; i < ActiveParticipantCount; i++)
@@ -195,8 +196,8 @@ else
                     string boxWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
                     <MudTh Style="text-align: center; padding: 4px 0px !important; font-size: 0.75rem; letter-spacing: -0.5px;">
                         <div style="width: @boxWidth; min-width: @boxWidth; height: 0px; margin: 0 auto;"></div>
-                        <div style="max-width: @boxWidth; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 auto;">
-                            @(string.IsNullOrWhiteSpace(Players.ElementAtOrDefault(idx)) ? "　" : Players[idx])
+                        <div style="max-width: @boxWidth; white-space: nowrap; margin: 0 auto;">
+                            @GetShortName(Players.ElementAtOrDefault(idx))
                         </div>
                     </MudTh>
                 }
@@ -278,7 +279,7 @@ else
         "#FCC419", // 黄
         "#FF922B", // 橙
         "#845EF7", // 紫
-        "#F06595"  // ピンク
+        "#F06595"  // 桃
     };
 
     private class PlayerFinalStat
@@ -370,23 +371,24 @@ else
             _modeWidths = new double[7, ActiveParticipantCount];
         for (int i = 0; i < ActiveParticipantCount; i++)
         {
-            double globalMaxCh = 2.0;
+            double globalDataMaxCh = 1.0;
             for (int m = 0; m <= 6; m++)
             {
-                double modeMaxCh = 2.0;
+                double modeDataMaxCh = 1.0;
                 foreach (var res in History)
                 {
                     string s = GetDisplayValue(res, i, m);
                     double ch = CalculateWidthInCh(s);
-                    if (ch > modeMaxCh) modeMaxCh = ch;
+                    if (ch > modeDataMaxCh) modeDataMaxCh = ch;
                 }
                 string totalS = GetTotalDisplayValue(i, m);
                 double totalCh = CalculateWidthInCh(totalS);
-                if (totalCh > modeMaxCh) modeMaxCh = totalCh;
-                _modeWidths[m, i] = modeMaxCh;
-                if (modeMaxCh > globalMaxCh) globalMaxCh = modeMaxCh;
+                if (totalCh > modeDataMaxCh) modeDataMaxCh = totalCh;
+                _modeWidths[m, i] = modeDataMaxCh;
+                if (modeDataMaxCh > globalDataMaxCh) globalDataMaxCh = modeDataMaxCh;
             }
-            _columnWidths[i] = $"{globalMaxCh}ch";
+            double columnWidth = Math.Max(10.0, globalDataMaxCh);
+            _columnWidths[i] = $"{columnWidth}ch";
         }
     }
 
@@ -535,11 +537,37 @@ else
                 if (double.TryParse(w.Replace("ch", ""), out double ch))
                 {
                     totalPx += ch * 8.0;
-                    totalPx += 16.0; 
+                    totalPx += 16.0;
                 }
         if (!IsReadOnly) totalPx += 30;
         return $"{totalPx + 20}px";
     }
 
+    // データやルールが更新されるたびに自動で呼ばれるメソッド
+    protected override async Task OnParametersSetAsync()
+    {
+        bool isModeInvalid = DisplayMode switch
+        {
+            3 => !Rules.IsSinkEnabled && !HasAnySinkPoints,
+            4 => !Rules.IsYakiEnabled && !HasAnyYakiPoints,
+            5 => !Rules.IsTobiEnabled && !HasAnyTobiPoints,
+            6 => !Rules.IsColdEnabled && !HasAnyColdPoints,
+            _ => false // 素点(0), pt(1), 円(2), グラフ(7)などは常に表示可能とする
+        };
+        if (isModeInvalid) await SetDisplayMode(1);
+        CalculateColumnWidths();
+    }
+
+    // 指定文字数を超えたら「...」を付ける
+    private string GetShortName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "　";
+        return name.Length > 4 ? name.Substring(0, 4) + "..." : name;
+    }
+
+    private bool HasAnySinkPoints => History.Any(h => h.SinkPoints != null && h.SinkPoints.Any(pt => pt != 0));
+    private bool HasAnyYakiPoints => History.Any(h => h.YakiPoints != null && h.YakiPoints.Any(pt => pt != 0));
+    private bool HasAnyTobiPoints => History.Any(h => h.TobiPoints != null && h.TobiPoints.Any(pt => pt != 0));
+    private bool HasAnyColdPoints => History.Any(h => h.ColdPoints != null && h.ColdPoints.Any(pt => pt != 0));
     private const string DeleteEmpty = "<path d=\"M20.37,8.91L19.37,10.64L7.24,3.64L8.24,1.91L11.28,3.66L12.64,3.29L16.97,5.79L17.34,7.16L20.37,8.91M6,19V7H11.07L18,11V19A2,2 0 0,1 16,21H8A2,2 0 0,1 6,19Z\"/>";
 }

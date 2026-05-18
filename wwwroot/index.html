@@ -218,10 +218,7 @@
             const el1 = document.getElementById(id1);
             const wrapper2 = document.getElementById(id2);
             if (!el1 || !wrapper2) return;
-            // MudTableが内部生成する本当のスクロール領域を探す
-            // すぐに見つからない場合もあるため、少し待つか、要素があれば取得する
             const el2 = wrapper2.querySelector('.mud-table-container') || wrapper2;
-            // すでに同期設定済みなら何もしない（イベント増殖防止）
             if (el1.dataset.isSyncing === "true") return;
             el1.dataset.isSyncing = "true";
             let isSyncing1 = false;
