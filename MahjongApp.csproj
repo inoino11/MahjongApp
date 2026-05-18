@@ -6,6 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <InformationalVersion>v$([System.DateTime]::UtcNow.AddHours(9).ToString("yy.MM.dd.HHmm"))</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
