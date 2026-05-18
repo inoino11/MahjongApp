@@ -1,3 +1,5 @@
+@inject IJSRuntime JSRuntime
+
 @* 1. 表示モード切替ボタン ＆ リセットボタン *@
 <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4 gap-2">
     <div class="d-flex flex-wrap gap-2">
@@ -35,9 +37,17 @@
     }
 </MudStack>
 
+<style>
+    /* チップ入力欄の文字を中央揃えにする */
+    .chip-input input {
+        text-align: center !important;
+    }
+</style>
+
 @if (DisplayMode == 7)
 {
     <style>
+        /* グラフ描画範囲 */
         .mud-chart-legend {
             display: none !important;
         }
@@ -50,7 +60,7 @@
 
             /* スマホ版: 高さを抑えて無駄な上下余白を減らす */
             .responsive-chart-wrapper {
-                height: 300px;
+                height: 130px;
             }
         }
 
@@ -80,7 +90,8 @@
         <div class="d-flex flex-column flex-md-row gap-3">
             <div style="flex-grow: 1; min-width: 0; width: 100%; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; padding-bottom: 32px;">
                 @{
-                    int minWidthPx = Math.Max(400, History.Count * 80 + 80);
+                    @* int minWidthPx = Math.Max(300, History.Count * 20 + 30); *@
+                    int minWidthPx = 300;
                 }
                 <div class="responsive-chart-wrapper" style="min-width: max(100%, @(minWidthPx)px);">
                     <MudChart ChartType="ChartType.Line" ChartSeries="@_chartSeries" XAxisLabels="@_xAxisLabels" Width="100%" Height="100%" ChartOptions="@_chartOptions" />
@@ -115,21 +126,22 @@ else
         <MudCard Class="mb-4" Elevation="0" Outlined="true">
             <MudCardContent Class="pa-3">
                 <MudText Typo="Typo.subtitle2" Class="mb-2">チップ集計</MudText>
-                <div style="display: flex; width: 100%; flex-wrap: nowrap; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 4px;">
+                <div id="chip-scroll" style="display: flex; width: 100%; flex-wrap: nowrap; align-items: center; gap: 0px; overflow-x: auto; padding-bottom: 4px;">
                     @{
                         bool isChipError = !IsReadOnly && SessionChips.Take(ActiveParticipantCount).Sum() != 0;
                     }
-                    <div style="width: 25px; flex-shrink: 0;"></div>
+                    <div style="width: 35px; flex-shrink: 0; position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1;"></div>
                     @for (int i = 0; i < ActiveParticipantCount; i++)
                     {
                         var idx = i;
                         int chip = SessionChips.Count > idx ? SessionChips[idx] : 0;
                         string pName = string.IsNullOrWhiteSpace(Players.ElementAtOrDefault(idx)) ? "　" : Players[idx];
-
-                        <div style="flex: 1; min-width: 4.5rem; @(IsReadOnly ? "text-align: center;" : "")">
+                        // ③ テーブルの列幅（_columnWidths[idx]）を取得して適用する
+                        string boxWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
+                        <div style="width: @boxWidth; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                             @if (!IsReadOnly)
                             {
-                                <MudNumericField T="int" Label="@pName" Value="chip" ValueChanged="@(v => OnChipChanged.InvokeAsync((idx, v)))" Step="1" HideSpinButtons="true" Margin="Margin.Dense" Style="@(isChipError ? "max-width: 4.0rem; color:#ff0000; font-weight:bold;" : "max-width: 4.5rem;")" onfocus="this.select();" />
+                                <MudNumericField T="int" Label="@pName" Value="chip" ValueChanged="@(v => OnChipChanged.InvokeAsync((idx, v)))" Step="1" HideSpinButtons="true" Margin="Margin.Dense" Style="@(isChipError ? "max-width: 2.5rem; color:#ff0000; font-weight:bold; text-align:center;" : "max-width: 2.5rem; text-align:center;")" onfocus="this.select();" />
                             }
                             else
                             {
@@ -142,14 +154,17 @@ else
                             }
                         </div>
                     }
-                    <div style="width: 25px; flex-shrink: 0;"></div>
+                    @if (!IsReadOnly)
+                    {
+                        <div style="width: 30px; flex-shrink: 0;"></div>
+                    }
                 </div>
             </MudCardContent>
         </MudCard>
     }
 
     @* 3. 成績テーブル *@
-    <div style="width: 100%; overflow-x: auto;">
+    <div id="table-scroll" style="width: 100%; overflow-x: auto;">
         <MudTable Items="@History" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="width: 100%; table-layout: fixed;">
             @* ... ColGroup, HeaderContent, RowTemplate, FooterContent は以前と同じ (変更なし) ... *@
             <ColGroup>
@@ -268,11 +283,23 @@ else
         if (DisplayMode == 7) PrepareChartData();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (DisplayMode != 7)
+        {
+            await JSRuntime.InvokeVoidAsync("syncScroll", "chip-scroll", "table-scroll");
+        }
+    }
+
     private void PrepareChartData()
     {
-        _chartSeries.Clear();
-        _finalStats.Clear();
-        _chartOptions.ChartPalette = _chartColors;
+        _chartSeries = new List<ChartSeries<double>>();
+        _finalStats = new List<PlayerFinalStat>();
+        var newOptions = new LineChartOptions
+        {
+            ChartPalette = _chartColors,
+            MaxNumYAxisTicks = 20
+        };
         int gameCount = History.Count;
         _xAxisLabels = Enumerable.Range(0, gameCount + 1).Select(i => i == 0 ? "Start" : $"{i}局").ToArray();
         // グラフの最大値・最小値を求めるための変数
@@ -283,19 +310,16 @@ else
             string pName = string.IsNullOrWhiteSpace(Players.ElementAtOrDefault(i)) ? "　" : Players[i];
             double cumulative = 0;
             double[] data = new double[gameCount + 1];
-            data[0] = 0; // 0局目（開始時）は全員0pt
+            data[0] = 0;
             for (int j = 0; j < gameCount; j++)
             {
-                // 抜け番なら加算Ptは0となり、線は水平に維持される
                 cumulative += (History[j].Points.Count > i ? History[j].Points[i] : 0);
                 data[j + 1] = Math.Round(cumulative, 1);
             }
-            // プレイヤーごとの最大・最小を全体の最大・最小と比較して更新
             double localMax = data.Max();
             double localMin = data.Min();
             if (localMax > maxPt) maxPt = localMax;
             if (localMin < minPt) minPt = localMin;
-
             string color = _chartColors[i % _chartColors.Length];
             _chartSeries.Add(new ChartSeries<double> { Name = pName, Data = data });
             _finalStats.Add(new PlayerFinalStat { Name = pName, TotalPt = cumulative, Color = color });
@@ -304,25 +328,21 @@ else
         double range = maxPt - minPt;
         if (range == 0)
         {
-            _chartOptions.YAxisTicks = 10; // 全員0ptの時などのデフォルト
+            newOptions.YAxisTicks = 10; // 全員0ptの時などのデフォルト
         }
         else
         {
-            // Y軸を大体 5分割 程度にするための目安値を計算
             double roughStep = range / 5.0;
-            // 目安値の桁数を取得 (例: roughStepが 25 なら magnitude は 10)
             double magnitude = Math.Pow(10, Math.Floor(Math.Log10(roughStep)));
-            double normalizedStep = roughStep / magnitude; // 必ず 1.0 ～ 9.99... の間に収まる
-            // キリの良い数字 (1, 2, 5, 10) に丸める
+            double normalizedStep = roughStep / magnitude;
             double niceStep;
             if (normalizedStep < 1.5) niceStep = 1;
             else if (normalizedStep < 3.5) niceStep = 2;
             else if (normalizedStep < 7.5) niceStep = 5;
             else niceStep = 10;
-            // 最終的な刻み幅を設定
-            _chartOptions.YAxisTicks = (int)Math.Round(niceStep * magnitude);
-            _chartOptions.MaxNumYAxisTicks = 20;
+            newOptions.YAxisTicks = Math.Max(1, (int)Math.Round(niceStep * magnitude));
         }
+        _chartOptions = newOptions;
     }
 
     // ... CalculateColumnWidths(), CalculateWidthInCh(), SetDisplayMode() 等の既存メソッド ...
@@ -371,6 +391,7 @@ else
         if (DisplayMode != mode)
         {
             DisplayMode = mode;
+            if (mode == 7) PrepareChartData();
             await DisplayModeChanged.InvokeAsync(mode);
         }
     }
@@ -402,26 +423,36 @@ else
 
     private string GetTdStyle(GameResult res, int idx)
     {
+        // 列幅が計算できていない場合は空を返す
+        if (idx >= _columnWidths.Length) return "";
+        string boxWidth = _columnWidths[idx];
+        string baseStyle = $"display:inline-block; width:{boxWidth}; text-align:right; font-variant-numeric:tabular-nums; font-size:0.8rem; letter-spacing:-0.5px; ";
+        // 1. 過去の三麻データ等でその列のデータ自体がない場合、または明示的な抜け番(null)の場合
+        if (idx >= res.RawScores.Count || res.RawScores[idx] == null)
+            return baseStyle + "color: #9e9e9e; font-weight: normal; text-align: center;";
         var valList = DisplayMode switch
         {
             0 => res.RawScores.Select(x => (double)(x ?? 0)).ToList(),
             1 => res.Points,
             2 => res.Yen.Select(x => (double)x).ToList(),
-            3 => res.SinkPoints?.Count > idx ? res.SinkPoints : new(),
-            4 => res.YakiPoints?.Count > idx ? res.YakiPoints : new(),
-            5 => res.TobiPoints?.Count > idx ? res.TobiPoints : new(),
-            6 => res.ColdPoints?.Count > idx ? res.ColdPoints : new(),
-            _ => new()
+            3 => res.SinkPoints,
+            4 => res.YakiPoints,
+            5 => res.TobiPoints,
+            6 => res.ColdPoints,
+            _ => new List<double>()
         };
-        if (idx >= valList.Count || idx >= _columnWidths.Length) return "";
+        // 万が一データリストが短かった場合（フォールバック）
+        if (valList == null || idx >= valList.Count)
+            return baseStyle + "color: #9e9e9e; font-weight: normal; text-align: center;";
         double val = valList[idx];
-        string boxWidth = _columnWidths[idx];
-        string style = $"display:inline-block; width:{boxWidth}; text-align:right; font-variant-numeric:tabular-nums; font-size:0.8rem; letter-spacing:-0.5px; ";
-        if (res.RawScores[idx] == null) return style + "color: #9e9e9e; font-weight: normal; text-align: center;";
-        if (DisplayMode >= 3 && val == 0) return style + "color: #9e9e9e; font-weight: normal;";
+        // 2. 特殊ルール(沈み・焼き鳥など)で変動が0の場合（ハイフン表示になるためCenterに揃える）
+        if (DisplayMode >= 3 && val == 0)
+            return baseStyle + "color: #9e9e9e; font-weight: normal; text-align: center;";
+        // 通常の数値表示
         bool isPositive = (DisplayMode == 0) ? res.Points[idx] >= 0 : val >= 0;
-        style += $"color:{(isPositive ? "#ff0000" : "#1976d2")}; ";
-        if (valList.Distinct().Count() > 1 && (val == valList.Max() || val == valList.Min())) style += "font-weight:bold;";
+        string style = baseStyle + $"color:{(isPositive ? "#ff0000" : "#1976d2")}; ";
+        if (valList.Distinct().Count() > 1 && (val == valList.Max() || val == valList.Min()))
+            style += "font-weight:bold;";
         return style;
     }
 

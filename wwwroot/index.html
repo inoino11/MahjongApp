@@ -204,6 +204,29 @@
                 }
             }
         };
+
+        // 2つのスクロール要素を完全に同期させる関数
+        window.syncScroll = (id1, id2) => {
+            const el1 = document.getElementById(id1);
+            const el2 = document.getElementById(id2);
+            if (!el1 || !el2) return;
+            let isSyncing1 = false;
+            let isSyncing2 = false;
+            el1.addEventListener('scroll', () => {
+                if (!isSyncing1) {
+                    isSyncing2 = true;
+                    el2.scrollLeft = el1.scrollLeft;
+                }
+                isSyncing1 = false;
+            }, { passive: true });
+            el2.addEventListener('scroll', () => {
+                if (!isSyncing2) {
+                    isSyncing1 = true;
+                    el1.scrollLeft = el2.scrollLeft;
+                }
+                isSyncing2 = false;
+            }, { passive: true });
+        };
     </script>
 </body>
 

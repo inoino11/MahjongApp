@@ -178,7 +178,7 @@
                             }
                             @* 素点 *@
                             <div class="d-flex align-center">
-                                <MudNumericField T="int?" Value="currentScores[index]" ValueChanged="@(v => HandleScoreInput(index, v))" HideSpinButtons="true" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == autoFilledIndex ? "auto-filled" : "")}")" Style="width: 70px;" Disabled="isSitOut" Adornment="@(index == autoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
+                                <MudNumericField T="int?" Value="currentScores[index]" ValueChanged="@(v => HandleScoreInput(index, v))" HideSpinButtons="true" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == autoFilledIndex ? "auto-filled" : "")}")" Style="width: 77px;" Disabled="isSitOut" Adornment="@(index == autoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
                                 <span class="score-zeros">00</span>
                             </div>
                         </div>
@@ -191,7 +191,7 @@
 
     @* --- セクション3: 集計結果 --- *@
     <MudPaper Class="pa-2 px-sm-4" Elevation="2" @onclick="CancelDelete">
-        <ResultTable History="ActiveHistory" Players="currentPlayers" ActiveParticipantCount="activeParticipantCount" @bind-DisplayMode="displayMode" Rules="rules" SessionChips="ActiveSessionChips" IsReadOnly="false" ArmedDeleteTarget="armedDeleteTarget" OnDeleteRequested="HandleDeleteRequest" OnResetRequested="ConfirmReset" OnChipChanged="HandleChipChangedCallback" />
+        <ResultTable History="ActiveHistory" Players="currentPlayers" ActiveParticipantCount="TableParticipantCount" @bind-DisplayMode="displayMode" Rules="rules" SessionChips="ActiveSessionChips" IsReadOnly="false" ArmedDeleteTarget="armedDeleteTarget" OnDeleteRequested="HandleDeleteRequest" OnResetRequested="ConfirmReset" OnChipChanged="HandleChipChangedCallback" />
         @* 共有ボタン *@
         <div class="d-flex justify-end mt-4 gap-2">
             <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Share" OnClick="ShareImageAsync" Disabled="isSharing" Style="width: 170px; white-space: nowrap;">
@@ -205,7 +205,7 @@
 
     @* --- セクションX: シェア用の裏DOM（画面外に隠す） --- *@
     <div style="position: absolute; left: -9999px; top: 0;">
-        <div id="share-target" style="width: @(800 + Math.Max(0, activeParticipantCount - 4) * 150)px; padding: 40px; background-color: #1a1a27; color: white; border-radius: 12px; font-family: 'Kaisei Decol', sans-serif;">
+        <div id="share-target" style="width: @(800 + Math.Max(0, TableParticipantCount - 4) * 150)px; padding: 40px; background-color: #1a1a27; color: white; border-radius: 12px; font-family: 'Kaisei Decol', sans-serif;">
             <h2 style="text-align: center; margin-bottom: 20px; font-weight: bold; border-bottom: 2px solid #444; padding-bottom: 10px;">
                 🀄 対局結果 🀄
             </h2>
@@ -214,7 +214,7 @@
                 <div><strong>ルール名:</strong> @(string.IsNullOrWhiteSpace(rules.Name) ? "未設定" : rules.Name)</div>
                 <div><strong>形式:</strong> @(rules.PlayerCount)人麻雀</div>
                 <div><strong>設定:</strong> @(rules.StartingPoints)持ち / @(rules.ReturnPoints)返し</div>
-                <div><strong>ウマ:</strong> @(rules.IsCustomUma? rules.GetUmaDisplayText(true) : $"{rules.Uma1} - {rules.Uma2}")</div>
+                <div><strong>ウマ:</strong> @(rules.IsCustomUma ? rules.GetUmaDisplayText(true) : $"{rules.Uma1} - {rules.Uma2}")</div>
                 <div><strong>レート:</strong> @(rules.Rate)円/1k</div>
                 @if (rules.ChipRate > 0)
                 {
@@ -226,7 +226,7 @@
                 <thead>
                     <tr style="background-color: rgba(255,255,255,0.1); border-bottom: 2px solid #555;">
                         <th style="padding: 12px; width: 80px; font-size: 0.9rem;">局</th>
-                        @for (int i = 0; i < activeParticipantCount; i++)
+                        @for (int i = 0; i < TableParticipantCount; i++)
                         {
                             <th style="padding: 12px; font-size: 1.1rem;">@(string.IsNullOrWhiteSpace(currentPlayers[i]) ? " " : currentPlayers[i])</th>
                         }
@@ -239,7 +239,7 @@
                         var game = ActiveHistory[row];
                         <tr style="border-bottom: 1px solid #333;">
                             <td style="padding: 10px; color: #aaa; font-size: 0.85rem; white-space: nowrap;">@(row + 1)局目</td>
-                            @for (int i = 0; i < activeParticipantCount; i++)
+                            @for (int i = 0; i < TableParticipantCount; i++)
                             {
                                 @* 各局のフォントサイズ: 1.1rem *@
                                 <td style="padding: 10px; font-size: 1.1rem; white-space: nowrap;">
@@ -255,7 +255,7 @@
                         <td style="padding: 15px 10px; font-size: 0.9rem; color: #ddd; font-weight: bold; white-space: nowrap;">
                             Pt 合計
                         </td>
-                        @for (int i = 0; i < activeParticipantCount; i++)
+                        @for (int i = 0; i < TableParticipantCount; i++)
                         {
                             @* Pt合計のフォントサイズ: 1.2rem *@
                             <td style="padding: 15px 10px; font-size: 1.2rem; white-space: nowrap;">
@@ -270,7 +270,7 @@
                             <td style="padding: 15px 10px; font-size: 0.9rem; color: #ddd; font-weight: bold; white-space: nowrap;">
                                 チップ
                             </td>
-                            @for (int i = 0; i < activeParticipantCount; i++)
+                            @for (int i = 0; i < TableParticipantCount; i++)
                             {
                                 int chip = ActiveSessionChips[i];
                                 @* チップのフォントサイズ: 1.2rem (Pt合計と同等) *@
@@ -287,7 +287,7 @@
                         <td style="padding: 15px 10px; font-size: 0.9rem; color: #eeeeee; white-space: nowrap;">
                             円 合計
                         </td>
-                        @for (int i = 0; i < activeParticipantCount; i++)
+                        @for (int i = 0; i < TableParticipantCount; i++)
                         {
                             @* 円合計のフォントサイズ: 1.4rem *@
                             <td style="padding: 15px 10px; font-size: 1.4rem; white-space: nowrap;">
@@ -312,12 +312,11 @@
     private int activeParticipantCount = 4;
     private List<string> currentPlayers = new() { "Aさん", "Bさん", "Cさん", "Dさん", "Eさん", "Fさん", "Gさん" };
     private List<int?> currentScores = new() { null, null, null, null };
-    private Dictionary<int, List<GameResult>> histories = new() { { 3, new() }, { 4, new() } };
-    private Dictionary<int, List<int>> sessionChipsMap = new() { { 3, new int[MaxParticipants].ToList() }, { 4, new int[MaxParticipants].ToList() } };
+    private List<int?> previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
+    private List<GameResult> ActiveHistory = new();
+    private List<int> ActiveSessionChips = Enumerable.Repeat(0, MaxParticipants).ToList();
     private int displayMode = 1;
     private bool isSettingsExpanded = true;
-    private List<GameResult> ActiveHistory => histories[rules.PlayerCount];
-    private List<int> ActiveSessionChips => sessionChipsMap[rules.PlayerCount];
     private bool IsTotalCorrect
     {
         get
@@ -353,24 +352,18 @@
         activeParticipantCount = savedActiveCount ?? rules.PlayerCount;
         var savedPresets = await LocalStorage.GetItemAsync<List<RuleSet>>(StorageKeys.RulePresets);
         if (savedPresets != null) rulePresets = savedPresets;
-        var dictHistories = await LocalStorage.GetItemAsync<Dictionary<int, List<GameResult>>>(StorageKeys.HistoriesDict);
-        if (dictHistories != null) histories = dictHistories;
-        var dictChips = await LocalStorage.GetItemAsync<Dictionary<int, List<int>>>(StorageKeys.SessionChipsDict);
-        if (dictChips != null)
+        var savedHistory = await LocalStorage.GetItemAsync<List<GameResult>>("ActiveHistory");
+        if (savedHistory != null) ActiveHistory = savedHistory;
+        var savedChips = await LocalStorage.GetItemAsync<List<int>>("ActiveSessionChips");
+        if (savedChips != null)
         {
-            sessionChipsMap = dictChips;
-            foreach (var key in sessionChipsMap.Keys.ToList())
-            {
-                while (sessionChipsMap[key].Count < MaxParticipants)
-                {
-                    sessionChipsMap[key].Add(0);
-                }
-            }
+            ActiveSessionChips = savedChips;
+            while (ActiveSessionChips.Count < MaxParticipants) ActiveSessionChips.Add(0);
         }
-        if (!histories.ContainsKey(3)) histories[3] = new();
-        if (!histories.ContainsKey(4)) histories[4] = new();
-        if (!sessionChipsMap.ContainsKey(3)) sessionChipsMap[3] = new int[MaxParticipants].ToList();
-        if (!sessionChipsMap.ContainsKey(4)) sessionChipsMap[4] = new int[MaxParticipants].ToList();
+        else
+        {
+            ActiveSessionChips = Enumerable.Repeat(0, MaxParticipants).ToList();
+        }
         ResetInputForms();
     }
 
@@ -412,7 +405,7 @@
     private async Task OnChipChanged(int index, int value)
     {
         ActiveSessionChips[index] = value;
-        await LocalStorage.SetItemAsync(StorageKeys.SessionChipsDict, sessionChipsMap);
+        await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
     }
 
     @* ルールプリセットを適用 *@
@@ -437,7 +430,7 @@
         rulePresets.RemoveAll(p => p.Name == rules.Name);
         var newPreset = rules.DeepClone();
         rulePresets.Add(newPreset);
-        
+
         await LocalStorage.SetItemAsync(StorageKeys.RulePresets, rulePresets);
         await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
         Snackbar.Add($"設定「{rules.Name}」を保存しました", Severity.Success);
@@ -815,7 +808,7 @@
             Yen = finalYen
         });
         // ローカルストレージに保存
-        await LocalStorage.SetItemAsync(StorageKeys.HistoriesDict, histories);
+        await LocalStorage.SetItemAsync("ActiveHistory", ActiveHistory);
         await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
         ResetInputForms();
         armedDeleteIndex = null;
@@ -824,18 +817,18 @@
     @* 全スコアリセット *@
     private async Task ConfirmReset()
     {
-        string players = rules.PlayerCount == 3 ? "三" : "四";
         bool? result = await DialogService.ShowMessageBoxAsync(
-        "記録のリセット",
-        (MarkupString)$"{players}人麻雀の記録をリセットしますか？<br />（この操作は取り消せません）",
-        yesText: "リセットする", cancelText: "キャンセル");
+            "記録のリセット",
+            (MarkupString)$"現在の記録とチップをすべてリセットしますか？<br />（この操作は取り消せません）",
+            yesText: "リセットする", cancelText: "キャンセル");
+
         if (result == true)
         {
             ActiveHistory.Clear();
-            sessionChipsMap[rules.PlayerCount] = Enumerable.Repeat(0, MaxParticipants).ToList();
-            await LocalStorage.SetItemAsync(StorageKeys.HistoriesDict, histories);
-            await LocalStorage.SetItemAsync(StorageKeys.SessionChipsDict, sessionChipsMap);
-            Snackbar.Add($"{players}人麻雀の記録をリセットしました", Severity.Info);
+            ActiveSessionChips = Enumerable.Repeat(0, MaxParticipants).ToList();
+            await LocalStorage.SetItemAsync("ActiveHistory", ActiveHistory);
+            await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
+            Snackbar.Add("記録をリセットしました", Severity.Info);
             StateHasChanged();
         }
     }
@@ -847,7 +840,7 @@
         {
             ActiveHistory.Remove(item);
             armedDeleteTarget = null;
-            await LocalStorage.SetItemAsync(StorageKeys.HistoriesDict, histories);
+            await LocalStorage.SetItemAsync("ActiveHistory", ActiveHistory);
         }
         else
         {
@@ -862,6 +855,19 @@
         {
             armedDeleteTarget = null;
             StateHasChanged();
+        }
+    }
+
+    @* 結果表示人数を求める *@
+    private int TableParticipantCount
+    {
+        get
+        {
+            int maxDataIndex = -1;
+            foreach (var game in ActiveHistory)
+                for (int i = 0; i < game.RawScores.Count; i++)
+                    if (game.RawScores[i].HasValue && i > maxDataIndex) maxDataIndex = i;
+            return Math.Max(activeParticipantCount, maxDataIndex + 1);
         }
     }
 
@@ -892,8 +898,8 @@
     @* 素点入力欄を初期化 *@
     private void ResetInputForms()
     {
-        // 最大人数分リセット
         currentScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
+        previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();         
         currentYaki = new(new bool[MaxParticipants]);
         currentTobiBonus = new(new bool[MaxParticipants]);
         currentSitOuts = new(new bool[MaxParticipants]);
@@ -972,7 +978,7 @@
     }
 
     private string GetSharePointValue(GameResult res, int idx) => (idx >= res.RawScores.Count || res.RawScores[idx] == null) ? "-" : FormatPlus(res.Points[idx]);
-    
+
     private string GetSharePointStyle(GameResult res, int idx)
     {
         if (idx >= res.RawScores.Count || res.RawScores[idx] == null) return "display: inline-block; width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: #9e9e9e;";
@@ -984,7 +990,7 @@
     private string GetShareTotalPointStyle(int idx)
     {
         if (ActiveHistory.Count == 0) return "display: inline-block; width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
-        var allTotalPts = Enumerable.Range(0, activeParticipantCount).Select(i => ActiveHistory.Sum(h => h.Points.Count > i ? h.Points[i] : 0)).ToList();
+        var allTotalPts = Enumerable.Range(0, TableParticipantCount).Select(i => ActiveHistory.Sum(h => h.Points.Count > i ? h.Points[i] : 0)).ToList();
         return BuildShareStyle(allTotalPts[idx], allTotalPts, "4.5rem");
     }
 
@@ -998,7 +1004,7 @@
     private string GetShareTotalYenStyle(int idx)
     {
         if (ActiveHistory.Count == 0 && ActiveSessionChips[idx] == 0) return "display: inline-block; width: 6.0rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
-        var allTotalYen = Enumerable.Range(0, activeParticipantCount).Select(i => (double)(ActiveHistory.Sum(h => h.Yen.Count > i ? h.Yen[i] : 0) + (ActiveSessionChips[i] * rules.ChipRate))).ToList();
+        var allTotalYen = Enumerable.Range(0, TableParticipantCount).Select(i => (double)(ActiveHistory.Sum(h => h.Yen.Count > i ? h.Yen[i] : 0) + (ActiveSessionChips[i] * rules.ChipRate))).ToList();
         return BuildShareStyle(allTotalYen[idx], allTotalYen, "6.0rem");
     }
 
@@ -1010,8 +1016,8 @@
             var payload = new
             {
                 r = rules,
-                p = currentPlayers.Take(activeParticipantCount).ToList(),
-                c = ActiveSessionChips.Take(activeParticipantCount).ToList(),
+                p = currentPlayers.Take(TableParticipantCount).ToList(),
+                c = ActiveSessionChips.Take(TableParticipantCount).ToList(),
                 h = ActiveHistory.Select(g => new
                 {
                     t = g.Timestamp.Ticks,
@@ -1050,7 +1056,7 @@
     private async Task OnPlayerCountChanged(int val)
     {
         rules.PlayerCount = val;
-        activeParticipantCount = val; // 枠数をルール人数に強制同期
+        activeParticipantCount = val;
         ResetInputForms();
         await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
         await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
@@ -1091,11 +1097,21 @@
         currentSitOuts[index] = isSitOut;
         if (isSitOut)
         {
+            // 消す前に直前の素点をバックアップ
+            previousScores[index] = currentScores[index];
             currentScores[index] = null;
             currentYaki[index] = false;
             currentTobiBonus[index] = false;
-            // 自動枠の人が抜け番にされた場合はフラグ消去
             if (index == autoFilledIndex) autoFilledIndex = null;
+        }
+        else
+        {
+            // 復帰時、バックアップがあれば素点を復元する
+            if (previousScores[index].HasValue)
+            {
+                currentScores[index] = previousScores[index];
+                previousScores[index] = null;
+            }
         }
         EvaluateAutoFill();
     }
