@@ -1,5 +1,3 @@
-@inject IJSRuntime JSRuntime
-
 @* 1. 表示モード切替ボタン ＆ リセットボタン *@
 <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4 gap-2">
     <div class="d-flex flex-wrap gap-2">
@@ -42,6 +40,9 @@
     .chip-input input {
         text-align: center !important;
     }
+    #table-scroll .mud-table-container table {
+        min-width: var(--table-min-width) !important;
+    }
 </style>
 
 @if (DisplayMode == 7)
@@ -60,7 +61,7 @@
 
             /* スマホ版: 高さを抑えて無駄な上下余白を減らす */
             .responsive-chart-wrapper {
-                height: 130px;
+                height: 140px;
             }
         }
 
@@ -99,7 +100,7 @@
             </div>
             <div class="d-flex flex-row flex-wrap flex-md-column gap-2" style="min-width: 140px; align-content: flex-start;">
                 <div style="width: 100%;">
-                    <MudText Typo="Typo.caption" Class="mud-text-secondary ml-1">最終pt順</MudText>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary ml-1">最終pt</MudText>
                 </div>
                 @foreach (var stat in _finalStats.OrderByDescending(x => x.TotalPt))
                 {
@@ -126,80 +127,92 @@ else
         <MudCard Class="mb-4" Elevation="0" Outlined="true">
             <MudCardContent Class="pa-3">
                 <MudText Typo="Typo.subtitle2" Class="mb-2">チップ集計</MudText>
-                <div id="chip-scroll" style="display: flex; width: 100%; flex-wrap: nowrap; align-items: center; gap: 0px; overflow-x: auto; padding-bottom: 4px;">
+                <div id="chip-scroll" style="width: 100%; overflow-x: auto; padding-bottom: 4px;">
                     @{
                         bool isChipError = !IsReadOnly && SessionChips.Take(ActiveParticipantCount).Sum() != 0;
                     }
-                    <div style="width: 35px; flex-shrink: 0; position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1;"></div>
-                    @for (int i = 0; i < ActiveParticipantCount; i++)
-                    {
-                        var idx = i;
-                        int chip = SessionChips.Count > idx ? SessionChips[idx] : 0;
-                        string pName = string.IsNullOrWhiteSpace(Players.ElementAtOrDefault(idx)) ? "　" : Players[idx];
-                        // ③ テーブルの列幅（_columnWidths[idx]）を取得して適用する
-                        string boxWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
-                        <div style="width: @boxWidth; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <div style="display: table; width: 100%; min-width: @GetTableMinWidth(); table-layout: fixed; border-collapse: collapse;">
+                        <div style="display: table-row;">
+                            <div style="display: table-cell; width: 35px; position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1; padding: 0;"></div>
+                            @for (int i = 0; i < ActiveParticipantCount; i++)
+                            {
+                                var idx = i;
+                                int chip = SessionChips.Count > idx ? SessionChips[idx] : 0;
+                                string pName = string.IsNullOrWhiteSpace(Players.ElementAtOrDefault(idx)) ? "　" : Players[idx];
+                                string boxWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
+                                <div style="display: table-cell; width: @boxWidth; vertical-align: bottom; padding: 0;">
+                                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+                                        <div style="width: @boxWidth; min-width: @boxWidth; height: 0px;"></div>
+                                        <MudText Align="Align.Center" Typo="Typo.caption" Class="d-block mud-text-secondary" Style="@($"max-width: {boxWidth}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 auto 2px auto;")">
+                                            @pName
+                                        </MudText>
+                                        @if (!IsReadOnly)
+                                        {
+                                            <MudNumericField T="int" Value="chip" ValueChanged="@(v => OnChipChanged.InvokeAsync((idx, v)))" Step="1" HideSpinButtons="true" Margin="Margin.Dense" Class="chip-input" Style="@(isChipError ? "max-width: 2.5rem; color:#ff0000; font-weight:bold; margin: 0 auto;" : "max-width: 2.5rem; margin: 0 auto;")" onfocus="this.select();" />
+                                        }
+                                        else
+                                        {
+                                            <MudText Align="Align.Center" Typo="Typo.body1" Style="@(chip > 0 ? "color:#ff0000; font-weight:bold;" : (chip < 0 ? "color:#1976d2; font-weight:bold;" : "color:#9e9e9e;"))">
+                                                @(chip > 0 ? $"+{chip}" : chip.ToString())枚
+                                            </MudText>
+                                        }
+                                    </div>
+                                </div>
+                            }
                             @if (!IsReadOnly)
                             {
-                                <MudNumericField T="int" Label="@pName" Value="chip" ValueChanged="@(v => OnChipChanged.InvokeAsync((idx, v)))" Step="1" HideSpinButtons="true" Margin="Margin.Dense" Style="@(isChipError ? "max-width: 2.5rem; color:#ff0000; font-weight:bold; text-align:center;" : "max-width: 2.5rem; text-align:center;")" onfocus="this.select();" />
-                            }
-                            else
-                            {
-                                <MudText Align="Align.Center" Typo="Typo.caption" Class="d-block mud-text-secondary" Style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;">
-                                    @pName
-                                </MudText>
-                                <MudText Align="Align.Center" Typo="Typo.body1" Style="@(chip > 0 ? "color:#ff0000; font-weight:bold;" : (chip < 0 ? "color:#1976d2; font-weight:bold;" : "color:#9e9e9e;"))">
-                                    @(chip > 0 ? $"+{chip}" : chip.ToString())枚
-                                </MudText>
+                                <div style="display: table-cell; width: 30px; padding: 0;"></div>
                             }
                         </div>
-                    }
-                    @if (!IsReadOnly)
-                    {
-                        <div style="width: 30px; flex-shrink: 0;"></div>
-                    }
+                    </div>
                 </div>
             </MudCardContent>
         </MudCard>
     }
 
     @* 3. 成績テーブル *@
-    <div id="table-scroll" style="width: 100%; overflow-x: auto;">
+    <div id="table-scroll" style="width: 100%; overflow-x: auto; --table-min-width: @GetTableMinWidth();">
         <MudTable Items="@History" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="width: 100%; table-layout: fixed;">
-            @* ... ColGroup, HeaderContent, RowTemplate, FooterContent は以前と同じ (変更なし) ... *@
             <ColGroup>
                 <col style="width: 35px;" />
                 @for (int i = 0; i < ActiveParticipantCount; i++)
                 {
-                    <col style="width: 60px;" />
+                    var idx = i;
+                    string colWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
+                    <col style="width: @colWidth;" />
                 }
                 @if (!IsReadOnly)
                 {
                     <col style="width: 30px;" />
                 }
             </ColGroup>
+            
             <HeaderContent>
-                <MudTh Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.65rem; letter-spacing: -0.5px;">時刻</MudTh>
+                <MudTh Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; white-space: nowrap; padding: 4px 0px !important; font-size: 0.65rem; letter-spacing: -0.5px;">時刻</MudTh>
                 @for (int i = 0; i < ActiveParticipantCount; i++)
                 {
                     var idx = i;
-                    <MudTh Style="text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.75rem; letter-spacing: -0.5px;">
-                        @(string.IsNullOrWhiteSpace(Players.ElementAtOrDefault(idx)) ? "　" : Players[idx])
+                    string boxWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
+                    <MudTh Style="text-align: center; padding: 4px 0px !important; font-size: 0.75rem; letter-spacing: -0.5px;">
+                        <div style="width: @boxWidth; min-width: @boxWidth; height: 0px; margin: 0 auto;"></div>
+                        <div style="max-width: @boxWidth; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 auto;">
+                            @(string.IsNullOrWhiteSpace(Players.ElementAtOrDefault(idx)) ? "　" : Players[idx])
+                        </div>
                     </MudTh>
                 }
                 @if (!IsReadOnly)
                 {
-                    <MudTh Style="padding: 4px 0px;"></MudTh>
+                    <MudTh Style="padding: 4px 0px !important;"></MudTh>
                 }
             </HeaderContent>
             <RowTemplate>
-                <MudTd Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1; text-align: center; white-space: nowrap; padding: 4px 0px; font-size: 0.6rem; color: #666; letter-spacing: -0.5px;">
+                <MudTd Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1; text-align: center; white-space: nowrap; padding: 4px 0px !important; font-size: 0.6rem; color: #666; letter-spacing: -0.5px;">
                     @context.Timestamp.ToString("HH:mm")
                 </MudTd>
                 @for (int i = 0; i < ActiveParticipantCount; i++)
                 {
                     var idx = i;
-                    <MudTd Style="text-align: center; padding: 4px 0px; white-space: nowrap;">
+                    <MudTd Style="text-align: center; padding: 4px 0px !important; white-space: nowrap;">
                         <span style="@GetTdStyle(context, idx)">
                             @GetDisplayValue(context, idx)
                         </span>
@@ -207,7 +220,7 @@ else
                 }
                 @if (!IsReadOnly)
                 {
-                    <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px;">
+                    <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px !important;">
                         <span @onclick="() => { }" @onclick:stopPropagation="true">
                             <MudIconButton Icon="@(ArmedDeleteTarget == context ? DeleteEmpty : Icons.Material.Filled.Delete)" Color="@(ArmedDeleteTarget == context ? Color.Error : Color.Default)" Size="Size.Small" Style="@(ArmedDeleteTarget == context ? "padding: 0px;" : "padding: 0px; color: #9e9e9e;")" OnClick="() => OnDeleteRequested.InvokeAsync(context)" />
                         </span>
@@ -215,14 +228,14 @@ else
                 }
             </RowTemplate>
             <FooterContent>
-                <MudTd Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 6px 0px; font-size: 0.75rem;">
+                <MudTd Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 6px 0px !important; font-size: 0.75rem;">
                     <MudIcon Icon="@(DisplayMode == 0 ? Icons.Material.Filled.Calculate : Icons.Material.Filled.Functions)" Style="font-size: 1rem; vertical-align: text-bottom; margin-right: 2px; color: #2e7d32;" />
                     @(DisplayMode == 0 ? "平均" : "合計")
                 </MudTd>
                 @for (int i = 0; i < ActiveParticipantCount; i++)
                 {
                     var idx = i;
-                    <MudTd Style="@($"{GetTotalTdStyle(idx)} text-align: center; padding: 6px 0px; white-space: nowrap;")">
+                    <MudTd Style="@($"{GetTotalTdStyle(idx)} text-align: center; padding: 6px 0px !important; white-space: nowrap;")">
                         <span style="@GetTotalSpanStyle(idx)">
                             @GetTotalDisplayValue(idx)
                         </span>
@@ -230,7 +243,7 @@ else
                 }
                 @if (!IsReadOnly)
                 {
-                    <MudTd Style="background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; padding: 6px 0px;"></MudTd>
+                    <MudTd Style="background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; padding: 6px 0px !important;"></MudTd>
                 }
             </FooterContent>
         </MudTable>
@@ -238,7 +251,7 @@ else
 }
 
 @code {
-    // ... 前回の Parameter 群はそのまま ...
+    @inject IJSRuntime JSRuntime
     [Parameter] public List<GameResult> History { get; set; } = new();
     [Parameter] public List<string> Players { get; set; } = new();
     [Parameter] public int ActiveParticipantCount { get; set; }
@@ -345,30 +358,35 @@ else
         _chartOptions = newOptions;
     }
 
-    // ... CalculateColumnWidths(), CalculateWidthInCh(), SetDisplayMode() 等の既存メソッド ...
+    private double[,] _modeWidths = new double[7, 0];
+
     private string[] _columnWidths = Array.Empty<string>();
 
     private void CalculateColumnWidths()
     {
         if (_columnWidths.Length != ActiveParticipantCount)
-        {
             _columnWidths = new string[ActiveParticipantCount];
-        }
+        if (_modeWidths.GetLength(1) != ActiveParticipantCount)
+            _modeWidths = new double[7, ActiveParticipantCount];
         for (int i = 0; i < ActiveParticipantCount; i++)
         {
-            string playerName = Players.ElementAtOrDefault(i) ?? "";
-            double maxCh = CalculateWidthInCh(playerName);
-            if (maxCh < 2.0) maxCh = 2.0;
-            foreach (var res in History)
+            double globalMaxCh = 2.0;
+            for (int m = 0; m <= 6; m++)
             {
-                string s = GetDisplayValue(res, i);
-                double ch = CalculateWidthInCh(s);
-                if (ch > maxCh) maxCh = ch;
+                double modeMaxCh = 2.0;
+                foreach (var res in History)
+                {
+                    string s = GetDisplayValue(res, i, m);
+                    double ch = CalculateWidthInCh(s);
+                    if (ch > modeMaxCh) modeMaxCh = ch;
+                }
+                string totalS = GetTotalDisplayValue(i, m);
+                double totalCh = CalculateWidthInCh(totalS);
+                if (totalCh > modeMaxCh) modeMaxCh = totalCh;
+                _modeWidths[m, i] = modeMaxCh;
+                if (modeMaxCh > globalMaxCh) globalMaxCh = modeMaxCh;
             }
-            string totalS = GetTotalDisplayValue(i);
-            double totalCh = CalculateWidthInCh(totalS);
-            if (totalCh > maxCh) maxCh = totalCh;
-            _columnWidths[i] = $"{maxCh + 0.5}ch";
+            _columnWidths[i] = $"{globalMaxCh}ch";
         }
     }
 
@@ -379,11 +397,13 @@ else
         foreach (char c in s)
         {
             if (c == '\uFE0F' || c == '\uFE0E' || c == '\u200D') continue;
-            if (c >= 0x00 && c <= 0x7F) width += 1.0;
+            if (c == '.') width += 0.4;
+            else if (c == '+' || c == '-') width += 0.8;
+            else if (c >= 0x00 && c <= 0x7F) width += 1.0;
             else if (char.IsSurrogate(c)) width += 1.0;
             else width += 2.0;
         }
-        return width;
+        return width - 0.5;
     }
 
     private async Task SetDisplayMode(int mode)
@@ -398,10 +418,11 @@ else
 
     private string FormatPlus(double val, string fmt = "F1") => val > 0 ? $"+{val.ToString(fmt)}" : val.ToString(fmt);
 
-    private string GetDisplayValue(GameResult res, int idx)
+    private string GetDisplayValue(GameResult res, int idx, int? overrideMode = null)
     {
+        int mode = overrideMode ?? DisplayMode;
         if (idx >= res.RawScores.Count || res.RawScores[idx] == null) return "-";
-        return DisplayMode switch
+        return mode switch
         {
             0 => (res.RawScores[idx] * 100)?.ToString("N0") ?? "-",
             1 => FormatPlus(res.Points[idx]),
@@ -412,7 +433,6 @@ else
             6 => FormatExtra(res.ColdPoints, idx, "👑", "🏳️"),
             _ => ""
         };
-
         string FormatExtra(List<double>? list, int i, string posIcon, string negIcon)
         {
             if (list == null || i >= list.Count || list[i] == 0) return "-";
@@ -425,7 +445,8 @@ else
     {
         // 列幅が計算できていない場合は空を返す
         if (idx >= _columnWidths.Length) return "";
-        string boxWidth = _columnWidths[idx];
+        double modeWidth = (DisplayMode >= 0 && DisplayMode <= 6 && idx < _modeWidths.GetLength(1)) ? _modeWidths[DisplayMode, idx] : 2.0;
+        string boxWidth = $"{modeWidth}ch";
         string baseStyle = $"display:inline-block; width:{boxWidth}; text-align:right; font-variant-numeric:tabular-nums; font-size:0.8rem; letter-spacing:-0.5px; ";
         // 1. 過去の三麻データ等でその列のデータ自体がない場合、または明示的な抜け番(null)の場合
         if (idx >= res.RawScores.Count || res.RawScores[idx] == null)
@@ -456,11 +477,12 @@ else
         return style;
     }
 
-    private double GetTotalNumericValue(int idx)
+    private double GetTotalNumericValue(int idx, int? overrideMode = null)
     {
+        int mode = overrideMode ?? DisplayMode;
         int chip = SessionChips.Count > idx ? SessionChips[idx] : 0;
         if (History.Count == 0 && chip == 0) return 0;
-        return DisplayMode switch
+        return mode switch
         {
             0 => History.Any(h => h.RawScores.Count > idx && h.RawScores[idx].HasValue)
                 ? History.Where(h => h.RawScores.Count > idx && h.RawScores[idx].HasValue).Average(h => h.RawScores[idx]!.Value) * 100
@@ -475,13 +497,14 @@ else
         };
     }
 
-    private string GetTotalDisplayValue(int idx)
+    private string GetTotalDisplayValue(int idx, int? overrideMode = null)
     {
+        int mode = overrideMode ?? DisplayMode;
         int chip = SessionChips.Count > idx ? SessionChips[idx] : 0;
         if (History.Count == 0 && chip == 0) return "0";
-        double val = GetTotalNumericValue(idx);
-        if (DisplayMode == 0) return Math.Round(val).ToString("N0");
-        if (DisplayMode == 2) return FormatPlus(val, "N0") + "円";
+        double val = GetTotalNumericValue(idx, mode);
+        if (mode == 0) return Math.Round(val).ToString("N0");
+        if (mode == 2) return FormatPlus(val, "N0") + "円";
         return FormatPlus(val, "F1");
     }
 
@@ -490,17 +513,32 @@ else
     private string GetTotalSpanStyle(int idx)
     {
         if (idx >= _columnWidths.Length) return "";
-        string boxWidth = _columnWidths[idx];
+        double modeWidth = (DisplayMode >= 0 && DisplayMode <= 6 && idx < _modeWidths.GetLength(1)) ? _modeWidths[DisplayMode, idx] : 2.0;
+        string boxWidth = $"{modeWidth}ch";
         string style = $"display: inline-block; width: {boxWidth}; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; letter-spacing: -0.5px; ";
         int chip = SessionChips.Count > idx ? SessionChips[idx] : 0;
         if (History.Count == 0 && chip == 0) return style;
-        var allValues = Enumerable.Range(0, ActiveParticipantCount).Select(GetTotalNumericValue).ToList();
+        var allValues = Enumerable.Range(0, ActiveParticipantCount).Select(i => GetTotalNumericValue(i)).ToList();
         double val = allValues[idx];
         if (DisplayMode >= 3 && val == 0) return style + "color: #9e9e9e; font-weight: normal; ";
         if (allValues.Distinct().Count() > 1 && (val == allValues.Max() || val == allValues.Min())) style += "font-weight: bold; ";
         bool isPositive = DisplayMode == 0 ? History.Sum(h => h.Points.Count > idx ? h.Points[idx] : 0) >= 0 : val >= 0;
         style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
         return style;
+    }
+
+    private string GetTableMinWidth()
+    {
+        double totalPx = 35;
+        foreach (var w in _columnWidths)
+            if (w != null && w.EndsWith("ch"))
+                if (double.TryParse(w.Replace("ch", ""), out double ch))
+                {
+                    totalPx += ch * 8.0;
+                    totalPx += 16.0; 
+                }
+        if (!IsReadOnly) totalPx += 30;
+        return $"{totalPx + 20}px";
     }
 
     private const string DeleteEmpty = "<path d=\"M20.37,8.91L19.37,10.64L7.24,3.64L8.24,1.91L11.28,3.66L12.64,3.29L16.97,5.79L17.34,7.16L20.37,8.91M6,19V7H11.07L18,11V19A2,2 0 0,1 16,21H8A2,2 0 0,1 6,19Z\"/>";

@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>麻雀集計ツール</title>
-    
+
     <!-- <script>
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             document.write('<base href="/" />');
@@ -14,18 +14,18 @@
         }
     </script> -->
     <base href="/" />
-    
+
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <link href="MahjongApp.styles.css" rel="stylesheet" />
-    
+
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@400;700&family=Klee+One:wght@400;600&family=Zen+Kaku+Gothic+Antique:wght@400;700&display=swap" rel="stylesheet">
-    
+
     <link href="manifest.json" rel="manifest" />
     <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
     <meta name="theme-color" content="#1b5e20" />
@@ -48,10 +48,12 @@
                 color: #e0e0e0;
                 font-family: 'Kaisei Decol', serif;
             }
+
             .loading-tile {
                 font-size: 4rem;
                 animation: float 2s ease-in-out infinite;
             }
+
             .loading-text {
                 margin-top: 20px;
                 font-size: 1.2rem;
@@ -59,24 +61,30 @@
                 letter-spacing: 0.1em;
                 animation: pulse 1.5s ease-in-out infinite;
             }
+
             @keyframes float {
                 0% {
                     transform: translateY(0px);
                 }
+
                 50% {
                     transform: translateY(-15px);
                 }
+
                 100% {
                     transform: translateY(0px);
                 }
             }
+
             @keyframes pulse {
                 0% {
                     opacity: 0.5;
                 }
+
                 50% {
                     opacity: 1;
                 }
+
                 100% {
                     opacity: 0.5;
                 }
@@ -204,12 +212,18 @@
                 }
             }
         };
-
-        // 2つのスクロール要素を完全に同期させる関数
+    </script>
+    <script>
         window.syncScroll = (id1, id2) => {
             const el1 = document.getElementById(id1);
-            const el2 = document.getElementById(id2);
-            if (!el1 || !el2) return;
+            const wrapper2 = document.getElementById(id2);
+            if (!el1 || !wrapper2) return;
+            // MudTableが内部生成する本当のスクロール領域を探す
+            // すぐに見つからない場合もあるため、少し待つか、要素があれば取得する
+            const el2 = wrapper2.querySelector('.mud-table-container') || wrapper2;
+            // すでに同期設定済みなら何もしない（イベント増殖防止）
+            if (el1.dataset.isSyncing === "true") return;
+            el1.dataset.isSyncing = "true";
             let isSyncing1 = false;
             let isSyncing2 = false;
             el1.addEventListener('scroll', () => {
@@ -219,6 +233,7 @@
                 }
                 isSyncing1 = false;
             }, { passive: true });
+
             el2.addEventListener('scroll', () => {
                 if (!isSyncing2) {
                     isSyncing1 = true;
