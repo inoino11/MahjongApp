@@ -1,31 +1,22 @@
 ﻿@using System.Reflection
 
 <div style="display: flex; flex-direction: column; height: 100%;">
-    
     <MudNavMenu>
-        <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
-        </MudNavMenu>
-
+        <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
+    </MudNavMenu>
     <div style="margin-top: auto; padding: 16px; text-align: center;">
         <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled); font-family: monospace;">
             @AppVersion
         </MudText>
     </div>
-    
 </div>
 
 @code {
     private string AppVersion { get; set; } = "v--.--.--";
-
     protected override void OnInitialized()
     {
-        // 実行中のアプリに焼き付けられたバージョン属性を読み取る
         var assembly = Assembly.GetExecutingAssembly();
         var attr = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-        
-        if (attr != null)
-        {
-            AppVersion = attr.InformationalVersion;
-        }
+        if (attr != null) AppVersion = attr.InformationalVersion;
     }
 }

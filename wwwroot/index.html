@@ -6,14 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>麻雀集計ツール</title>
 
-    <!-- <script>
+    <script>
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             document.write('<base href="/" />');
         } else {
             document.write('<base href="/MahjongApp/" />');
         }
-    </script> -->
-    <base href="/" />
+    </script>
+    <!-- <base href="/" /> -->
 
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
@@ -44,7 +44,6 @@
                 align-items: center;
                 height: 100vh;
                 background-color: #0d140d;
-                /* アプリ背景と同じ深い緑 */
                 color: #e0e0e0;
                 font-family: 'Kaisei Decol', serif;
             }
@@ -95,13 +94,11 @@
             <div class="loading-text">雀卓準備中...</div>
         </div>
     </div>
-
     <div id="blazor-error-ui">
         An unhandled error has occurred.
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
-
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
     <script>
