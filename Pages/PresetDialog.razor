@@ -2,6 +2,21 @@
 @inject ILocalStorageService LocalStorage
 @inject ISnackbar Snackbar
 
+<style>
+    @@keyframes flash-highlight {
+        0% {
+            background-color: rgba(var(--mud-palette-primary-rgb), 0.3);
+        }
+
+        100% {
+            background-color: transparent;
+        }
+    }
+
+    .moved-highlight {
+        animation: flash-highlight 0.7s ease-out;
+    }
+</style>
 <MudDialog>
     <DialogContent>
         @if (Presets == null || Presets.Count == 0)
@@ -10,16 +25,13 @@
         }
         else
         {
-            <MudDropContainer T="RuleSet" Items="@Presets" ItemsSelector="@((item, dropzone) => true)" ItemDropped="PresetUpdated" Class="d-flex flex-column gap-2">
-                <ChildContent>
-                    <MudDropZone T="RuleSet" Identifier="presets" AllowReorder="true" Class="mud-h-full" />
-                </ChildContent>
-                <ItemRenderer>
-                    @* foreachの変数が context に変わります *@
-                    <MudPaper Elevation="0" Outlined="true" Class="pa-3" Style="cursor:grab;" @onclick="() => SelectPreset(context)">
+            <MudStack Spacing="2">
+                @foreach (var preset in Presets.ToList())
+                {
+                    <MudPaper Elevation="0" Outlined="true" Class="@($"pa-3 flex-grow-1 {(flashingPresets.Any(p => ReferenceEquals(p, preset)) ? "moved-highlight" : "")}")" Style="cursor:pointer;" @onclick="() => SelectPreset(preset)">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                            <MudText Typo="Typo.subtitle1" Style="font-weight:bold;" Color="Color.Primary">@context.Name</MudText>
-                            @if (IsCustomApplied(context))
+                            <MudText Typo="Typo.subtitle1" Style="font-weight:bold;" Color="Color.Primary">@preset.Name</MudText>
+                            @if (IsCustomApplied(preset))
                             {
                                 <MudTooltip Text="カスタムルール適用中">
                                     <MudIcon Icon="@Icons.Material.Filled.Tune" Color="Color.Secondary" Size="Size.Small" />
@@ -28,17 +40,20 @@
                         </MudStack>
                         <MudStack Row="true" AlignItems="AlignItems.End" Justify="Justify.SpaceBetween">
                             <MudText Typo="Typo.body2" Class="mt-1">
-                                @(context.PlayerCount == 3 ? "三麻" : "四麻") / @(context.StartingPoints)点持ち / @(context.ReturnPoints)点返し<br />
-                                ウマ: @context.GetUmaDisplayText() / レート:@(context.Rate)円
+                                @(preset.PlayerCount == 3 ? "三麻" : "四麻") / @(preset.StartingPoints)点持ち / @(preset.ReturnPoints)点返し<br />
+                                ウマ: @preset.GetUmaDisplayText() / レート:@(preset.Rate)円
                             </MudText>
-                            @* stopPropagationを追加して誤爆を防止 *@
-                            <span @onclick:stopPropagation="true">
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Medium" OnClick="() => DeletePreset(context)" />
-                            </span>
+
+                            @* 並び替え＆削除ボタンのグループ (stopPropagationを追加して誤爆を防止) *@
+                            <MudStack Row="true" Spacing="0" @onclick:stopPropagation="true">
+                                <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Medium" Color="Color.Default" Disabled="@(Presets.IndexOf(preset) == 0)" OnClick="() => MovePreset(preset, -1)" />
+                                <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Medium" Color="Color.Default" Disabled="@(Presets.IndexOf(preset) == Presets.Count - 1)" OnClick="() => MovePreset(preset, 1)" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Medium" OnClick="() => DeletePreset(preset)" />
+                            </MudStack>
                         </MudStack>
                     </MudPaper>
-                </ItemRenderer>
-            </MudDropContainer>
+                }
+            </MudStack>
         }
     </DialogContent>
     <DialogActions>
@@ -79,13 +94,37 @@
         MudDialog.Cancel();
     }
 
-    // ドロップされた要素を元の位置から消し、新しい位置に挿入
-    private async Task PresetUpdated(MudItemDropInfo<RuleSet> dropItem)
+    // 移動直後のアイテムを保持する変数
+    private RuleSet? recentlyMovedPreset = null;
+
+    // アニメーションの発火回数を管理するカウンター
+    private int animationVersion = 0;
+
+    // 複数の発光状態を独立して管理するリスト
+    private List<RuleSet> flashingPresets = new();
+
+    // 新しい位置に挿入
+    private async Task MovePreset(RuleSet preset, int direction)
     {
-        if (dropItem.Item == null) return;
-        Presets.Remove(dropItem.Item);
-        Presets.Insert(dropItem.IndexInZone, dropItem.Item);
-        await LocalStorage.SetItemAsync(StorageKeys.RulePresets, Presets);
-        StateHasChanged();
+        int index = Presets.IndexOf(preset);
+        int newIndex = index + direction;
+        if (newIndex >= 0 && newIndex < Presets.Count)
+        {
+            Presets.RemoveAt(index);
+            Presets.Insert(newIndex, preset);
+            await LocalStorage.SetItemAsync("rulePresets", Presets);
+            // 移動した「この行のオブジェクト」だけを発光リストに追加
+            flashingPresets.Add(preset);
+            StateHasChanged();
+            // 独立した非同期処理で、0.7秒後に確実に対象の光だけを消す
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(700);
+                // 同一設定の別ルールを誤って消さないよう、メモリ上の参照が完全一致するものだけを解除
+                flashingPresets.RemoveAll(p => ReferenceEquals(p, preset));
+                // バックグラウンド処理からUIを更新
+                await InvokeAsync(StateHasChanged);
+            });
+        }
     }
 }
