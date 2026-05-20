@@ -10,27 +10,35 @@
         }
         else
         {
-            <MudStack Spacing="2">
-                @foreach (var preset in Presets.ToList())
-                {
-                    <MudPaper Elevation="0" Outlined="true" Class="pa-3 flex-grow-1" Style="cursor:pointer;" @onclick="() => SelectPreset(preset)">
+            <MudDropContainer T="RuleSet" Items="@Presets" ItemsSelector="@((item, dropzone) => true)" ItemDropped="PresetUpdated" Class="d-flex flex-column gap-2">
+                <ChildContent>
+                    <MudDropZone T="RuleSet" Identifier="presets" AllowReorder="true" Class="mud-h-full" />
+                </ChildContent>
+                <ItemRenderer>
+                    @* foreachの変数が context に変わります *@
+                    <MudPaper Elevation="0" Outlined="true" Class="pa-3" Style="cursor:grab;" @onclick="() => SelectPreset(context)">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                            <MudText Typo="Typo.subtitle1" Style="font-weight:bold;" Color="Color.Primary">@preset.Name</MudText>
-                            @if (IsCustomApplied(preset))
+                            <MudText Typo="Typo.subtitle1" Style="font-weight:bold;" Color="Color.Primary">@context.Name</MudText>
+                            @if (IsCustomApplied(context))
                             {
                                 <MudTooltip Text="カスタムルール適用中">
                                     <MudIcon Icon="@Icons.Material.Filled.Tune" Color="Color.Secondary" Size="Size.Small" />
                                 </MudTooltip>
                             }
                         </MudStack>
-                        <MudText Typo="Typo.body2" Class="mt-1">
-                            @(preset.PlayerCount == 3 ? "三麻" : "四麻") / @(preset.StartingPoints)点持ち / @(preset.ReturnPoints)点返し<br />
-                            ウマ: @preset.GetUmaDisplayText() / レート:@(preset.Rate)円
-                        </MudText>
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Medium" OnClick="() => DeletePreset(preset)" />
+                        <MudStack Row="true" AlignItems="AlignItems.End" Justify="Justify.SpaceBetween">
+                            <MudText Typo="Typo.body2" Class="mt-1">
+                                @(context.PlayerCount == 3 ? "三麻" : "四麻") / @(context.StartingPoints)点持ち / @(context.ReturnPoints)点返し<br />
+                                ウマ: @context.GetUmaDisplayText() / レート:@(context.Rate)円
+                            </MudText>
+                            @* stopPropagationを追加して誤爆を防止 *@
+                            <span @onclick:stopPropagation="true">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Medium" OnClick="() => DeletePreset(context)" />
+                            </span>
+                        </MudStack>
                     </MudPaper>
-                }
-            </MudStack>
+                </ItemRenderer>
+            </MudDropContainer>
         }
     </DialogContent>
     <DialogActions>
@@ -69,5 +77,15 @@
     private void Cancel()
     {
         MudDialog.Cancel();
+    }
+
+    // ドロップされた要素を元の位置から消し、新しい位置に挿入
+    private async Task PresetUpdated(MudItemDropInfo<RuleSet> dropItem)
+    {
+        if (dropItem.Item == null) return;
+        Presets.Remove(dropItem.Item);
+        Presets.Insert(dropItem.IndexInZone, dropItem.Item);
+        await LocalStorage.SetItemAsync(StorageKeys.RulePresets, Presets);
+        StateHasChanged();
     }
 }
