@@ -178,7 +178,7 @@
                             }
                             @* 素点 *@
                             <div class="d-flex align-center">
-                                <MudNumericField T="int?" Value="currentScores[index]" ValueChanged="@(v => HandleScoreInput(index, v))" HideSpinButtons="true" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == autoFilledIndex ? "auto-filled" : "")}")" Style="width: 77px;" Disabled="isSitOut" Adornment="@(index == autoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
+                                <MudTextField T="string" Value="@(currentScores[index]?.ToString())" ValueChanged="@(v => HandleScoreStringInput(index, v))" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == autoFilledIndex ? "auto-filled" : "")}")" Style="width: 77px;" Disabled="isSitOut" Adornment="@(index == autoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
                                 <span class="score-zeros">00</span>
                             </div>
                         </div>
@@ -384,14 +384,76 @@
         else rules.ReturnPoints = val * 100;
     }
 
-    @* 最後の1人の素点自動入力 *@
-    private void HandleScoreInput(int index, int? val)
+    @* 最後の1人の素点自動入力（数式対応） *@
+    private async Task HandleScoreStringInput(int index, string val)
     {
-        // 自動枠をユーザーが手動で書き換えた場合、フラグを剥奪
-        if (index == autoFilledIndex) autoFilledIndex = null;
-
-        currentScores[index] = val;
+        int? parsedVal = EvaluateScoreExpression(val);
+        if (index == autoFilledIndex)
+        {
+            if (parsedVal == null)
+            {
+                // 自動枠を手動で空欄にした場合
+                currentScores[index] = null;
+                StateHasChanged();
+                await Task.Yield();
+            }
+            else
+            {
+                // 自動枠に新しい数値が上書き入力された場合
+                autoFilledIndex = null;
+            }
+        }
+        currentScores[index] = parsedVal;
         EvaluateAutoFill();
+    }
+
+    @* 文字列の数式（+ / -）を計算して整数を返す *@
+    private int? EvaluateScoreExpression(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return null;
+        input = input.Replace(" ", "").Replace("　", "");
+        try
+        {
+            int total = 0;
+            string currentNumber = "";
+            char currentOp = '+';
+            for (int i = 0; i < input.Length; i++)
+            {
+                char c = input[i];
+                if (c == '+' || c == '-')
+                {
+                    // 先頭が符号（例: "-100"）の場合の処理
+                    if (string.IsNullOrEmpty(currentNumber))
+                    {
+                        currentOp = c == '-' && currentOp == '+' ? '-' : c;
+                        continue;
+                    }
+                    int val = int.Parse(currentNumber);
+                    total = currentOp == '+' ? total + val : total - val;
+                    currentNumber = "";
+                    currentOp = c;
+                }
+                else if (char.IsDigit(c))
+                {
+                    currentNumber += c;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            // 最後の数字を加減
+            if (!string.IsNullOrEmpty(currentNumber))
+            {
+                int val = int.Parse(currentNumber);
+                total = currentOp == '+' ? total + val : total - val;
+            }
+            return total;
+        }
+        catch
+        {
+            return null; // パースに失敗した場合は空欄に戻す
+        }
     }
 
     @* 対局者名を保存 *@
@@ -899,7 +961,7 @@
     private void ResetInputForms()
     {
         currentScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
-        previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();         
+        previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
         currentYaki = new(new bool[MaxParticipants]);
         currentTobiBonus = new(new bool[MaxParticipants]);
         currentSitOuts = new(new bool[MaxParticipants]);
