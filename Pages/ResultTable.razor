@@ -45,6 +45,13 @@
     #table-scroll .mud-table-container table {
         min-width: var(--table-min-width) !important;
     }
+    #chip-scroll {
+        -ms-overflow-style: none;    /* IE, Edge用 */
+        scrollbar-width: none;       /* Firefox用 */
+    }
+    #chip-scroll::-webkit-scrollbar {
+        display: none;               /* Chrome, Safari用 */
+    }
 </style>
 
 @if (DisplayMode == 7)
@@ -127,8 +134,8 @@ else
     @if (!IsReadOnly || Rules?.ChipRate > 0)
     {
         <MudCard Class="mb-4" Elevation="0" Outlined="true">
-            <MudCardContent Class="pa-3">
-                <MudText Typo="Typo.subtitle2" Class="mb-2">チップ集計</MudText>
+            <MudCardContent Class="py-3 px-0">
+                <MudText Typo="Typo.subtitle2" Class="mb-2 px-3">チップ集計</MudText>
                 <div id="chip-scroll" style="width: 100%; overflow-x: auto; padding-bottom: 4px;">
                     @{
                         bool isChipError = !IsReadOnly && SessionChips.Take(ActiveParticipantCount).Sum() != 0;
@@ -213,7 +220,8 @@ else
                 @for (int i = 0; i < ActiveParticipantCount; i++)
                 {
                     var idx = i;
-                    <MudTd Style="text-align: center; padding: 4px 0px !important; white-space: nowrap;">
+                    string cellWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
+                    <MudTd Style="@($"text-align: center; padding: 4px 0px !important; white-space: nowrap; width: {cellWidth}; min-width: {cellWidth}; max-width: {cellWidth};")">
                         <span style="@GetTdStyle(context, idx)">
                             @GetDisplayValue(context, idx)
                         </span>
@@ -236,7 +244,8 @@ else
                 @for (int i = 0; i < ActiveParticipantCount; i++)
                 {
                     var idx = i;
-                    <MudTd Style="@($"{GetTotalTdStyle(idx)} text-align: center; padding: 6px 0px !important; white-space: nowrap;")">
+                    string cellWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
+                    <MudTd Style="@($"{GetTotalTdStyle(idx)} text-align: center; padding: 6px 0px !important; white-space: nowrap; width: {cellWidth}; min-width: {cellWidth}; max-width: {cellWidth};")">
                         <span style="@GetTotalSpanStyle(idx)">
                             @GetTotalDisplayValue(idx)
                         </span>
@@ -362,16 +371,18 @@ else
     private double[,] _modeWidths = new double[7, 0];
 
     private string[] _columnWidths = Array.Empty<string>();
-
     private void CalculateColumnWidths()
     {
         if (_columnWidths.Length != ActiveParticipantCount)
             _columnWidths = new string[ActiveParticipantCount];
         if (_modeWidths.GetLength(1) != ActiveParticipantCount)
             _modeWidths = new double[7, ActiveParticipantCount];
+        double absoluteMaxCh = 0;
         for (int i = 0; i < ActiveParticipantCount; i++)
         {
-            double globalDataMaxCh = 1.0;
+            string shortName = GetShortName(Players.ElementAtOrDefault(i));
+            double nameWidthCh = CalculateWidthInCh(shortName);
+            double playerMaxCh = nameWidthCh;
             for (int m = 0; m <= 6; m++)
             {
                 double modeDataMaxCh = 1.0;
@@ -385,11 +396,14 @@ else
                 double totalCh = CalculateWidthInCh(totalS);
                 if (totalCh > modeDataMaxCh) modeDataMaxCh = totalCh;
                 _modeWidths[m, i] = modeDataMaxCh;
-                if (modeDataMaxCh > globalDataMaxCh) globalDataMaxCh = modeDataMaxCh;
+                if (modeDataMaxCh > playerMaxCh) playerMaxCh = modeDataMaxCh;
             }
-            double columnWidth = Math.Max(10.0, globalDataMaxCh);
-            _columnWidths[i] = $"{columnWidth}ch";
+            if (playerMaxCh > absoluteMaxCh) absoluteMaxCh = playerMaxCh;
         }
+        // 幅が広すぎる場合はここで調整
+        double uniformColumnWidth = absoluteMaxCh * 0.65;
+        for (int i = 0; i < ActiveParticipantCount; i++)
+            _columnWidths[i] = $"{uniformColumnWidth}ch";
     }
 
     private double CalculateWidthInCh(string s)
@@ -400,7 +414,7 @@ else
         {
             if (c == '\uFE0F' || c == '\uFE0E' || c == '\u200D') continue;
             if (c == '.') width += 0.4;
-            else if (c == '+' || c == '-') width += 0.8;
+            else if (c == '+' || c == '-') width += 1.0;
             else if (c >= 0x00 && c <= 0x7F) width += 1.0;
             else if (char.IsSurrogate(c)) width += 1.0;
             else width += 2.0;
