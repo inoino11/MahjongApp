@@ -489,13 +489,51 @@
     @* ルールプリセットに保存 *@
     private async Task SavePreset()
     {
-        rulePresets.RemoveAll(p => p.Name == rules.Name);
+        var existingPreset = rulePresets.FirstOrDefault(p => p.Name == rules.Name);
+        if (existingPreset != null)
+        {
+            string existingJson = System.Text.Json.JsonSerializer.Serialize(existingPreset);
+            string currentJson = System.Text.Json.JsonSerializer.Serialize(rules);
+            if (existingJson != currentJson)
+            {
+                bool? result = await DialogService.ShowMessageBoxAsync(
+                    "設定の保存",
+                    "同じルール名が保存されています。",
+                    yesText: "上書き",
+                    cancelText: "キャンセル",
+                    noText: "両方残す");
+                if (result == null)
+                {
+                    return;
+                }
+                else if (result == true)
+                {
+                    rulePresets.Remove(existingPreset);
+                }
+                else
+                {
+                    string baseName = rules.Name;
+                    int counter = 1;
+                    string newName = $"{baseName}_{counter}";
+                    while (rulePresets.Any(p => p.Name == newName))
+                    {
+                        counter++;
+                        newName = $"{baseName}_{counter}";
+                    }
+                    rules.Name = newName;
+                }
+            }
+            else
+            {
+                rulePresets.Remove(existingPreset);
+            }
+        }
         var newPreset = rules.DeepClone();
         rulePresets.Add(newPreset);
-
         await LocalStorage.SetItemAsync(StorageKeys.RulePresets, rulePresets);
         await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
         Snackbar.Add($"設定「{rules.Name}」を保存しました", Severity.Success);
+        StateHasChanged();
     }
 
     @* カスタムルールを開く *@
