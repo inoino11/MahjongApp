@@ -48,12 +48,13 @@
 
     @* --- セクション1: 設定 (折りたたみ可) --- *@
     <MudExpansionPanels Class="mb-6" @onclick:stopPropagation="true">
-        <MudExpansionPanel Text="ルール・対局者設定" @bind-Expanded="isSettingsExpanded">
+        <MudExpansionPanel Text="ルール設定" @bind-Expanded="isSettingsExpanded">
             <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mb-4" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="OpenPresetDialog">
                 保存済みの設定を呼び出し
             </MudButton>
             <MudGrid>
-                <MudItem xs="12" md="8" Class="d-flex">
+                @* 対局者設定を削除し、ルール設定を xs="12" md="12" に変更 *@
+                <MudItem xs="12" md="12" Class="d-flex">
                     <MudCard Outlined="true" Class="flex-grow-1">
                         <MudCardHeader Class="pb-0">
                             <CardHeaderContent>
@@ -112,38 +113,11 @@
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
-                <MudItem xs="12" md="4" Class="d-flex">
-                    <MudCard Outlined="true" Class="flex-grow-1">
-                        <MudCardHeader Class="pb-0">
-                            <CardHeaderContent>
-                                <MudText Typo="Typo.subtitle1" Style="font-weight:bold;">対局者名</MudText>
-                            </CardHeaderContent>
-                        </MudCardHeader>
-                        <MudCardContent Class="pa-3 pt-1">
-                            <MudStack Spacing="0">
-                                @for (int i = 0; i < activeParticipantCount; i++)
-                                {
-                                    var index = i;
-                                    <MudTextField Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index]" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" Margin="Margin.Dense" onfocus="this.select();" />
-                                }
-                            </MudStack>
-                            @* 抜け番の追加・削除ボタン *@
-                            <MudStack Row="true" Justify="Justify.Center" Class="mt-2" Spacing="1">
-                                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="AddParticipant" Disabled="@(activeParticipantCount >= MaxParticipants)">
-                                    枠を追加
-                                </MudButton>
-                                <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonRemove" OnClick="RemoveParticipant" Disabled="@(activeParticipantCount <= rules.PlayerCount)">
-                                    枠を削除
-                                </MudButton>
-                            </MudStack>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
             </MudGrid>
         </MudExpansionPanel>
     </MudExpansionPanels>
 
-    @* --- セクション2: 素点入力 --- *@
+    @* --- セクション2: 対局者＆素点入力 --- *@
     <MudPaper Class="pa-4 mb-6" Elevation="2" @onclick:stopPropagation="true">
         <MudStack Row="true" AlignItems="AlignItems.Baseline" Class="mb-2">
             <MudText Typo="Typo.h6">素点入力</MudText>
@@ -156,9 +130,8 @@
                 <MudItem xs="12" sm="6" Class="pa-2">
                     @* 抜け番の時は透明度を下げる *@
                     <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center px-3 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
-                        <MudText Typo="Typo.body1" Style="font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%;">
-                            @(string.IsNullOrWhiteSpace(currentPlayers[index]) ? " " : currentPlayers[index])
-                        </MudText>
+                        @* 名前入力をテキストからTextFieldに変更 *@
+                        <MudTextField T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index]" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" DisableUnderLine="true" Margin="Margin.Dense" Style="font-weight: bold; font-size: 1rem; max-width: 140px;" Disabled="isSitOut" onfocus="this.select();" />
                         <MudSpacer />
                         <div class="d-flex align-center">
                             @* 抜け番 *@
@@ -186,7 +159,16 @@
                 </MudItem>
             }
         </MudGrid>
-        <MudButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true" Class="mt-4 py-3" Disabled="@(!IsTotalCorrect)" OnClick="CalculateAndRecordGame">結果を記録する</MudButton>
+        @* 抜け番の追加・削除ボタンをここに移動 *@
+        <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-3 mb-1 pr-2" Spacing="2">
+            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="AddParticipant" Disabled="@(activeParticipantCount >= MaxParticipants)">
+                枠を追加
+            </MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonRemove" OnClick="RemoveParticipant" Disabled="@(activeParticipantCount <= rules.PlayerCount)">
+                枠を削除
+            </MudButton>
+        </MudStack>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true" Class="mt-2 py-3" Disabled="@(!IsTotalCorrect)" OnClick="CalculateAndRecordGame">結果を記録する</MudButton>
     </MudPaper>
 
     @* --- セクション3: 集計結果 --- *@
