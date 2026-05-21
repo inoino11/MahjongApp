@@ -550,7 +550,6 @@
         };
         var dialog = await DialogService.ShowAsync<CustomRuleDialog>("カスタムルール", parameters, options);
         var result = await dialog.Result;
-
         if (result is not null && !result.Canceled && result.Data is RuleSet newRules)
         {
             rules = newRules;
