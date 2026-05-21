@@ -19,42 +19,49 @@
 </style>
 <MudDialog>
     <DialogContent>
-        @if (Presets == null || Presets.Count == 0)
-        {
-            <MudText>保存済みの設定はありません。</MudText>
-        }
-        else
-        {
-            <MudStack Spacing="2">
-                @foreach (var preset in Presets.ToList())
-                {
-                    <MudPaper Elevation="0" Outlined="true" Class="@($"pa-3 flex-grow-1 {(flashingPresets.Any(p => ReferenceEquals(p, preset)) ? "moved-highlight" : "")}")" Style="cursor:pointer;" @onclick="() => SelectPreset(preset)">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                            <MudText Typo="Typo.subtitle1" Style="font-weight:bold;" Color="Color.Primary">@preset.Name</MudText>
-                            @if (IsCustomApplied(preset))
-                            {
-                                <MudTooltip Text="カスタムルール適用中">
-                                    <MudIcon Icon="@Icons.Material.Filled.Tune" Color="Color.Secondary" Size="Size.Small" />
-                                </MudTooltip>
-                            }
-                        </MudStack>
-                        <MudStack Row="true" AlignItems="AlignItems.End" Justify="Justify.SpaceBetween">
-                            <MudText Typo="Typo.body2" Class="mt-1">
-                                @(preset.PlayerCount == 3 ? "三麻" : "四麻") / @(preset.StartingPoints)点持ち / @(preset.ReturnPoints)点返し<br />
-                                ウマ: @preset.GetUmaDisplayText() / レート:@(preset.Rate)円
-                            </MudText>
-
-                            @* 並び替え＆削除ボタンのグループ (stopPropagationを追加して誤爆を防止) *@
-                            <MudStack Row="true" Spacing="0" @onclick:stopPropagation="true">
-                                <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Medium" Color="Color.Default" Disabled="@(Presets.IndexOf(preset) == 0)" OnClick="() => MovePreset(preset, -1)" />
-                                <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Medium" Color="Color.Default" Disabled="@(Presets.IndexOf(preset) == Presets.Count - 1)" OnClick="() => MovePreset(preset, 1)" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Medium" OnClick="() => DeletePreset(preset)" />
+        @* 余白のクリックでも削除待機状態を解除できるように全体をdivで囲む *@
+        <div @onclick="ClearArmedState" style="min-height: 100%; width: 100%;">
+            @if (Presets == null || Presets.Count == 0)
+            {
+                <MudText>保存済みの設定はありません。</MudText>
+            }
+            else
+            {
+                <MudStack Spacing="2">
+                    @foreach (var preset in Presets.ToList())
+                    {
+                        <MudPaper Elevation="0" Outlined="true" Class="@($"pa-3 flex-grow-1 {(flashingPresets.Any(p => ReferenceEquals(p, preset)) ? "moved-highlight" : "")}")" Style="cursor:pointer;" @onclick="() => SelectPreset(preset)">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                <MudText Typo="Typo.subtitle1" Style="font-weight:bold;" Color="Color.Primary">@preset.Name</MudText>
+                                @if (IsCustomApplied(preset))
+                                {
+                                    <MudTooltip Text="カスタムルール適用中">
+                                        <MudIcon Icon="@Icons.Material.Filled.Tune" Color="Color.Secondary" Size="Size.Small" />
+                                    </MudTooltip>
+                                }
                             </MudStack>
-                        </MudStack>
-                    </MudPaper>
-                }
-            </MudStack>
-        }
+                            <MudStack Row="true" AlignItems="AlignItems.End" Justify="Justify.SpaceBetween">
+                                <MudText Typo="Typo.body2" Class="mt-1">
+                                    @(preset.PlayerCount == 3 ? "三麻" : "四麻") / @(preset.StartingPoints)点持ち / @(preset.ReturnPoints)点返し<br />
+                                    ウマ: @preset.GetUmaDisplayText() / レート:@(preset.Rate)円
+                                </MudText>
+                                @* 並び替え＆削除ボタンのグループ (stopPropagationを追加して誤爆を防止) *@
+                                <MudStack Row="true" Spacing="0" @onclick:stopPropagation="true">
+                                    <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Medium" Color="Color.Default" Disabled="@(Presets.IndexOf(preset) == 0)" OnClick="() => MovePreset(preset, -1)" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Medium" Color="Color.Default" Disabled="@(Presets.IndexOf(preset) == Presets.Count - 1)" OnClick="() => MovePreset(preset, 1)" />
+                                    @* 2段階クリック削除ボタン *@
+                                    <MudIconButton Icon="@(armedDeletePreset == preset ? DeleteEmpty : Icons.Material.Filled.Delete)" 
+                                                   Color="@(armedDeletePreset == preset ? Color.Error : Color.Default)" 
+                                                   Size="Size.Medium" 
+                                                   Style="@(armedDeletePreset == preset ? "" : "color: #9e9e9e;")" 
+                                                   OnClick="() => HandleDeleteClick(preset)" />
+                                </MudStack>
+                            </MudStack>
+                        </MudPaper>
+                    }
+                </MudStack>
+            }
+        </div>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">閉じる</MudButton>
@@ -65,9 +72,46 @@
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
     [Parameter] public List<RuleSet> Presets { get; set; } = new();
 
+    // 削除待機状態のプリセットを保持
+    private RuleSet? armedDeletePreset = null;
+
+    private bool CheckAndDisarm()
+    {
+        if (armedDeletePreset != null)
+        {
+            armedDeletePreset = null;
+            return true;
+        }
+        return false;
+    }
+
+    private void ClearArmedState()
+    {
+        CheckAndDisarm();
+    }
+
     private void SelectPreset(RuleSet preset)
     {
+        if (CheckAndDisarm()) return;
         MudDialog.Close(DialogResult.Ok(preset));
+    }
+
+    private async Task HandleDeleteClick(RuleSet preset)
+    {
+        if (armedDeletePreset != null && armedDeletePreset != preset)
+        {
+            CheckAndDisarm();
+            return;
+        }
+        if (armedDeletePreset == preset)
+        {
+            await DeletePreset(preset);
+            armedDeletePreset = null;
+        }
+        else
+        {
+            armedDeletePreset = preset;
+        }
     }
 
     private async Task DeletePreset(RuleSet preset)
@@ -106,6 +150,7 @@
     // 新しい位置に挿入
     private async Task MovePreset(RuleSet preset, int direction)
     {
+        if (CheckAndDisarm()) return;
         int index = Presets.IndexOf(preset);
         int newIndex = index + direction;
         if (newIndex >= 0 && newIndex < Presets.Count)
@@ -113,18 +158,17 @@
             Presets.RemoveAt(index);
             Presets.Insert(newIndex, preset);
             await LocalStorage.SetItemAsync("rulePresets", Presets);
-            // 移動した「この行のオブジェクト」だけを発光リストに追加
             flashingPresets.Add(preset);
             StateHasChanged();
-            // 独立した非同期処理で、0.7秒後に確実に対象の光だけを消す
             _ = Task.Run(async () =>
             {
                 await Task.Delay(700);
-                // 同一設定の別ルールを誤って消さないよう、メモリ上の参照が完全一致するものだけを解除
                 flashingPresets.RemoveAll(p => ReferenceEquals(p, preset));
-                // バックグラウンド処理からUIを更新
                 await InvokeAsync(StateHasChanged);
             });
         }
     }
+
+    // 開いたごみ箱のSVG
+    private const string DeleteEmpty = "<path d=\"M20.37,8.91L19.37,10.64L7.24,3.64L8.24,1.91L11.28,3.66L12.64,3.29L16.97,5.79L17.34,7.16L20.37,8.91M6,19V7H11.07L18,11V19A2,2 0 0,1 16,21H8A2,2 0 0,1 6,19Z\"/>";
 }
