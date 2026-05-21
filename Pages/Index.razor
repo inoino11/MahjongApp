@@ -128,10 +128,14 @@
                 var index = i;
                 bool isSitOut = currentSitOuts[index];
                 <MudItem xs="12" sm="6" Class="pa-2">
-                    @* 抜け番の時は透明度を下げる *@
                     <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center px-3 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
-                        @* 名前入力をテキストからTextFieldに変更 *@
-                        <MudTextField T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index]" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" DisableUnderLine="true" Margin="Margin.Dense" Style="font-weight: bold; font-size: 1rem; max-width: 140px;" Disabled="isSitOut" onfocus="this.select();" />
+                        <MudTextField T="string" Placeholder="@($"対局者 {index + 1}")" 
+                                      Value="currentPlayers[index]" 
+                                      ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" 
+                                      DisableUnderLine="true" Margin="Margin.Dense" 
+                                      Style="font-weight: bold; font-size: 0.95rem; width: 100%; min-width: 5em;" 
+                                      Disabled="isSitOut" 
+                                      onfocus="this.select();" />
                         <MudSpacer />
                         <div class="d-flex align-center">
                             @* 抜け番 *@
@@ -147,7 +151,7 @@
                             @* トビ *@
                             @if (rules.IsTobiEnabled)
                             {
-                                <MudToggleIconButton @bind-Toggled="currentTobiBonus[index]" Icon="@Icons.Material.Filled.Rocket" Color="Color.Default" Title="トビ賞を獲得しません" ToggledIcon="@Icons.Material.Filled.RocketLaunch" ToggledColor="Color.Error" ToggledTitle="🚀 トビ賞を獲得します" Size="Size.Small" ToggledSize="Size.Small" Class="mr-2" Disabled="isSitOut" />
+                                <MudToggleIconButton @bind-Toggled="currentTobiBonus[index]" Icon="@Icons.Material.Filled.Rocket" Color="Color.Default" Title="トビ賞を獲得しません" ToggledIcon="@Icons.Material.Filled.RocketLaunch" ToggledColor="Color.Error" ToggledTitle="🚀 トビ賞を獲得します" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
                             }
                             @* 素点 *@
                             <div class="d-flex align-center">
