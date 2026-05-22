@@ -37,7 +37,7 @@
         color: #808080;
         margin-left: 2px;
         user-select: none;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
     }
 </style>
 
@@ -52,74 +52,70 @@
             <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mb-4" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="OpenPresetDialog">
                 保存済みの設定を呼び出し
             </MudButton>
-            <MudGrid>
-                @* 対局者設定を削除し、ルール設定を xs="12" md="12" に変更 *@
-                <MudItem xs="12" md="12" Class="d-flex">
-                    <MudCard Outlined="true" Class="flex-grow-1">
-                        <MudCardHeader Class="pb-0">
-                            <CardHeaderContent>
-                                <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                                    <MudText Typo="Typo.subtitle1" Style="font-weight:bold; white-space: nowrap;">ルール設定</MudText>
-                                    <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
-                                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Settings" OnClick="OpenCustomRuleDialog">
-                                            カスタム<span class="d-none d-sm-inline">ルール</span>
-                                        </MudButton>
-                                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Save" OnClick="SavePreset">
-                                            <span class="d-none d-sm-inline">現在の</span>設定保存
-                                        </MudButton>
-                                    </MudStack>
-                                </MudStack>
-                            </CardHeaderContent>
-                        </MudCardHeader>
-                        <MudCardContent Class="pa-3 pt-1 mt-2">
-                            <MudGrid Spacing="1">
-                                <MudItem xs="6" sm="4" Class="pr-3">
-                                    <MudSelect T="int" Label="対局人数" Value="rules.PlayerCount" ValueChanged="OnPlayerCountChanged" Margin="Margin.Dense">
-                                        <MudSelectItem Value="@(4)">四人麻雀</MudSelectItem>
-                                        <MudSelectItem Value="@(3)">三人麻雀</MudSelectItem>
-                                    </MudSelect>
-                                </MudItem>
-                                <MudItem xs="6" sm="8" Class="pr-3">
-                                    <MudTextField Label="ルール名" @bind-Value="rules.Name" Margin="Margin.Dense" onfocus="this.select();" />
-                                </MudItem>
-                                <MudItem xs="6" sm="4" Class="pr-3">
-                                    <MudNumericField T="int" Label="持ち点" Value="rules.StartingPoints" ValueChanged="OnStartingPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" />
-                                </MudItem>
-                                <MudItem xs="6" sm="4" Class="pr-3">
-                                    <MudNumericField T="int" Label="返し点" Value="rules.ReturnPoints" ValueChanged="OnReturnPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" />
-                                </MudItem>
-                                <MudItem xs="6" sm="4" Class="pr-3">
-                                    <MudNumericField Label="レート(円/1k)" @bind-Value="rules.Rate" Step="10" Min="0" Margin="Margin.Dense" />
-                                </MudItem>
-                                <MudItem xs="6" sm="4" Class="pr-3">
-                                    <MudNumericField Label="チップ(円/枚)" @bind-Value="rules.ChipRate" Step="50" Min="0" Margin="Margin.Dense" />
-                                </MudItem>
-                                @if (rules.IsCustomUma)
-                                {
-                                    <MudItem xs="12" sm="8">
-                                        <MudTextField Label="カスタム順位ウマ" Value="@rules.GetUmaDisplayText(true)" ReadOnly="true" Margin="Margin.Dense" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Close" OnAdornmentClick="DisableCustomUma" Style="font-variant-numeric: tabular-nums;" />
-                                    </MudItem>
-                                }
-                                else
-                                {
-                                    <MudItem xs="6" sm="4" Class="pr-3">
-                                        <MudNumericField Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←2)" : "順位ウマ(2←3)")" @bind-Value="rules.Uma1" Step="5" Min="0" Margin="Margin.Dense" />
-                                    </MudItem>
-                                    <MudItem xs="6" sm="4" Class="pr-3">
-                                        <MudNumericField Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←3)" : "順位ウマ(1←4)")" @bind-Value="rules.Uma2" Step="5" Min="0" Margin="Margin.Dense" />
-                                    </MudItem>
-                                }
-                            </MudGrid>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-            </MudGrid>
+            <MudCard Outlined="true" Class="w-100">
+                <MudCardHeader Class="pb-0">
+                    <CardHeaderContent>
+                        <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudText Typo="Typo.subtitle1" Style="font-weight:bold; white-space: nowrap;">ルール設定</MudText>
+                            <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Settings" OnClick="OpenCustomRuleDialog">
+                                    カスタム<span class="d-none d-sm-inline">ルール</span>
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Save" OnClick="SavePreset">
+                                    <span class="d-none d-sm-inline">現在の</span>設定保存
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent Class="pa-2 pa-sm-3 pt-1 mt-2">
+                    <MudGrid Spacing="2">
+                        <MudItem xs="6" sm="8">
+                            <MudTextField Label="ルール名" @bind-Value="rules.Name" Margin="Margin.Dense" onfocus="this.select();" />
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudSelect T="int" Label="対局人数" Value="rules.PlayerCount" ValueChanged="OnPlayerCountChanged" Margin="Margin.Dense">
+                                <MudSelectItem Value="@(4)">四人麻雀</MudSelectItem>
+                                <MudSelectItem Value="@(3)">三人麻雀</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudNumericField T="int" Label="持ち点" Value="rules.StartingPoints" ValueChanged="OnStartingPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudNumericField T="int" Label="返し点" Value="rules.ReturnPoints" ValueChanged="OnReturnPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudNumericField Label="レート(円/1k)" @bind-Value="rules.Rate" Step="10" Min="0" Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudNumericField Label="チップ(円/枚)" @bind-Value="rules.ChipRate" Step="50" Min="0" Margin="Margin.Dense" />
+                        </MudItem>
+                        @if (rules.IsCustomUma)
+                        {
+                            <MudItem xs="12" sm="8">
+                                <MudTextField Label="カスタム順位ウマ" Value="@rules.GetUmaDisplayText(true)" ReadOnly="true" Margin="Margin.Dense" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Close" OnAdornmentClick="DisableCustomUma" Style="font-variant-numeric: tabular-nums;" />
+                            </MudItem>
+                        }
+                        else
+                        {
+                            <MudItem xs="6" sm="4">
+                                <MudNumericField T="int" Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←2)" : "順位ウマ(2←3)")" Value="rules.Uma1" ValueChanged="@((int v) => { rules.Uma1 = v; SyncNormalToCustomUma(); })" Step="5" Min="0" Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="6" sm="4">
+                                <MudNumericField T="int" Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←3)" : "順位ウマ(1←4)")" Value="rules.Uma2" ValueChanged="@((int v) => { rules.Uma2 = v; SyncNormalToCustomUma(); })" Step="5" Min="0" Margin="Margin.Dense" />
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
         </MudExpansionPanel>
     </MudExpansionPanels>
 
     @* --- セクション2: 対局者＆素点入力 --- *@
-    <MudPaper Class="pa-4 mb-6" Elevation="2" @onclick:stopPropagation="true">
-        <MudStack Row="true" AlignItems="AlignItems.Baseline" Class="mb-2">
+    @* 余白をスマホサイズに合わせて pa-2 pa-sm-4 に変更 *@
+    <MudPaper Class="pa-2 pa-sm-4 mb-6" Elevation="2" @onclick:stopPropagation="true">
+        <MudStack Row="true" AlignItems="AlignItems.Baseline" Class="mb-2 px-2">
             <MudText Typo="Typo.h6">素点入力</MudText>
         </MudStack>
         <MudGrid Spacing="1" AlignItems="AlignItems.Center">
@@ -127,15 +123,10 @@
             {
                 var index = i;
                 bool isSitOut = currentSitOuts[index];
-                <MudItem xs="12" sm="6" Class="pa-2">
-                    <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center px-3 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
-                        <MudTextField T="string" Placeholder="@($"対局者 {index + 1}")" 
-                                      Value="currentPlayers[index]" 
-                                      ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" 
-                                      DisableUnderLine="true" Margin="Margin.Dense" 
-                                      Style="font-weight: bold; font-size: 0.95rem; width: 100%; min-width: 5em;" 
-                                      Disabled="isSitOut" 
-                                      onfocus="this.select();" />
+                @* ここの MudItem に付いていた Class="pa-2" を削除 (幅超過の原因) *@
+                <MudItem xs="12" sm="6">
+                    <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center px-2 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
+                        <MudTextField T="string" Placeholder="@($"対局者 {index + 1}")"   Value="currentPlayers[index]"   ValueChanged="@((string v) => OnPlayerNameChanged(index, v))"   DisableUnderLine="true" Margin="Margin.Dense"   Style="font-weight: bold; font-size: 0.95rem; width: 100%; min-width: 4em;"   Disabled="isSitOut"   onfocus="this.select();" />
                         <MudSpacer />
                         <div class="d-flex align-center">
                             @* 抜け番 *@
@@ -163,7 +154,6 @@
                 </MudItem>
             }
         </MudGrid>
-        @* 抜け番の追加・削除ボタンをここに移動 *@
         <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-3 mb-1 pr-2" Spacing="2">
             <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="AddParticipant" Disabled="@(activeParticipantCount >= MaxParticipants)">
                 枠を追加
@@ -353,21 +343,58 @@
         ResetInputForms();
     }
 
-    @* 持ち点の100倍処理 *@
+    @* 持ち点の処理 *@
     private void OnStartingPointsChanged(int val)
     {
+        int currentOka = Math.Max(0, rules.ReturnPoints - rules.StartingPoints);
         int diff = val - rules.StartingPoints;
         if (Math.Abs(diff) == 5000) rules.StartingPoints = val;
         else rules.StartingPoints = val * 100;
+        rules.ReturnPoints = rules.StartingPoints + currentOka;
         EvaluateAutoFill();
     }
 
-    @* 返し点の100倍処理 *@
+    @* 返し点の処理 *@
     private void OnReturnPointsChanged(int val)
     {
         int diff = val - rules.ReturnPoints;
         if (Math.Abs(diff) == 5000) rules.ReturnPoints = val;
         else rules.ReturnPoints = val * 100;
+        if (rules.ReturnPoints < rules.StartingPoints)
+            rules.ReturnPoints = rules.StartingPoints;
+    }
+
+    // 通常のウマ設定(Uma1, Uma2)をCustomUmaに反映
+    public void SyncNormalToCustomUma()
+    {
+        // カスタムウマモードがONのときは、ユーザーの手入力を上書きしないよう同期をスキップ
+        if (rules.IsCustomUma) return;
+        if (rules.PlayerCount == 4)
+        {
+            rules.CustomUma4_1 = rules.Uma2; // 1位ウマ
+            rules.CustomUma4_2 = rules.Uma1; // 2位ウマ
+            rules.CustomUma4_3 = -rules.Uma1; // 3位ウマ
+            rules.CustomUma4_4 = -rules.Uma2; // 4位ウマ
+        }
+        else if (rules.PlayerCount == 3)
+        {
+            rules.CustomUma3_1 = rules.Uma1 + rules.Uma2; // 1位ウマ
+            rules.CustomUma3_2 = -rules.Uma1; // 2位ウマ
+            rules.CustomUma3_3 = -rules.Uma2; // 3位ウマ
+        }
+    }
+
+    /// 現在の人数に応じたCustomUmaの値を取得
+    public double[] GetCustomUmaArray()
+    {
+        if (rules.PlayerCount == 4)
+        {
+            return new double[] { rules.CustomUma4_1, rules.CustomUma4_2, rules.CustomUma4_3, rules.CustomUma4_4 };
+        }
+        else
+        {
+            return new double[] { rules.CustomUma3_1, rules.CustomUma3_2, rules.CustomUma3_3 };
+        }
     }
 
     @* 最後の1人の素点自動入力（数式対応） *@
@@ -470,6 +497,7 @@
             ValidateDisplayMode();
             StateHasChanged();
         }
+        SyncNormalToCustomUma();
     }
 
     @* ルールプリセットに保存 *@
@@ -543,6 +571,7 @@
             ValidateDisplayMode();
             StateHasChanged();
         }
+        SyncNormalToCustomUma();
     }
 
     @* 順位ウマの個別設定を解除 *@
@@ -583,25 +612,10 @@
         // オカ・順位ウマのベースポイント算出
         double[] baseUmaOka = new double[pCount];
         double oka = (rules.ReturnPoints - rules.StartingPoints) * pCount / 1000.0;
-        baseUmaOka[0] += oka;
+        baseUmaOka[0] += oka; // 1位にオカを加算
+        double[] umaArray = GetCustomUmaArray();
         for (int rank = 0; rank < pCount; rank++)
-        {
-            double uma = 0;
-            if (pCount == 4)
-            {
-                if (rank == 0) uma = rules.IsCustomUma ? rules.CustomUma4_1 : rules.Uma2;
-                else if (rank == 1) uma = rules.IsCustomUma ? rules.CustomUma4_2 : rules.Uma1;
-                else if (rank == 2) uma = rules.IsCustomUma ? rules.CustomUma4_3 : -rules.Uma1;
-                else if (rank == 3) uma = rules.IsCustomUma ? rules.CustomUma4_4 : -rules.Uma2;
-            }
-            else if (pCount == 3)
-            {
-                if (rank == 0) uma = rules.IsCustomUma ? rules.CustomUma3_1 : rules.Uma1 + rules.Uma2;
-                else if (rank == 1) uma = rules.IsCustomUma ? rules.CustomUma3_2 : -rules.Uma1;
-                else if (rank == 2) uma = rules.IsCustomUma ? rules.CustomUma3_3 : -rules.Uma2;
-            }
-            baseUmaOka[rank] += uma;
-        }
+            baseUmaOka[rank] += umaArray[rank];
         // 各個人の素点と端数処理
         double[] points = new double[pCount];
         double totalPts = 0;
@@ -1137,11 +1151,19 @@
         }
     }
 
-    @* 対局人数変更時の処理 (参加枠をリセット) *@
+    @* 対局人数変更時の処理 *@
     private async Task OnPlayerCountChanged(int val)
     {
         rules.PlayerCount = val;
         activeParticipantCount = val;
+        (rules.StartingPoints, rules.ReturnPoints, rules.Uma1, rules.Uma2) = val switch
+        {
+            4 => (25000, 30000, 10, 20),
+            3 => (30000, 35000, 10, 20),
+            _ => (rules.StartingPoints, rules.ReturnPoints, rules.Uma1, rules.Uma2)
+        };
+        // 人数変更時にもカスタムウマ側にデータを同期させる
+        SyncNormalToCustomUma();
         ResetInputForms();
         await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
         await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
@@ -1154,8 +1176,12 @@
     {
         if (activeParticipantCount < MaxParticipants)
         {
+            int newIndex = activeParticipantCount;
+            if (autoFilledIndex.HasValue)
+                currentSitOuts[newIndex] = true;
             activeParticipantCount++;
             await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
+            EvaluateAutoFill();
         }
     }
 

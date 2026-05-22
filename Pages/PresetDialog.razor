@@ -16,46 +16,72 @@
     .moved-highlight {
         animation: flash-highlight 0.7s ease-out;
     }
+
+    /* バッジの余白と文字サイズを削ってコンパクト化 */
+    .rule-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 1px 6px;
+        background-color: rgba(255, 255, 255, 0.08);
+        border-radius: 4px;
+        font-size: 0.7rem;
+        color: #ddd;
+        white-space: nowrap;
+    }
 </style>
+
 <MudDialog>
     <DialogContent>
-        @* 余白のクリックでも削除待機状態を解除できるように全体をdivで囲む *@
-        <div @onclick="ClearArmedState" style="min-height: 100%; width: 100%;">
+        @* 
+           styleに max-height (画面高の55%) と overflow-y: auto を追加。
+           これでリストが長い場合のみ、このエリア内だけでスクロールが発生します。
+        *@
+        <div @onclick="ClearArmedState" 
+             style="max-height: 55vh; overflow-y: auto; overflow-x: hidden; padding: 4px 8px 12px 4px;">
             @if (Presets == null || Presets.Count == 0)
             {
-                <MudText>保存済みの設定はありません。</MudText>
+                <MudText Typo="Typo.body2" Align="Align.Center" Class="py-4">保存済みの設定はありません。</MudText>
             }
             else
             {
                 <MudStack Spacing="2">
                     @foreach (var preset in Presets.ToList())
                     {
-                        <MudPaper Elevation="0" Outlined="true" Class="@($"pa-3 flex-grow-1 {(flashingPresets.Any(p => ReferenceEquals(p, preset)) ? "moved-highlight" : "")}")" Style="cursor:pointer;" @onclick="() => SelectPreset(preset)">
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                <MudText Typo="Typo.subtitle1" Style="font-weight:bold;" Color="Color.Primary">@preset.Name</MudText>
-                                @if (IsCustomApplied(preset))
-                                {
-                                    <MudTooltip Text="カスタムルール適用中">
-                                        <MudIcon Icon="@Icons.Material.Filled.Tune" Color="Color.Secondary" Size="Size.Small" />
-                                    </MudTooltip>
-                                }
-                            </MudStack>
-                            <MudStack Row="true" AlignItems="AlignItems.End" Justify="Justify.SpaceBetween">
-                                <MudText Typo="Typo.body2" Class="mt-1">
-                                    @(preset.PlayerCount == 3 ? "三麻" : "四麻") / @(preset.StartingPoints)点持ち / @(preset.ReturnPoints)点返し<br />
-                                    ウマ: @preset.GetUmaDisplayText() / レート:@(preset.Rate)円
-                                </MudText>
-                                @* 並び替え＆削除ボタンのグループ (stopPropagationを追加して誤爆を防止) *@
-                                <MudStack Row="true" Spacing="0" @onclick:stopPropagation="true">
-                                    <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Medium" Color="Color.Default" Disabled="@(Presets.IndexOf(preset) == 0)" OnClick="() => MovePreset(preset, -1)" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Medium" Color="Color.Default" Disabled="@(Presets.IndexOf(preset) == Presets.Count - 1)" OnClick="() => MovePreset(preset, 1)" />
-                                    @* 2段階クリック削除ボタン *@
-                                    <MudIconButton Icon="@(armedDeletePreset == preset ? DeleteEmpty : Icons.Material.Filled.Delete)" 
-                                                   Color="@(armedDeletePreset == preset ? Color.Error : Color.Default)" 
-                                                   Size="Size.Medium" 
-                                                   Style="@(armedDeletePreset == preset ? "" : "color: #9e9e9e;")" 
-                                                   OnClick="() => HandleDeleteClick(preset)" />
+                        <MudPaper Elevation="0" Outlined="true" 
+                                  Class="@($"pa-2 flex-grow-1 {(flashingPresets.Any(p => ReferenceEquals(p, preset)) ? "moved-highlight" : "")}")" 
+                                  Style="cursor:pointer; transition: border-color 0.2s;" 
+                                  @onclick="() => SelectPreset(preset)">
+                            <MudStack Spacing="1">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                        <MudText Typo="Typo.subtitle2" Style="font-weight:bold; line-height: 1.2;" Color="Color.Primary">@preset.Name</MudText>
+                                        @if (IsCustomApplied(preset))
+                                        {
+                                            <MudTooltip Text="カスタムルール適用中">
+                                                <MudIcon Icon="@Icons.Material.Filled.Tune" Color="Color.Secondary" Size="Size.Small" />
+                                            </MudTooltip>
+                                        }
+                                    </MudStack>
+                                    <MudStack Row="true" Spacing="0" @onclick:stopPropagation="true">
+                                        <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Small" Color="Color.Default" Disabled="@(Presets.IndexOf(preset) == 0)" OnClick="() => MovePreset(preset, -1)" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" Color="Color.Default" Disabled="@(Presets.IndexOf(preset) == Presets.Count - 1)" OnClick="() => MovePreset(preset, 1)" />
+                                        <MudIconButton Icon="@(armedDeletePreset == preset ? DeleteEmpty : Icons.Material.Filled.Delete)"
+                                                       Color="@(armedDeletePreset == preset ? Color.Error : Color.Default)"
+                                                       Size="Size.Small"
+                                                       Style="@(armedDeletePreset == preset ? "" : "color: #9e9e9e;")"
+                                                       OnClick="() => HandleDeleteClick(preset)" />
+                                    </MudStack>
                                 </MudStack>
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    <span class="rule-badge">@(preset.PlayerCount == 3 ? "三麻" : "四麻")</span>
+                                    <span class="rule-badge">@($"{preset.StartingPoints} / {preset.ReturnPoints}")</span>
+                                    <span class="rule-badge">ウマ: @preset.GetUmaDisplayText()</span>
+                                    <span class="rule-badge">レート: @(preset.Rate)</span>
+                                    @if (preset.ChipRate > 0)
+                                    {
+                                        <span class="rule-badge">チップ: @(preset.ChipRate)</span>
+                                    }
+                                </div>
                             </MudStack>
                         </MudPaper>
                     }
@@ -64,7 +90,8 @@
         </div>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">閉じる</MudButton>
+        @* ボタンの色をPrimaryにして視認性を向上 *@
+        <MudButton Color="Color.Primary" OnClick="Cancel">閉じる</MudButton>
     </DialogActions>
 </MudDialog>
 
