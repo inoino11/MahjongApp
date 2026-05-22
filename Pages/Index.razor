@@ -7,6 +7,17 @@
 
 @* 素点入力欄のスタイル *@
 <style>
+    /* 名前入力欄 */
+    .player-name-input input {
+        text-align: center !important;
+        letter-spacing: 1px;
+    }
+
+    /* フォーカスされていない時は下線を極限まで薄くする */
+    .player-name-input:not(:focus-within) {
+        opacity: 0.85;
+    }
+
     .score-input input {
         text-align: right !important;
         font-size: 1.3rem !important;
@@ -113,7 +124,6 @@
     </MudExpansionPanels>
 
     @* --- セクション2: 対局者＆素点入力 --- *@
-    @* 余白をスマホサイズに合わせて pa-2 pa-sm-4 に変更 *@
     <MudPaper Class="pa-2 pa-sm-4 mb-6" Elevation="2" @onclick:stopPropagation="true">
         <MudStack Row="true" AlignItems="AlignItems.Baseline" Class="mb-2 px-2">
             <MudText Typo="Typo.h6">素点入力</MudText>
@@ -123,12 +133,12 @@
             {
                 var index = i;
                 bool isSitOut = currentSitOuts[index];
-                @* ここの MudItem に付いていた Class="pa-2" を削除 (幅超過の原因) *@
                 <MudItem xs="12" sm="6">
-                    <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center px-2 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
-                        <MudTextField T="string" Placeholder="@($"対局者 {index + 1}")"   Value="currentPlayers[index]"   ValueChanged="@((string v) => OnPlayerNameChanged(index, v))"   DisableUnderLine="true" Margin="Margin.Dense"   Style="font-weight: bold; font-size: 0.95rem; width: 100%; min-width: 4em;"   Disabled="isSitOut"   onfocus="this.select();" />
-                        <MudSpacer />
-                        <div class="d-flex align-center">
+                    <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center justify-space-between px-2 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
+                        @* 左ブロック: 名前入力 *@
+                        <MudTextField T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index]" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input" Style="font-weight: bold; font-size: 0.95rem; width: 5.5em;" Disabled="isSitOut" onfocus="this.select();" />
+                        @* 中央ブロック: アイコン群 *@
+                        <div class="d-flex align-center justify-center flex-grow-1">
                             @* 抜け番 *@
                             @if (activeParticipantCount > rules.PlayerCount)
                             {
@@ -144,11 +154,11 @@
                             {
                                 <MudToggleIconButton @bind-Toggled="currentTobiBonus[index]" Icon="@Icons.Material.Filled.Rocket" Color="Color.Default" Title="トビ賞を獲得しません" ToggledIcon="@Icons.Material.Filled.RocketLaunch" ToggledColor="Color.Error" ToggledTitle="🚀 トビ賞を獲得します" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
                             }
-                            @* 素点 *@
-                            <div class="d-flex align-center">
-                                <MudTextField T="string" Value="@(currentScores[index]?.ToString())" ValueChanged="@(v => HandleScoreStringInput(index, v))" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == autoFilledIndex ? "auto-filled" : "")}")" Style="width: 77px;" Disabled="isSitOut" Adornment="@(index == autoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
-                                <span class="score-zeros">00</span>
-                            </div>
+                        </div>
+                        @* 右ブロック: 素点入力 *@
+                        <div class="d-flex align-center">
+                            <MudTextField T="string" Value="@(currentScores[index]?.ToString())" ValueChanged="@(v => HandleScoreStringInput(index, v))" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == autoFilledIndex ? "auto-filled" : "")}")" Style="width: 77px;" Disabled="isSitOut" Adornment="@(index == autoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
+                            <span class="score-zeros">00</span>
                         </div>
                     </MudPaper>
                 </MudItem>
