@@ -131,9 +131,9 @@
 else
 {
     @* 2. チップ集計 *@
-    @if (!IsReadOnly || Rules?.ChipRate > 0)
-    {
-        <MudCard Class="mb-4" Elevation="0" Outlined="true">
+    @if (Rules?.ChipRate > 0)
+    {
+        <MudCard Class="mb-4" Elevation="0" Outlined="true">
             <MudCardContent Class="py-3 px-0">
                 <MudText Typo="Typo.subtitle2" Class="mb-2 px-3">チップ集計</MudText>
                 <div id="chip-scroll" style="width: 100%; overflow-x: auto; padding-bottom: 4px;">
