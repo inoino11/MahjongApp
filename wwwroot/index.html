@@ -242,6 +242,20 @@
             }, { passive: true });
         };
     </script>
+    <script>
+        window.syncContainerHeight = () => {
+            const container = document.getElementById('result-container');
+            const chart = document.getElementById('chart-wrapper');
+            const table = document.getElementById('table-wrapper');
+            if (!container || !chart || !table) return;
+            // 表とグラフの実際の高さをピクセル単位で実測
+            const chartHeight = chart.offsetHeight;
+            const tableHeight = table.offsetHeight;
+            // 高い方のサイズ（最低450px）をコンテナの min-height に直接セット
+            const maxHeight = Math.max(chartHeight, tableHeight);
+            container.style.minHeight = maxHeight + 'px';
+        };
+    </script>
 </body>
 
 </html>

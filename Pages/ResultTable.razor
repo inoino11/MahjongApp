@@ -41,224 +41,233 @@
     .chip-input input {
         text-align: center !important;
     }
-
     #table-scroll .mud-table-container table {
         min-width: var(--table-min-width) !important;
     }
     #chip-scroll {
-        -ms-overflow-style: none;    /* IE, Edge用 */
-        scrollbar-width: none;       /* Firefox用 */
+        -ms-overflow-style: none;
+        /* IE, Edge用 */
+        scrollbar-width: none;
+        /* Firefox用 */
     }
     #chip-scroll::-webkit-scrollbar {
-        display: none;               /* Chrome, Safari用 */
+        display: none;
+        /* Chrome, Safari用 */
+    }
+    /* ▼ 実測・同期用の新設CSS ▼ */
+    #result-container {
+        width: 100%;
+        position: relative;
+        transition: min-height 0.2s ease;
+    }
+    .hide-element {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        visibility: hidden;
+        pointer-events: none;
+        z-index: -1;
+    }
+    /* グラフ描画範囲 */
+    .mud-chart-legend {
+        display: none !important;
+    }
+    @@media (max-width: 959.98px) {
+        .custom-legend-item {
+            flex: 0 0 calc(50% - 4px);
+            min-width: 0;
+        }
+        /* スマホ版: 高さを抑えて無駄な上下余白を減らす */
+        .responsive-chart-wrapper {
+            height: 140px;
+        }
+    }
+    @@media (min-width: 960px) {
+        .custom-legend-item {
+            width: 100%;
+        }
+        /* PC版: ゆとりのある高さを確保 */
+        .responsive-chart-wrapper {
+            height: 280px;
+        }
+    }
+    /* 共通: 上下の見切れ防止とSVGのオーバーフロー許可 */
+    .responsive-chart-wrapper {
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+    .responsive-chart-wrapper svg {
+        overflow: visible !important;
     }
 </style>
 
-@if (DisplayMode == 7)
-{
-    <style>
-        /* グラフ描画範囲 */
-        .mud-chart-legend {
-            display: none !important;
-        }
-
-        @@media (max-width: 959.98px) {
-            .custom-legend-item {
-                flex: 0 0 calc(50% - 4px);
-                min-width: 0;
-            }
-
-            /* スマホ版: 高さを抑えて無駄な上下余白を減らす */
-            .responsive-chart-wrapper {
-                height: 140px;
-            }
-        }
-
-        @@media (min-width: 960px) {
-            .custom-legend-item {
-                width: 100%;
-            }
-
-            /* PC版: ゆとりのある高さを確保 */
-            .responsive-chart-wrapper {
-                height: 280px;
-            }
-        }
-
-        /* 共通: 上下の見切れ防止とSVGのオーバーフロー許可 */
-        .responsive-chart-wrapper {
-            padding-top: 12px;
-            padding-bottom: 12px;
-        }
-
-        .responsive-chart-wrapper svg {
-            overflow: visible !important;
-        }
-    </style>
-    @* --- モード7: グラフ表示 --- *@
-    <div class="pa-2 pa-md-4 mud-background-gray rounded-lg" style="background-color: rgba(255,255,255,0.02);">
-        <div class="d-flex flex-column flex-md-row gap-3">
-            <div style="flex-grow: 1; min-width: 0; width: 100%; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; padding-bottom: 32px;">
-                @{
-                    @* int minWidthPx = Math.Max(300, History.Count * 20 + 30); *@
-                    int minWidthPx = 300;
-                }
-                <div class="responsive-chart-wrapper" style="min-width: max(100%, @(minWidthPx)px);">
-                    <MudChart ChartType="ChartType.Line" ChartSeries="@_chartSeries" XAxisLabels="@_xAxisLabels" Width="100%" Height="100%" ChartOptions="@_chartOptions" />
-                </div>
-            </div>
-            <div class="d-flex flex-row flex-wrap flex-md-column gap-2" style="min-width: 140px; align-content: flex-start;">
-                <div style="width: 100%;">
-                    <MudText Typo="Typo.caption" Class="mud-text-secondary ml-1">最終pt</MudText>
-                </div>
-                @foreach (var stat in _finalStats.OrderByDescending(x => x.TotalPt))
-                {
-                    <div class="custom-legend-item d-flex align-center px-2 py-1 rounded" style="background: rgba(255,255,255,0.05); border-left: 4px solid @stat.Color;">
-                        <div style="flex-grow: 1; overflow: hidden;">
-                            <MudText Typo="Typo.body2" Style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold;">
-                                @stat.Name
-                            </MudText>
-                            <MudText Typo="Typo.caption" Style="@(stat.TotalPt >= 0 ? "color: #ff6b6b;" : "color: #4dabf7;")">
-                                @(stat.TotalPt > 0 ? "+" : "")@stat.TotalPt.ToString("F1")
-                            </MudText>
-                        </div>
+<div id="result-container">
+    @* --- グラフ表示 --- *@
+    <div id="chart-wrapper" class="@(DisplayMode == 7 ? "" : "hide-element")">
+        <div class="pa-2 pa-md-4 mud-background-gray rounded-lg" style="background-color: rgba(255,255,255,0.02);">
+            <div class="d-flex flex-column flex-md-row gap-3">
+                <div style="flex-grow: 1; min-width: 0; width: 100%; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; padding-bottom: 32px;">
+                    @{
+                        int minWidthPx = 300;
+                    }
+                    <div class="responsive-chart-wrapper" style="min-width: max(100%, @(minWidthPx)px);">
+                        <MudChart ChartType="ChartType.Line" ChartSeries="@_chartSeries" XAxisLabels="@_xAxisLabels" Width="100%" Height="100%" ChartOptions="@_chartOptions" />
                     </div>
-                }
+                </div>
+                <div class="d-flex flex-row flex-wrap flex-md-column gap-2" style="min-width: 140px; align-content: flex-start;">
+                    <div style="width: 100%;">
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary ml-1">最終pt</MudText>
+                    </div>
+                    @foreach (var stat in _finalStats.OrderByDescending(x => x.TotalPt))
+                    {
+                        <div class="custom-legend-item d-flex align-center px-2 py-1 rounded" style="background: rgba(255,255,255,0.05); border-left: 4px solid @stat.Color;">
+                            <div style="flex-grow: 1; overflow: hidden;">
+                                <MudText Typo="Typo.body2" Style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold;">
+                                    @stat.Name
+                                </MudText>
+                                <MudText Typo="Typo.caption" Style="@(stat.TotalPt >= 0 ? "color: #ff6b6b;" : "color: #4dabf7;")">
+                                    @(stat.TotalPt > 0 ? "+" : "")@stat.TotalPt.ToString("F1")
+                                </MudText>
+                            </div>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     </div>
-}
-else
-{
-    @* 2. チップ集計 *@
-    @if (Rules?.ChipRate > 0)
-    {
-        <MudCard Class="mb-4" Elevation="0" Outlined="true">
-            <MudCardContent Class="py-3 px-0">
-                <MudText Typo="Typo.subtitle2" Class="mb-2 px-3">チップ集計</MudText>
-                <div id="chip-scroll" style="width: 100%; overflow-x: auto; padding-bottom: 4px;">
-                    @{
-                        bool isChipError = !IsReadOnly && SessionChips.Take(ActiveParticipantCount).Sum() != 0;
-                    }
-                    <div style="display: table; width: 100%; min-width: @GetTableMinWidth(); table-layout: fixed; border-collapse: collapse;">
-                        <div style="display: table-row;">
-                            <div style="display: table-cell; width: 35px; position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1; padding: 0;"></div>
-                            @for (int i = 0; i < ActiveParticipantCount; i++)
-                            {
-                                var idx = i;
-                                int chip = SessionChips.Count > idx ? SessionChips[idx] : 0;
-                                string pName = string.IsNullOrWhiteSpace(Players.ElementAtOrDefault(idx)) ? "　" : Players[idx];
-                                string boxWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
-                                <div style="display: table-cell; width: @boxWidth; vertical-align: bottom; padding: 0;">
-                                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
-                                        <div style="width: @boxWidth; min-width: @boxWidth; height: 0px;"></div>
-                                        <MudText Align="Align.Center" Typo="Typo.caption" Class="d-block mud-text-secondary" Style="@($"max-width: {boxWidth}; white-space: nowrap; margin: 0 auto 2px auto; letter-spacing: -0.5px;")">
-                                            @GetShortName(Players.ElementAtOrDefault(idx))
-                                        </MudText>
-                                        @if (!IsReadOnly)
-                                        {
-                                            <MudNumericField T="int" Value="chip" ValueChanged="@(v => OnChipChanged.InvokeAsync((idx, v)))" Step="1" HideSpinButtons="true" Margin="Margin.Dense" Class="chip-input" Style="@(isChipError ? "max-width: 2.5rem; color:#ff0000; font-weight:bold; margin: 0 auto;" : "max-width: 2.5rem; margin: 0 auto;")" onfocus="this.select();" />
-                                        }
-                                        else
-                                        {
-                                            <MudText Align="Align.Center" Typo="Typo.body1" Style="@(chip > 0 ? "color:#ff0000; font-weight:bold;" : (chip < 0 ? "color:#1976d2; font-weight:bold;" : "color:#9e9e9e;"))">
-                                                @(chip > 0 ? $"+{chip}" : chip.ToString())枚
+    @* --- テーブル表示エリア --- *@
+    <div id="table-wrapper" class="@(DisplayMode != 7 ? "" : "hide-element")">
+        @* チップ集計 *@
+        @if (Rules?.ChipRate > 0)
+        {
+            <MudCard Class="mb-4" Elevation="0" Outlined="true">
+                <MudCardContent Class="py-3 px-0">
+                    <MudText Typo="Typo.subtitle2" Class="mb-2 px-3">チップ集計</MudText>
+                    <div id="chip-scroll" style="width: 100%; overflow-x: auto; padding-bottom: 4px;">
+                        @{
+                            bool isChipError = !IsReadOnly && SessionChips.Take(ActiveParticipantCount).Sum() != 0;
+                        }
+                        <div style="display: table; width: 100%; min-width: @GetTableMinWidth(); table-layout: fixed; border-collapse: collapse;">
+                            <div style="display: table-row;">
+                                <div style="display: table-cell; width: 35px; position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1; padding: 0;"></div>
+                                @for (int i = 0; i < ActiveParticipantCount; i++)
+                                {
+                                    var idx = i;
+                                    int chip = SessionChips.Count > idx ? SessionChips[idx] : 0;
+                                    string pName = string.IsNullOrWhiteSpace(Players.ElementAtOrDefault(idx)) ? " " : Players[idx];
+                                    string boxWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
+                                    <div style="display: table-cell; width: @boxWidth; vertical-align: bottom; padding: 0;">
+                                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+                                            <div style="width: @boxWidth; min-width: @boxWidth; height: 0px;"></div>
+                                            <MudText Align="Align.Center" Typo="Typo.caption" Class="d-block mud-text-secondary" Style="@($"max-width: {boxWidth}; white-space: nowrap; margin: 0 auto 2px auto; letter-spacing: -0.5px;")">
+                                                @GetShortName(Players.ElementAtOrDefault(idx))
                                             </MudText>
-                                        }
+                                            @if (!IsReadOnly)
+                                            {
+                                                <MudNumericField T="int" Value="chip" ValueChanged="@(v => OnChipChanged.InvokeAsync((idx, v)))" Step="1" HideSpinButtons="true" Margin="Margin.Dense" Class="chip-input" Style="@(isChipError ? "max-width: 2.5rem; color:#ff0000; font-weight:bold; margin: 0 auto;" : "max-width: 2.5rem; margin: 0 auto;")" onfocus="this.select();" />
+                                            }
+                                            else
+                                            {
+                                                <MudText Align="Align.Center" Typo="Typo.body1" Style="@(chip > 0 ? "color:#ff0000; font-weight:bold;" : (chip < 0 ? "color:#1976d2; font-weight:bold;" : "color:#9e9e9e;"))">
+                                                    @(chip > 0 ? $"+{chip}" : chip.ToString())枚
+                                                </MudText>
+                                            }
+                                        </div>
                                     </div>
-                                </div>
-                            }
-                            @if (!IsReadOnly)
-                            {
-                                <div style="display: table-cell; width: 30px; padding: 0;"></div>
-                            }
+                                }
+                                @if (!IsReadOnly)
+                                {
+                                    <div style="display: table-cell; width: 30px; padding: 0;"></div>
+                                }
+                            </div>
                         </div>
                     </div>
-                </div>
-            </MudCardContent>
-        </MudCard>
-    }
+                </MudCardContent>
+            </MudCard>
+        }
 
-    @* 3. 成績テーブル *@
-    <div id="table-scroll" style="width: 100%; overflow-x: auto; --table-min-width: @GetTableMinWidth();">
-        <MudTable Items="@History" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="width: 100%; table-layout: fixed;">
-            <ColGroup>
-                <col style="width: 35px;" />
-                @for (int i = 0; i < ActiveParticipantCount; i++)
-                {
-                    var idx = i;
-                    string colWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
-                    <col style="width: @colWidth;" />
-                }
-                @if (!IsReadOnly)
-                {
-                    <col style="width: 30px;" />
-                }
-            </ColGroup>
-            <HeaderContent>
-                <MudTh Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; white-space: nowrap; padding: 4px 0px !important; font-size: 0.65rem; letter-spacing: -0.5px;">時刻</MudTh>
-                @for (int i = 0; i < ActiveParticipantCount; i++)
-                {
-                    var idx = i;
-                    string boxWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
-                    <MudTh Style="text-align: center; padding: 4px 0px !important; font-size: 0.75rem; letter-spacing: -0.5px;">
-                        <div style="width: @boxWidth; min-width: @boxWidth; height: 0px; margin: 0 auto;"></div>
-                        <div style="max-width: @boxWidth; white-space: nowrap; margin: 0 auto;">
-                            @GetShortName(Players.ElementAtOrDefault(idx))
-                        </div>
-                    </MudTh>
-                }
-                @if (!IsReadOnly)
-                {
-                    <MudTh Style="padding: 4px 0px !important;"></MudTh>
-                }
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1; text-align: center; white-space: nowrap; padding: 4px 0px !important; font-size: 0.6rem; color: #666; letter-spacing: -0.5px;">
-                    @context.Timestamp.ToString("HH:mm")
-                </MudTd>
-                @for (int i = 0; i < ActiveParticipantCount; i++)
-                {
-                    var idx = i;
-                    string cellWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
-                    <MudTd Style="@($"text-align: center; padding: 4px 0px !important; white-space: nowrap; width: {cellWidth}; min-width: {cellWidth}; max-width: {cellWidth};")">
-                        <span style="@GetTdStyle(context, idx)">
-                            @GetDisplayValue(context, idx)
-                        </span>
+        @* テーブル *@
+        <div id="table-scroll" style="width: 100%; overflow-x: auto; --table-min-width: @GetTableMinWidth();">
+            <MudTable Items="@History" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="width: 100%; table-layout: fixed;">
+                <ColGroup>
+                    <col style="width: 35px;" />
+                    @for (int i = 0; i < ActiveParticipantCount; i++)
+                    {
+                        var idx = i;
+                        string colWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
+                        <col style="width: @colWidth;" />
+                    }
+                    @if (!IsReadOnly)
+                    {
+                        <col style="width: 30px;" />
+                    }
+                </ColGroup>
+                <HeaderContent>
+                    <MudTh Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; white-space: nowrap; padding: 4px 0px !important; font-size: 0.65rem; letter-spacing: -0.5px;">時刻</MudTh>
+                    @for (int i = 0; i < ActiveParticipantCount; i++)
+                    {
+                        var idx = i;
+                        string boxWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
+                        <MudTh Style="text-align: center; padding: 4px 0px !important; font-size: 0.75rem; letter-spacing: -0.5px;">
+                            <div style="width: @boxWidth; min-width: @boxWidth; height: 0px; margin: 0 auto;"></div>
+                            <div style="max-width: @boxWidth; white-space: nowrap; margin: 0 auto;">
+                                @GetShortName(Players.ElementAtOrDefault(idx))
+                            </div>
+                        </MudTh>
+                    }
+                    @if (!IsReadOnly)
+                    {
+                        <MudTh Style="padding: 4px 0px !important;"></MudTh>
+                    }
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1; text-align: center; white-space: nowrap; padding: 4px 0px !important; font-size: 0.6rem; color: #666; letter-spacing: -0.5px;">
+                        @context.Timestamp.ToString("HH:mm")
                     </MudTd>
-                }
-                @if (!IsReadOnly)
-                {
-                    <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px !important;">
-                        <span @onclick="() => { }" @onclick:stopPropagation="true">
-                            <MudIconButton Icon="@(ArmedDeleteTarget == context ? DeleteEmpty : Icons.Material.Filled.Delete)" Color="@(ArmedDeleteTarget == context ? Color.Error : Color.Default)" Size="Size.Small" Style="@(ArmedDeleteTarget == context ? "padding: 0px;" : "padding: 0px; color: #9e9e9e;")" OnClick="() => OnDeleteRequested.InvokeAsync(context)" />
-                        </span>
+                    @for (int i = 0; i < ActiveParticipantCount; i++)
+                    {
+                        var idx = i;
+                        string cellWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
+                        <MudTd Style="@($"text-align: center; padding: 4px 0px !important; white-space: nowrap; width: {cellWidth}; min-width: {cellWidth}; max-width: {cellWidth};")">
+                            <span style="@GetTdStyle(context, idx)">
+                                @GetDisplayValue(context, idx)
+                            </span>
+                        </MudTd>
+                    }
+                    @if (!IsReadOnly)
+                    {
+                        <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px !important;">
+                            <span @onclick="() => { }" @onclick:stopPropagation="true">
+                                <MudIconButton Icon="@(ArmedDeleteTarget == context ? DeleteEmpty : Icons.Material.Filled.Delete)" Color="@(ArmedDeleteTarget == context ? Color.Error : Color.Default)" Size="Size.Small" Style="@(ArmedDeleteTarget == context ? "padding: 0px;" : "padding: 0px; color: #9e9e9e;")" OnClick="() => OnDeleteRequested.InvokeAsync(context)" />
+                            </span>
+                        </MudTd>
+                    }
+                </RowTemplate>
+                <FooterContent>
+                    <MudTd Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 6px 0px !important; font-size: 0.75rem;">
+                        <MudIcon Icon="@(DisplayMode == 0 ? Icons.Material.Filled.Calculate : Icons.Material.Filled.Functions)" Style="font-size: 1rem; vertical-align: text-bottom; margin-right: 2px; color: #2e7d32;" />
+                        @(DisplayMode == 0 ? "平均" : "合計")
                     </MudTd>
-                }
-            </RowTemplate>
-            <FooterContent>
-                <MudTd Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 6px 0px !important; font-size: 0.75rem;">
-                    <MudIcon Icon="@(DisplayMode == 0 ? Icons.Material.Filled.Calculate : Icons.Material.Filled.Functions)" Style="font-size: 1rem; vertical-align: text-bottom; margin-right: 2px; color: #2e7d32;" />
-                    @(DisplayMode == 0 ? "平均" : "合計")
-                </MudTd>
-                @for (int i = 0; i < ActiveParticipantCount; i++)
-                {
-                    var idx = i;
-                    string cellWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
-                    <MudTd Style="@($"{GetTotalTdStyle(idx)} text-align: center; padding: 6px 0px !important; white-space: nowrap; width: {cellWidth}; min-width: {cellWidth}; max-width: {cellWidth};")">
-                        <span style="@GetTotalSpanStyle(idx)">
-                            @GetTotalDisplayValue(idx)
-                        </span>
-                    </MudTd>
-                }
-                @if (!IsReadOnly)
-                {
-                    <MudTd Style="background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; padding: 6px 0px !important;"></MudTd>
-                }
-            </FooterContent>
-        </MudTable>
+                    @for (int i = 0; i < ActiveParticipantCount; i++)
+                    {
+                        var idx = i;
+                        string cellWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
+                        <MudTd Style="@($"{GetTotalTdStyle(idx)} text-align: center; padding: 6px 0px !important; white-space: nowrap; width: {cellWidth}; min-width: {cellWidth}; max-width: {cellWidth};")">
+                            <span style="@GetTotalSpanStyle(idx)">
+                                @GetTotalDisplayValue(idx)
+                            </span>
+                        </MudTd>
+                    }
+                    @if (!IsReadOnly)
+                    {
+                        <MudTd Style="background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; padding: 6px 0px !important;"></MudTd>
+                    }
+                </FooterContent>
+            </MudTable>
+        </div>
     </div>
-}
+</div>
 
 @code {
     @inject IJSRuntime JSRuntime
@@ -306,12 +315,12 @@ else
         if (DisplayMode == 7) PrepareChartData();
     }
 
+    // スクロール同期
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (DisplayMode != 7)
-        {
             await JSRuntime.InvokeVoidAsync("syncScroll", "chip-scroll", "table-scroll");
-        }
+        await JSRuntime.InvokeVoidAsync("syncContainerHeight");
     }
 
     private void PrepareChartData()

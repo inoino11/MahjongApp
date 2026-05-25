@@ -164,13 +164,18 @@
                 </MudItem>
             }
         </MudGrid>
-        <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-3 mb-1 pr-2" Spacing="2">
-            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="AddParticipant" Disabled="@(activeParticipantCount >= MaxParticipants)">
-                枠を追加
+        <MudStack Row="true" Justify="Justify.SpaceBetween" Wrap="Wrap.Wrap" Class="mt-3 mb-1 px-2" Spacing="2">
+            <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" StartIcon="@Icons.Material.Filled.History" OnClick="CopyPreviousGame" Disabled="@(ActiveHistory.Count == 0)">
+                前局をコピー
             </MudButton>
-            <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonRemove" OnClick="RemoveParticipant" Disabled="@(activeParticipantCount <= rules.PlayerCount)">
-                枠を削除
-            </MudButton>
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="AddParticipant" Disabled="@(activeParticipantCount >= MaxParticipants)">
+                    枠を追加
+                </MudButton>
+                <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonRemove" OnClick="RemoveParticipant" Disabled="@(activeParticipantCount <= rules.PlayerCount)">
+                    枠を削除
+                </MudButton>
+            </MudStack>
         </MudStack>
         <MudButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true" Class="mt-2 py-3" Disabled="@(!IsTotalCorrect)" OnClick="CalculateAndRecordGame">結果を記録する</MudButton>
     </MudPaper>
@@ -965,6 +970,32 @@
             armedDeleteTarget = null;
             StateHasChanged();
         }
+    }
+
+    @* 直前の局の素点・焼き鳥・トビ賞を再現 *@
+    private async Task CopyPreviousGame()
+    {
+        if (ActiveHistory.Count == 0) return;
+        var lastGame = ActiveHistory.Last();
+        // コピー対象の人数に応じて、足りない場合は「枠を追加」する
+        int requiredCount = lastGame.RawScores.Count;
+        while (activeParticipantCount < requiredCount && activeParticipantCount < MaxParticipants)
+        {
+            activeParticipantCount++;
+            await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
+        }
+        for (int i = 0; i < activeParticipantCount; i++)
+            if (i < lastGame.RawScores.Count)
+            {
+                currentScores[i] = lastGame.RawScores[i];
+                if (lastGame.YakiPlayers != null && i < lastGame.YakiPlayers.Count)
+                    currentYaki[i] = lastGame.YakiPlayers[i];
+                if (lastGame.TobiBonusRecipients != null && i < lastGame.TobiBonusRecipients.Count)
+                    currentTobiBonus[i] = lastGame.TobiBonusRecipients[i];
+            }
+        autoFilledIndex = null;
+        EvaluateAutoFill();        
+        StateHasChanged();
     }
 
     @* 結果表示人数を求める *@
