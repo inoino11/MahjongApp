@@ -33,9 +33,9 @@ public class RuleSet
     public int PlayerCount { get; set; } = 4;
     public int StartingPoints { get; set; } = 25000;
     public int ReturnPoints { get; set; } = 30000;
-    public int Rate { get; set; } = 50;
     public int Uma1 { get; set; } = 10;
     public int Uma2 { get; set; } = 20;
+    public int Rate { get; set; } = 50;
     public int ChipRate { get; set; } = 100;
 
     // ==========================================

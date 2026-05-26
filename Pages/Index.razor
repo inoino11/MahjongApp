@@ -311,7 +311,7 @@
     private List<RuleSet> rulePresets = new();
     private const int MaxParticipants = 7;
     private int activeParticipantCount = 4;
-    private List<string> currentPlayers = new() { "Aさん", "Bさん", "Cさん", "Dさん", "Eさん", "Fさん", "Gさん" };
+    private List<string> currentPlayers = Enumerable.Repeat("", MaxParticipants).ToList();
     private List<int?> currentScores = new() { null, null, null, null };
     private List<int?> previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
     private List<GameResult> ActiveHistory = new();
@@ -352,7 +352,48 @@
         var savedActiveCount = await LocalStorage.GetItemAsync<int?>(StorageKeys.ActiveParticipantCount);
         activeParticipantCount = savedActiveCount ?? rules.PlayerCount;
         var savedPresets = await LocalStorage.GetItemAsync<List<RuleSet>>(StorageKeys.RulePresets);
-        if (savedPresets != null) rulePresets = savedPresets;
+        if (savedPresets != null && savedPresets.Count > 0)
+        {
+            rulePresets = savedPresets;
+        }
+        else
+        {
+            // 初回起動時のデフォルトプリセット
+            rulePresets = new List<RuleSet>
+            {
+                new RuleSet
+                {
+                    Name = "一般的な四麻",
+                    PlayerCount = 4,
+                    StartingPoints = 25000,
+                    ReturnPoints = 30000,
+                    Uma1 = 10,
+                    Uma2 = 20
+                },
+                new RuleSet
+                {
+                    Name = "一般的な三麻",
+                    PlayerCount = 3,
+                    StartingPoints = 35000,
+                    ReturnPoints = 40000,
+                    Uma1 = 10,
+                    Uma2 = 20
+                },
+                new RuleSet
+                {
+                    Name = "Mリーグルール",
+                    PlayerCount = 4,
+                    StartingPoints = 25000,
+                    ReturnPoints = 30000,
+                    Uma1 = 10,
+                    Uma2 = 30,
+                    Rate = 0,
+                    ChipRate = 0,
+                    TieBreaker = TieBreakerRule.Split
+                }
+            };
+            await LocalStorage.SetItemAsync(StorageKeys.RulePresets, rulePresets);
+        }
         var savedHistory = await LocalStorage.GetItemAsync<List<GameResult>>("ActiveHistory");
         if (savedHistory != null) ActiveHistory = savedHistory;
         var savedChips = await LocalStorage.GetItemAsync<List<int>>("ActiveSessionChips");
