@@ -159,7 +159,7 @@
                 <MudItem xs="12" sm="6">
                     <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center justify-space-between px-2 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
                         @* 左ブロック: 名前入力 *@
-                        <MudTextField T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index]" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input" Style="font-weight: bold; font-size: 0.95rem; width: 5.5em;" Disabled="isSitOut" onfocus="this.select();" />
+                        <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" SearchFunc="@SearchRegisteredPlayers" CoerceText="true" CoerceValue="false" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input" Style="font-weight: bold; font-size: 0.95rem; width: 5.5em;" Disabled="isSitOut" onfocus="this.select();" />
                         @* 中央ブロック: アイコン群 *@
                         <div class="d-flex align-center justify-center flex-grow-1">
                             @* 抜け番 *@
@@ -192,7 +192,13 @@
 
     @* --- セクション3: 集計結果 --- *@
     <MudPaper Class="pa-2 px-sm-4" Elevation="2" @onclick="CancelDelete">
-        <ResultTable History="ActiveHistory" Players="currentPlayers" ActiveParticipantCount="TableParticipantCount" @bind-DisplayMode="displayMode" Rules="rules" SessionChips="ActiveSessionChips" IsReadOnly="false" ArmedDeleteTarget="armedDeleteTarget" OnDeleteRequested="HandleDeleteRequest" OnResetRequested="ConfirmReset" OnChipChanged="HandleChipChangedCallback" />
+        <ResultTable History="ActiveHistory" Players="currentPlayers.Select(p => p.Name).ToList()" ActiveParticipantCount="TableParticipantCount" @bind-DisplayMode="displayMode" Rules="rules" SessionChips="ActiveSessionChips" IsReadOnly="false" ArmedDeleteTarget="armedDeleteTarget" OnDeleteRequested="HandleDeleteRequest" OnResetRequested="ConfirmReset" OnChipChanged="HandleChipChangedCallback" />
+        @* DBへ保存するボタン *@
+        <div class="d-flex justify-center mt-6">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.CloudUpload" Disabled="@(ActiveHistory.Count == 0)" OnClick="ConfirmFinalizeSession" Style="width: 100%; max-width: 400px; font-weight: bold; padding: 12px 0;">
+                結果を通算成績に保存
+            </MudButton>
+        </div>
         @* 共有ボタン *@
         <div class="d-flex justify-end mt-4 gap-2">
             <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Share" OnClick="ShareImageAsync" Disabled="isSharing" Style="width: 170px; white-space: nowrap;">
@@ -229,7 +235,7 @@
                         <th style="padding: 12px; width: 80px; font-size: 0.9rem;">局</th>
                         @for (int i = 0; i < TableParticipantCount; i++)
                         {
-                            <th style="padding: 12px; font-size: 1.1rem;">@(string.IsNullOrWhiteSpace(currentPlayers[i]) ? " " : currentPlayers[i])</th>
+                            <th style="padding: 12px; font-size: 1.1rem;">@(string.IsNullOrWhiteSpace(currentPlayers[i].Name) ? " " : currentPlayers[i].Name)</th>
                         }
                     </tr>
                 </thead>
@@ -307,11 +313,19 @@
 </MudContainer>
 
 @code {
+    // 画面の入力状態を管理するための内部クラス
+    public class PlayerInputState
+    {
+        public string? Id { get; set; } // 登録済みの場合はID、新規手入力の場合はnull
+        public string Name { get; set; } = string.Empty;
+    }
     private RuleSet rules = new();
     private List<RuleSet> rulePresets = new();
     private const int MaxParticipants = 7;
     private int activeParticipantCount = 4;
-    private List<string> currentPlayers = Enumerable.Repeat("", MaxParticipants).ToList();
+    private List<PlayerInputState> currentPlayers = Enumerable.Range(0, MaxParticipants)
+        .Select(_ => new PlayerInputState()).ToList();
+    private List<PlayerProfile> playerMaster = new();
     private List<int?> currentScores = new() { null, null, null, null };
     private List<int?> previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
     private List<GameResult> ActiveHistory = new();
@@ -341,12 +355,21 @@
     {
         var savedRules = await LocalStorage.GetItemAsync<RuleSet>(StorageKeys.Rules);
         if (savedRules != null) rules = savedRules;
+        playerMaster = new List<PlayerProfile>
+        {
+            new PlayerProfile { Id = "id-inoue", Name = "井上" },
+            new PlayerProfile { Id = "id-koshima", Name = "小嶋" },
+            new PlayerProfile { Id = "id-naito", Name = "内藤" },
+            new PlayerProfile { Id = "id-ito", Name = "伊藤" }
+        };
         var savedPlayers = await LocalStorage.GetItemAsync<List<string>>(StorageKeys.CurrentPlayers);
         if (savedPlayers != null)
         {
             for (int i = 0; i < savedPlayers.Count && i < MaxParticipants; i++)
             {
-                currentPlayers[i] = savedPlayers[i];
+                currentPlayers[i].Name = savedPlayers[i];
+                var matched = playerMaster.FirstOrDefault(p => p.Name == savedPlayers[i]);
+                if (matched != null) currentPlayers[i].Id = matched.Id;
             }
         }
         var savedActiveCount = await LocalStorage.GetItemAsync<int?>(StorageKeys.ActiveParticipantCount);
@@ -528,11 +551,32 @@
         }
     }
 
-    @* 対局者名を保存 *@
+    @* ユーザーの入力文字からサジェストを検索するメソッド *@
+    private Task<IEnumerable<string>> SearchRegisteredPlayers(string value, CancellationToken token)
+    {
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult<IEnumerable<string>>(playerMaster.Select(p => p.Name));
+        var result = playerMaster
+            .Where(p => p.Name.Contains(value, StringComparison.OrdinalIgnoreCase))
+            .Select(p => p.Name);
+        return Task.FromResult(result);
+    }
+
+    @* 対局者名が変更された時の処理 *@
     private async Task OnPlayerNameChanged(int index, string value)
     {
-        currentPlayers[index] = value;
-        await LocalStorage.SetItemAsync(StorageKeys.CurrentPlayers, currentPlayers);
+        currentPlayers[index].Name = value;
+        var matchedPlayer = playerMaster.FirstOrDefault(p => p.Name == value);
+        if (matchedPlayer != null)
+        {
+            currentPlayers[index].Id = matchedPlayer.Id;
+        }
+        else
+        {
+            currentPlayers[index].Id = null;
+        }
+        var nameList = currentPlayers.Select(p => p.Name).ToList();
+        await LocalStorage.SetItemAsync(StorageKeys.CurrentPlayers, nameList);
     }
 
     @* チップ数を保存 *@
@@ -651,7 +695,7 @@
         if (activeIndices.Count != pCount) return;
         // 計算用の抽出配列
         var activeScores = activeIndices.Select(i => (currentScores[i] ?? 0) * 100).ToList();
-        var activePlayers = activeIndices.Select(i => currentPlayers[i]).ToList();
+        var activePlayers = activeIndices.Select(i => currentPlayers[i].Name).ToList();
         var activeYaki = activeIndices.Select(i => currentYaki[i]).ToList();
         var activeTobiBonus = activeIndices.Select(i => currentTobiBonus[i]).ToList();
         // 簡易入力ミスチェック
@@ -953,7 +997,7 @@
         ActiveHistory.Add(new GameResult
         {
             Timestamp = DateTime.Now,
-            PlayerNames = currentPlayers.Take(activeParticipantCount).ToList(),
+            PlayerNames = currentPlayers.Take(activeParticipantCount).Select(p => p.Name).ToList(),
             RawScores = finalRawScores,
             Points = finalPoints,
             YakiPlayers = currentYaki.Take(activeParticipantCount).ToList(),
@@ -1379,6 +1423,116 @@
         {
             currentScores[autoFilledIndex.Value] = null;
             autoFilledIndex = null;
+        }
+    }
+
+    @* 本日の対局セッションの終了確定確認ダイアログを表示 *@
+    private async Task ConfirmFinalizeSession()
+    {
+        int chipSum = 0;
+        for (int i = 0; i < TableParticipantCount; i++)
+            chipSum += ActiveSessionChips[i];
+        bool isChipError = chipSum != 0;
+        string msg = "本日のすべての対局結果とチップの精算枚数を長期成績DBに記録し、現在の入力フォームをリセットしますか？";
+        if (isChipError) msg = "<span style='color: #ff6b6b; font-weight: bold;'>【警告】チップの合計枚数がプラスマイナスゼロになっていません（現在: " + (chipSum > 0 ? "+" : "") + chipSum + "枚）。</span><br />このまま長期成績に強制保存しますか？";
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "対局セッションの終了確定",
+            (MarkupString)msg,
+            yesText: "終了して保存する",
+            cancelText: "戻る"
+        );
+        if (result == true) await FinalizeAndSaveToDbAsync();
+    }
+
+    @* データを成形して長期成績DB（IndexedDBを想定）へ一括保存し、卓を片付けるコアロジック *@
+    private async Task FinalizeAndSaveToDbAsync()
+    {
+        try
+        {
+            // 1. 本日の対局（ActiveHistory）に一度でも登場した「ユニークなプレイヤー名」をすべて抽出
+            var sessionPlayerNames = ActiveHistory
+                .SelectMany(h => h.PlayerNames)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct()
+                .ToList();
+            // 名前からIDを即座に引くためのマッピング用ディレクショナリ
+            var nameToIdMap = new Dictionary<string, string>();
+            var newSessionId = Guid.NewGuid().ToString();
+            var currentTimestamp = DateTime.Now;
+            // 2. 名簿マスター（playerMaster）と照合し、新規の名前にはIDを自動発行
+            foreach (var name in sessionPlayerNames)
+            {
+                var existingPlayer = playerMaster.FirstOrDefault(p => p.Name == name);
+                if (existingPlayer != null)
+                {
+                    nameToIdMap[name] = existingPlayer.Id;
+                }
+                else
+                {
+                    // 新規プレイヤーのID発行と名簿追加
+                    var newId = Guid.NewGuid().ToString();
+                    var newProfile = new PlayerProfile
+                    {
+                        Id = newId,
+                        Name = name,
+                        CumulativeChips = 0,
+                        CreatedAt = currentTimestamp
+                    };
+
+                    playerMaster.Add(newProfile);
+                    // TODO: ここで永続化DB（IndexedDB等）に新名簿を保存するサービスを呼び出す
+                    // await LongTermDb.SavePlayerProfileAsync(newProfile);
+                    nameToIdMap[name] = newId;
+                }
+            }
+
+            // 3. 各局のデータを名前ベースから「IDベース」に変換し、保存用モデル（SavedGameRecord）を作成
+            foreach (var game in ActiveHistory)
+            {
+                var savedRecord = new SavedGameRecord
+                {
+                    SessionId = newSessionId,
+                    RuleName = rules.Name,
+                    PlayerCount = rules.PlayerCount,
+                    Timestamp = game.Timestamp,
+                    PlayerIds = game.PlayerNames.Select(name => !string.IsNullOrWhiteSpace(name) && nameToIdMap.ContainsKey(name) ? nameToIdMap[name] : null).ToList(),
+                    RawScores = game.RawScores,
+                    Points = game.Points,
+                    Yen = game.Yen
+                };
+                // TODO: ここで永続化DB（IndexedDB等）に局データを1件ずつ保存するサービスを呼び出す
+                // await LongTermDb.SaveGameRecordAsync(savedRecord);
+            }
+            // 4. まとめて入力された本日の最終チップ枚数を各プレイヤーの累計データに反映
+            for (int i = 0; i < TableParticipantCount; i++)
+            {
+                string name = currentPlayers[i].Name;
+                if (!string.IsNullOrWhiteSpace(name) && nameToIdMap.TryGetValue(name, out var playerId))
+                {
+                    int chipCount = ActiveSessionChips[i];
+                    var profile = playerMaster.FirstOrDefault(p => p.Id == playerId);
+                    if (profile != null)
+                    {
+                        profile.CumulativeChips += chipCount;
+                        // TODO: ここで永続化DB（IndexedDB等）のプレイヤーのチップ累計枚数を更新する
+                        // await LongTermDb.UpdatePlayerChipsAsync(playerId, profile.CumulativeChips);
+                    }
+                }
+            }
+            // 5. 【物理的な二重登録防止】 本日のワークスペース（卓情報）を完全にクリア
+            ActiveHistory.Clear();
+            ActiveSessionChips = Enumerable.Repeat(0, MaxParticipants).ToList();
+            // LocalStorageの一時キャッシュセーブデータも上書きして空にする
+            await LocalStorage.SetItemAsync("ActiveHistory", ActiveHistory);
+            await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
+            // フォームとUIをリセット
+            ResetInputForms();
+            Snackbar.Add("本日の対局結果を長期成績DBに正常に保存しました！", Severity.Success);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("長期成績の保存中にエラーが発生しました: " + ex.Message, Severity.Error);
         }
     }
 }

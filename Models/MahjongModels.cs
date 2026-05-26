@@ -44,7 +44,7 @@ public class RuleSet
 
     // --- ウマ完全個別設定 ---
     public bool IsCustomUma { get; set; } = false;
-    
+
     // 4麻用カスタムウマ
     public int CustomUma4_1 { get; set; } = 20;
     public int CustomUma4_2 { get; set; } = 10;
@@ -130,7 +130,7 @@ public class GameResult
     // ==========================================
     // 以下、イベント発生履歴（結果取り消し・再描画用）
     // ==========================================
-    
+
     public List<bool> YakiPlayers { get; set; } = new();          // 焼き鳥を食らった人
     public List<bool> TobiPlayers { get; set; } = new();          // トんだ人
     public List<bool> TobiBonusRecipients { get; set; } = new();  // トバした人
@@ -138,4 +138,36 @@ public class GameResult
     public List<double> YakiPoints { get; set; } = new();         // 焼き鳥で動いたポイント
     public List<double> TobiPoints { get; set; } = new();         // トビ賞で動いたポイント
     public List<double> ColdPoints { get; set; } = new();         // コールドで動いたポイント
+}
+
+/// IndexedDB用のプレイヤーデータ
+public class PlayerProfile
+{
+    public string Id { get; set; } = string.Empty;          // プレイヤーID
+    public string Name { get; set; } = string.Empty;        // 表示名
+    public int CumulativeChips { get; set; } = 0;           // チップ枚数
+    public DateTime CreatedAt { get; set; } = DateTime.Now; // 登録日時
+}
+
+/// IndexedDB用のレコードデータ
+public class SavedGameRecord
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString(); // レコードID
+    public string SessionId { get; set; } = string.Empty;       // セッションID
+    public string RuleName { get; set; } = string.Empty;        // ルール名
+    public int PlayerCount { get; set; }                        // 三麻/四麻
+    public List<string?> PlayerIds { get; set; } = new();       // プレイヤーIDリスト
+    public List<int?> RawScores { get; set; } = new();          // 素点リスト
+    public List<double> Points { get; set; } = new();           // ポイントリスト
+    public List<int> Yen { get; set; } = new();                 // 円リスト
+    public DateTime Timestamp { get; set; } = DateTime.Now;     // 登録日時
+}
+
+/// IndexedDB用のセッションデータ
+public class SavedSessionRecord
+{
+    public string SessionId { get; set; } = string.Empty;           // セッションID
+    public DateTime Date { get; set; } = DateTime.Now;              // 登録日時
+    public List<string> ParticipantPlayerIds { get; set; } = new(); // プレイヤーIDリスト
+   public List<int> SettledChips { get; set; } = new();             // 移動チップ枚数リスト
 }
