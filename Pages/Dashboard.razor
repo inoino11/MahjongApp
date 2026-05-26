@@ -1,0 +1,60 @@
+@page "/dashboard"
+@using MahjongApp.Models
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 pb-10">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white;">
+        <MudIcon Icon="@Icons.Material.Filled.QueryStats" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
+        成績ダッシュボード
+    </MudText>
+    @* 四麻・三麻の切り替えタブ *@
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4" Color="Color.Dark">
+        <MudTabPanel Text="四人麻雀" Icon="@Icons.Material.Filled.People">            
+            @* --- Hero Metrics (最重要指標) --- *@
+            <MudGrid Spacing="3" Class="mb-6">
+                <MudItem xs="12" sm="6">
+                    <MudPaper Class="pa-4 d-flex flex-column align-center justify-center" Style="height: 120px; background-color: rgba(255,255,255,0.05);">
+                        <MudText Typo="Typo.subtitle1" Color="Color.Secondary">総合収支</MudText>
+                        <MudText Typo="Typo.h3" Style="color: #ff6b6b; font-weight: bold;">+12,500円</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudPaper Class="pa-4 d-flex flex-column align-center justify-center" Style="height: 120px; background-color: rgba(255,255,255,0.05);">
+                        <MudText Typo="Typo.subtitle1" Color="Color.Secondary">平均順位 (四麻)</MudText>
+                        <MudText Typo="Typo.h3" Style="font-weight: bold;">2.34<span style="font-size: 1rem; color: #9e9e9e;"> 位</span></MudText>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+            @* --- 詳細統計＆相性分析エリア (今後の実装枠) --- *@
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-4" Style="min-height: 300px; background-color: rgba(255,255,255,0.02);">
+                        <MudText Typo="Typo.h6" Class="mb-4">基本成績・順位分布</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">※ここに円グラフやトップ率などの統計が入ります</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-4" Style="min-height: 300px; background-color: rgba(255,255,255,0.02);">
+                        <MudText Typo="Typo.h6" Class="mb-4">対人相性・ライバル分析</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">※ここに「カモ」や「天敵」のランキングが入ります</MudText>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </MudTabPanel>        
+        <MudTabPanel Text="三人麻雀" Icon="@Icons.Material.Filled.PersonOutline">
+            <MudText Typo="Typo.body1" Align="Align.Center" Class="py-10">三麻のデータはまだありません。</MudText>
+        </MudTabPanel>
+    </MudTabs>
+    <div class="d-flex justify-center mt-6">
+        <MudButton Href="/" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Home">
+            入力画面に戻る
+        </MudButton>
+    </div>
+</MudContainer>
+
+@code {
+    // 今後ここにIndexedDBからデータをロードする処理を書きます
+    protected override async Task OnInitializedAsync()
+    {
+        // await LoadDataFromDbAsync();
+    }
+}
