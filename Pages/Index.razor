@@ -48,7 +48,17 @@
         color: #808080;
         margin-left: 2px;
         user-select: none;
-        transform: translateY(-2px);
+    }
+
+    /* 自動入力アイコン追加時に文字が上に浮く現象を修正 */
+    .score-input .mud-input {
+        align-items: baseline !important;
+    }
+
+    /* アイコン自体は高さの中央を維持する */
+    .score-input .mud-input-adornment-start {
+        align-self: center !important;
+        margin-top: 0 !important;
     }
 </style>
 
@@ -169,7 +179,7 @@
                             }
                         </div>
                         @* 右ブロック: 素点入力 *@
-                        <div class="d-flex align-center">
+                        <div class="d-flex align-baseline">
                             <MudTextField T="string" Value="@(currentScores[index]?.ToString())" ValueChanged="@(v => HandleScoreStringInput(index, v))" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == autoFilledIndex ? "auto-filled" : "")}")" Style="width: 77px;" Disabled="isSitOut" Adornment="@(index == autoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
                             <span class="score-zeros">00</span>
                         </div>
@@ -1226,13 +1236,26 @@
         if (activeParticipantCount > rules.PlayerCount)
         {
             activeParticipantCount--;
-            // 隠れる枠の入力状態をリセット
             currentScores[activeParticipantCount] = null;
             currentSitOuts[activeParticipantCount] = false;
             currentYaki[activeParticipantCount] = false;
             currentTobiBonus[activeParticipantCount] = false;
+            if (activeParticipantCount == rules.PlayerCount)
+            {
+                for (int i = 0; i < activeParticipantCount; i++)
+                {
+                    if (currentSitOuts[i])
+                    {
+                        currentSitOuts[i] = false;
+                        if (previousScores[i].HasValue)
+                        {
+                            currentScores[i] = previousScores[i];
+                            previousScores[i] = null;
+                        }
+                    }
+                }
+            }
             await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
-            // 枠が減ることで残り1人が確定する可能性があるため、自動計算を再評価
             EvaluateAutoFill();
         }
     }

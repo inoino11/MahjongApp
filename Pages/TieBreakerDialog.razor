@@ -3,48 +3,43 @@
 <MudDialog>
     <DialogContent>
         <MudText Class="mb-4">同点が発生しました。<br />起家から順に全員をクリックしてください。</MudText>
-        <MudStack>
-            @* 文字列のforeachではなく、インデックスを使ったforループに変更 *@
+        <MudStack Class="mb-4">
             @for (int i = 0; i < Players.Count; i++)
             {
                 var index = i;
                 var player = Players[index];
                 bool isSelected = SelectedIndices.Contains(index);
                 string displayName = string.IsNullOrWhiteSpace(player) ? " " : player;
-                
-                <MudButton Variant="@(isSelected ? Variant.Filled : Variant.Outlined)" Color="@(isSelected ? Color.Primary : Color.Default)" Disabled="isSelected" OnClick="() => SelectPlayer(index)">
+                <MudButton Variant="@(isSelected ? Variant.Filled : Variant.Outlined)" 
+                           Color="@(isSelected ? Color.Primary : Color.Default)" 
+                           Style="@(isSelected ? "border: 1px solid transparent;" : "")"
+                           OnClick="() => TogglePlayerSelection(index)">
                     @(isSelected ? $"{SelectedIndices.IndexOf(index) + 1}番目 : {displayName}" : displayName)
                 </MudButton>
             }
         </MudStack>
-        @if (SelectedIndices.Count > 0)
-        {
-            <MudButton Class="mt-4" Color="Color.Error" Variant="Variant.Text" OnClick="ResetSelection">
-                選択をやり直す
-            </MudButton>
-        }
     </DialogContent>
 </MudDialog>
 
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
 
-    // 親画面から受け取る対局者リスト
     [Parameter] public List<string> Players { get; set; } = new();
 
-    // クリックされた順にインデックスを格納するリスト
     private List<int> SelectedIndices = new();
 
-    private void SelectPlayer(int index)
+    // 選択状態を切り替え
+    private void TogglePlayerSelection(int index)
     {
-        SelectedIndices.Add(index);
-        // 全員選択されたら自動的にダイアログを閉じて、インデックスのリストを親画面に返す
-        if (SelectedIndices.Count == Players.Count)
-            MudDialog.Close(DialogResult.Ok(SelectedIndices));
-    }
-
-    private void ResetSelection()
-    {
-        SelectedIndices.Clear();
+        if (SelectedIndices.Contains(index))
+        {
+            SelectedIndices.Remove(index);
+        }
+        else
+        {
+            SelectedIndices.Add(index);
+            if (SelectedIndices.Count == Players.Count)
+                MudDialog.Close(DialogResult.Ok(SelectedIndices));
+        }
     }
 }
