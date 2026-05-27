@@ -1,6 +1,13 @@
 @page "/dashboard"
 @using MahjongApp.Models
 
+<style>
+    /* セレクトボックスの文字が上に寄る現象の補正 */
+    .align-center-select .mud-input-slot {
+        padding-top: 13px !important; /* 上の余白を増やして文字を押し下げる */
+        padding-bottom: 5px !important; /* 下の余白を減らす */
+    }
+</style>
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 pb-10">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white;">
         <MudIcon Icon="@Icons.Material.Filled.QueryStats" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
@@ -46,15 +53,15 @@
                     <div style="overflow-x: auto;">
                         <MudTable Items="@stats4" Hover="true" Dense="true" Elevation="0" Style="min-width: 800px; background: transparent;">
                             <HeaderContent>
-                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">名前</MudText></MudTh>
-                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">対局数</MudText></MudTh>
-                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">総合Pt</MudText></MudTh>
-                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; color:#4caf50;">総合収支</MudText></MudTh>
-                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">(Pt収支)</MudText></MudTh>
-                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">(チップ収支)</MudText></MudTh>
-                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">平均順位</MudText></MudTh>
-                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">トップ率</MudText></MudTh>
-                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">ラス率</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">名前</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">対局数</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap; color:#4caf50;">総合Pt</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap; color:#4caf50;">総合収支</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">(Pt収支)</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">(チップ収支)</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">平均順位</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">トップ率</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">ラス率</MudText></MudTh>
                             </HeaderContent>
                             <RowTemplate Context="stat">
                                 <MudTd DataLabel="名前"><strong style="font-size: 1.1rem;">@stat.Name</strong></MudTd>
@@ -92,15 +99,15 @@
                         <div style="overflow-x: auto;">
                             <MudTable Items="@stats3" Hover="true" Dense="true" Elevation="0" Style="min-width: 800px; background: transparent;">
                                 <HeaderContent>
-                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">名前</MudText></MudTh>
-                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">対局数</MudText></MudTh>
-                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">総合Pt</MudText></MudTh>
-                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; color:#4caf50;">総合収支</MudText></MudTh>
-                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">(Pt収支)</MudText></MudTh>
-                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">(チップ収支)</MudText></MudTh>
-                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">平均順位</MudText></MudTh>
-                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">トップ率</MudText></MudTh>
-                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">ラス率</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">名前</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">対局数</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap; color:#4caf50;">総合Pt</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap; color:#4caf50;">総合収支</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">(Pt収支)</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">(チップ収支)</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">平均順位</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">トップ率</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">ラス率</MudText></MudTh>
                                 </HeaderContent>
                                 <RowTemplate Context="stat">
                                     <MudTd DataLabel="名前"><strong style="font-size: 1.1rem;">@stat.Name</strong></MudTd>
@@ -132,15 +139,9 @@
         <MudPaper Class="pa-4 mt-6" Style="background-color: rgba(255,255,255,0.02);">
             <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
                 <MudIcon Icon="@Icons.Material.Filled.Handshake" Size="Size.Medium" />
-                <MudText Typo="Typo.h6">相性分析 (カモと天敵)</MudText>
+                <MudText Typo="Typo.h6">相性分析</MudText>
             </MudStack>
-            
-            <MudText Typo="Typo.body2" Class="mb-4" Color="Color.Secondary">
-                ※特定の相手と同卓した際の「あなたの成績」を集計しています。<br/>
-                （チップは1日単位の精算で相手を特定できないため、純粋なゲーム収支をベースに算出しています）
-            </MudText>
-
-            <MudSelect T="string" Label="分析対象プレイヤー (自分) を選択" Value="@selectedHeroId" ValueChanged="OnHeroSelected" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4" Style="max-width: 300px; background-color: rgba(255,255,255,0.05);">
+            <MudSelect T="string" Label="分析対象を選択" Value="@selectedHeroId" ValueChanged="OnHeroSelected" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4 align-center-select" Style="max-width: 200px; background-color: rgba(255,255,255,0.05);">
                 @foreach (var p in availablePlayers)
                 {
                     <MudSelectItem Value="@p.Id">@p.Name</MudSelectItem>
@@ -152,12 +153,12 @@
                 <div style="overflow-x: auto;">
                     <MudTable Items="@matchupStats" Hover="true" Dense="true" Elevation="0" Style="min-width: 600px; background: transparent;">
                         <HeaderContent>
-                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">相手</MudText></MudTh>
-                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">同卓回数</MudText></MudTh>
-                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">同卓時の収支</MudText></MudTh>
-                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">同卓時のPt</MudText></MudTh>
-                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">直接対決 (勝-負)</MudText></MudTh>
-                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">先着率</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">相手</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">同卓回数</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">同卓時の収支</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">同卓時のPt</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">直接対決 (勝-負)</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; white-space: nowrap;">先着率</MudText></MudTh>
                         </HeaderContent>
                         <RowTemplate Context="stat">
                             <MudTd DataLabel="相手"><strong style="font-size: 1.05rem;">@stat.OpponentName</strong></MudTd>

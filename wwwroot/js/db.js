@@ -164,5 +164,39 @@ window.mahjongDb = {
             tx.objectStore('sessions').clear();
             tx.objectStore('games').clear();
         });
+    },
+    // JSONファイルをブラウザからダウンロードさせる処理
+    downloadFile: function (filename, contentType, content) {
+        const file = new File([content], filename, { type: contentType });
+        const exportUrl = URL.createObjectURL(file);
+        const a = document.createElement("a");
+        document.body.appendChild(a);
+        a.href = exportUrl;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(exportUrl);
+        a.remove();
+    },
+    // 読み込んだJSONデータでデータベースをまるごと復元または統合する処理
+    restoreData: function (jsonData, isMerge) {
+        return new Promise((resolve, reject) => {
+            if (!this.db) return reject("Database not initialized");
+            try {
+                const data = JSON.parse(jsonData);
+                const tx = this.db.transaction(['players', 'sessions', 'games'], 'readwrite');
+                tx.oncomplete = () => resolve(true);
+                tx.onerror = (e) => reject(e.target.error);
+                if (!isMerge) {
+                    tx.objectStore('players').clear();
+                    tx.objectStore('sessions').clear();
+                    tx.objectStore('games').clear();
+                }
+                if (data.players) data.players.forEach(p => tx.objectStore('players').put(p));
+                if (data.sessions) data.sessions.forEach(s => tx.objectStore('sessions').put(s));
+                if (data.games) data.games.forEach(g => tx.objectStore('games').put(g));
+            } catch (e) {
+                reject("JSON Parsing or DB Error: " + e.message);
+            }
+        });
     }
 };

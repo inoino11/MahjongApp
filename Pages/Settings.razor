@@ -1,0 +1,86 @@
+@page "/settings"
+@using Microsoft.AspNetCore.Components.Forms
+@inject MahjongApp.Services.DatabaseService DatabaseService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-4 pb-10">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white;">
+        <MudIcon Icon="@Icons.Material.Filled.Settings" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
+        設定・データ管理
+    </MudText>
+    <MudPaper Class="pa-6 mb-6" Style="background-color: rgba(255,255,255,0.02);">
+        <MudText Typo="Typo.h6" Class="mb-2">データのバックアップ (エクスポート)</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            現在のすべての成績データとプレイヤー名簿をJSONファイルとしてダウンロードします。<br/>
+            定期的に保存しておくと、端末の変更や万が一のデータ消失時に復元できます。
+        </MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Download" OnClick="ExportData">
+            バックアップファイルを保存
+        </MudButton>
+    </MudPaper>
+    <MudPaper Class="pa-6" Style="background-color: rgba(255,255,255,0.02); border: 1px solid rgba(255, 152, 0, 0.3);">
+        <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Warning">データの復元・統合 (インポート)</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            保存しておいたJSONファイルを読み込みます。読み込み方法を選択してください。
+        </MudText>
+        @* モード選択のラジオボタン *@
+        <MudRadioGroup @bind-Value="importMode" Class="mb-4 d-flex flex-column">
+            <MudRadio Value='"overwrite"' Color="Color.Error">
+                <strong>完全上書き</strong> (現在のデータをすべて消去して入れ替えます)
+            </MudRadio>
+            <MudRadio Value='"merge"' Color="Color.Success">
+                <strong>データ統合</strong> (現在のデータに差分を追加します)
+            </MudRadio>
+        </MudRadioGroup>
+        <MudButton HtmlTag="label" for="backup-upload" Variant="Variant.Outlined" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Upload">
+            ファイルを選択して実行
+        </MudButton>
+        <InputFile id="backup-upload" OnChange="ImportData" accept=".json" style="display: none;" />
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string importMode = "overwrite"; // 初期値は上書き
+
+    private async Task ExportData()
+    {
+        try
+        {
+            await DatabaseService.ExportDataAsync();
+            Snackbar.Add("バックアップファイルをダウンロードしました", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"エクスポートに失敗しました: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ImportData(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file == null) return;
+        bool isMerge = importMode == "merge";
+        string title = isMerge ? "データの統合" : "データの完全上書き";
+        string message = isMerge
+            ? "現在のデータにバックアップファイルのデータを追加・統合します。\n（※同じIDの履歴はバックアップ側の内容で更新されます）\n本当によろしいですか？"
+            : "現在のアプリ内のデータはすべて消去され、選択したファイルの内容で完全に上書きされます。\n本当によろしいですか？";
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            title, message, yesText: "はい、実行します", cancelText: "キャンセル");
+        if (result != true) return;
+
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            using var reader = new System.IO.StreamReader(stream);
+            var json = await reader.ReadToEndAsync();
+            await DatabaseService.ImportDataAsync(json, isMerge);
+            string successMsg = isMerge ? "データを統合しました！" : "データを完全に復元しました！";
+            Snackbar.Add(successMsg, Severity.Success);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("ファイルの読み込みに失敗しました。正しいバックアップファイルか確認してください。", Severity.Error);
+        }
+    }
+}

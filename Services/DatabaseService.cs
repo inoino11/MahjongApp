@@ -61,6 +61,24 @@ public class DatabaseService
         await EnsureInitializedAsync();
         await _jsRuntime.InvokeVoidAsync("mahjongDb.clearAllData");
     }
+
+    public async Task ExportDataAsync()
+    {
+        var data = await GetAllDataAsync();
+        var options = new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+        };
+        var json = System.Text.Json.JsonSerializer.Serialize(data, options);
+        var filename = $"MahjongBackup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+        await _jsRuntime.InvokeVoidAsync("mahjongDb.downloadFile", filename, "application/json", json);
+    }
+
+    public async Task ImportDataAsync(string json, bool isMerge = false)
+    {
+        await EnsureInitializedAsync();
+        await _jsRuntime.InvokeVoidAsync("mahjongDb.restoreData", json, isMerge);
+    }
 }
 
 /// ダッシュボード読み込み用のデータ受け皿クラス
