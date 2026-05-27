@@ -7,7 +7,7 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 pb-10">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white;">
         <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
-        セッション履歴
+        対局履歴
     </MudText>
 
     @if (isLoading)
@@ -18,7 +18,7 @@
     }
     else if (sessionGroups.Count == 0)
     {
-        <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">記録されたセッションはありません。</MudText>
+        <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">記録された対局はありません。</MudText>
     }
     else
     {
@@ -55,7 +55,7 @@
                                     }
                                     else
                                     {
-                                        <MudText Typo="Typo.body2" Class="mb-4">このセッションには対局記録がありません。</MudText>
+                                        <MudText Typo="Typo.body2" Class="mb-4">ここには対局記録がありません。</MudText>
                                     }
                                     @if (group.Session.SettledChips != null && group.Session.SettledChips.Count > 0 && group.Session.SettledChips.Any(c => c != 0))
                                     {
@@ -117,7 +117,7 @@
         {
             allPlayers = dbData.Players;
             playerMap = dbData.Players.ToDictionary(p => p.Id, p => p.Name);
-            // セッションを日付の降順（新しい順）で並べ、紐づく対局データをグループ化
+            // 対局を日付の降順（新しい順）で並べ、紐づく対局データをグループ化
             sessionGroups = dbData.Sessions
                 .OrderByDescending(s => s.Date)
                 .Select(s => new SessionGroup
@@ -143,14 +143,14 @@
     private async Task ConfirmDeleteSession(SessionGroup group)
     {
         bool? result = await DialogService.ShowMessageBoxAsync(
-            "セッションの削除",
-            $"このセッション（{group.Session.Date.ToString("yyyy/MM/dd HH:mm")}）と、\n含まれる対局履歴（{group.Games.Count}局）を完全に削除します。\nよろしいですか？",
+            "対局の削除",
+            $"この対局（{group.Session.Date.ToString("yyyy/MM/dd HH:mm")}）データを完全に削除します。\nよろしいですか？",
             yesText: "削除する", cancelText: "キャンセル");
 
         if (result == true)
         {
             await DatabaseService.DeleteSessionAsync(group.Session.SessionId);
-            Snackbar.Add("セッションを削除しました", Severity.Success);
+            Snackbar.Add("対局を削除しました", Severity.Success);
             await LoadData();
         }
     }
