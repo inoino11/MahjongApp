@@ -127,6 +127,58 @@
                 }
             </MudTabPanel>
         </MudTabs>
+
+        @* --- 相性分析エリア --- *@
+        <MudPaper Class="pa-4 mt-6" Style="background-color: rgba(255,255,255,0.02);">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.Handshake" Size="Size.Medium" />
+                <MudText Typo="Typo.h6">相性分析 (カモと天敵)</MudText>
+            </MudStack>
+            
+            <MudText Typo="Typo.body2" Class="mb-4" Color="Color.Secondary">
+                ※特定の相手と同卓した際の「あなたの成績」を集計しています。<br/>
+                （チップは1日単位の精算で相手を特定できないため、純粋なゲーム収支をベースに算出しています）
+            </MudText>
+
+            <MudSelect T="string" Label="分析対象プレイヤー (自分) を選択" Value="@selectedHeroId" ValueChanged="OnHeroSelected" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4" Style="max-width: 300px; background-color: rgba(255,255,255,0.05);">
+                @foreach (var p in availablePlayers)
+                {
+                    <MudSelectItem Value="@p.Id">@p.Name</MudSelectItem>
+                }
+            </MudSelect>
+
+            @if (matchupStats.Count > 0)
+            {
+                <div style="overflow-x: auto;">
+                    <MudTable Items="@matchupStats" Hover="true" Dense="true" Elevation="0" Style="min-width: 600px; background: transparent;">
+                        <HeaderContent>
+                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">相手</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">同卓回数</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">同卓時の収支</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">同卓時のPt</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">直接対決 (勝-負)</MudText></MudTh>
+                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">先着率</MudText></MudTh>
+                        </HeaderContent>
+                        <RowTemplate Context="stat">
+                            <MudTd DataLabel="相手"><strong style="font-size: 1.05rem;">@stat.OpponentName</strong></MudTd>
+                            <MudTd DataLabel="同卓回数">@stat.GamesTogether 局</MudTd>
+                            <MudTd DataLabel="同卓時の収支" Style="@(stat.HeroNetYen >= 0 ? "color:#ff6b6b; font-weight:bold; background-color: rgba(76, 175, 80, 0.05);" : "color:#4dabf7; font-weight:bold; background-color: rgba(244, 67, 54, 0.05);")">
+                                @(stat.HeroNetYen > 0 ? "+" : "")@stat.HeroNetYen.ToString("N0")円
+                            </MudTd>
+                            <MudTd DataLabel="同卓時のPt" Style="@(stat.HeroNetPoint >= 0 ? "color:#ff6b6b;" : "color:#4dabf7;")">
+                                @(stat.HeroNetPoint > 0 ? "+" : "")@stat.HeroNetPoint.ToString("F1")
+                            </MudTd>
+                            <MudTd DataLabel="直接対決">@stat.HeroWins 勝 - @stat.HeroLosses 負</MudTd>
+                            <MudTd DataLabel="先着率">@stat.DirectWinRate.ToString("F1")%</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(selectedHeroId))
+            {
+                <MudText Color="Color.Secondary" Class="mt-2">同卓データがありません。</MudText>
+            }
+        </MudPaper>
     }
 
     <div class="d-flex justify-center mt-6">
@@ -169,6 +221,23 @@
     private int totalChipYenAllRules = 0;
     private double topPlayerAverageRank = 0;
 
+    // --- 相性分析用の変数 ---
+    private List<PlayerProfile> availablePlayers = new();
+    private List<SavedGameRecord> allGames = new();
+    private string? selectedHeroId;
+    private List<MatchupStat> matchupStats = new();
+
+    private class MatchupStat
+    {
+        public string OpponentName { get; set; } = "";
+        public int GamesTogether { get; set; }
+        public double HeroNetPoint { get; set; }
+        public int HeroNetYen { get; set; }
+        public int HeroWins { get; set; }
+        public int HeroLosses { get; set; }
+        public double DirectWinRate => (HeroWins + HeroLosses) == 0 ? 0 : (double)HeroWins / (HeroWins + HeroLosses) * 100;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         await LoadAndCalculateStatsAsync();
@@ -181,7 +250,8 @@
         {
             var dbData = await DatabaseService.GetAllDataAsync();
             if (dbData == null || dbData.Players.Count == 0 || dbData.Games.Count == 0) return;
-
+            allGames = dbData.Games;
+            availablePlayers = dbData.Players.Where(p => p.Id != "deleted").OrderBy(p => p.Name).ToList();
             var statsMap4 = dbData.Players.ToDictionary(p => p.Id, p => new PlayerStats { Id = p.Id, Name = p.Name });
             var statsMap3 = dbData.Players.ToDictionary(p => p.Id, p => new PlayerStats { Id = p.Id, Name = p.Name });
 
@@ -270,10 +340,71 @@
                 totalChipYenAllRules = topPlayer.TotalChipYen;
                 topPlayerAverageRank = topPlayer.AverageRank;
             }
+
+            // 6. 相性分析の初期化（デフォルトでトッププレイヤーを選択）
+            if (string.IsNullOrEmpty(selectedHeroId) && topPlayer != null)
+            {
+                selectedHeroId = availablePlayers.FirstOrDefault(p => p.Name == topPlayerName)?.Id;
+            }
+            CalculateMatchups();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"ダッシュボードの集計エラー: {ex.Message}");
         }
+    }
+
+    private void OnHeroSelected(string id)
+    {
+        selectedHeroId = id;
+        CalculateMatchups();
+    }
+
+    private void CalculateMatchups()
+    {
+        matchupStats.Clear();
+        if (string.IsNullOrEmpty(selectedHeroId)) return;
+
+        var map = new Dictionary<string, MatchupStat>();
+
+        foreach (var game in allGames)
+        {
+            // 自分（Hero）がその局に参加しているかチェック
+            int heroIdx = game.PlayerIds.IndexOf(selectedHeroId);
+            if (heroIdx < 0 || heroIdx >= game.RawScores.Count || !game.RawScores[heroIdx].HasValue) continue;
+
+            double heroPt = game.Points.Count > heroIdx ? game.Points[heroIdx] : 0;
+            int heroYen = game.Yen.Count > heroIdx ? game.Yen[heroIdx] : 0;
+            double heroRaw = game.RawScores[heroIdx]!.Value; 
+
+            // 同じ局にいた他のプレイヤーを走査
+            for (int i = 0; i < game.PlayerIds.Count; i++)
+            {
+                string? oppId = game.PlayerIds[i];
+                // 空席、削除済みアカウント、または自分自身ならスキップ
+                if (string.IsNullOrEmpty(oppId) || oppId == "deleted" || oppId == selectedHeroId) continue;
+                if (!game.RawScores[i].HasValue) continue; // 相手が抜け番ならスキップ
+
+                if (!map.ContainsKey(oppId))
+                {
+                    map[oppId] = new MatchupStat { OpponentName = availablePlayers.FirstOrDefault(p => p.Id == oppId)?.Name ?? "不明" };
+                }
+
+                var stat = map[oppId];
+                stat.GamesTogether++;
+                
+                // 「同卓したときの自分の成績」を相手ごとに蓄積
+                stat.HeroNetPoint += heroPt;
+                stat.HeroNetYen += heroYen;
+
+                // 直接対決（素点の比較による先着判定）
+                double oppRaw = game.RawScores[i]!.Value;
+                if (heroRaw > oppRaw) stat.HeroWins++;
+                else if (heroRaw < oppRaw) stat.HeroLosses++;
+            }
+        }
+
+        // 収支（同卓時の自分のプラスが大きい＝カモ）順にソート
+        matchupStats = map.Values.OrderByDescending(s => s.HeroNetYen).ToList();
     }
 }
