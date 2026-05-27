@@ -82,5 +82,87 @@ window.mahjongDb = {
             reqG.onsuccess = () => { result.games = reqG.result; checkDone(); };
             tx.onerror = (e) => reject(e.target.error);
         });
+    },
+    // プレイヤー名の変更やチップの直接修正
+    updatePlayer: function (player) {
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(['players'], 'readwrite');
+            tx.objectStore('players').put(player);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = (e) => reject(e.target.error);
+        });
+    },
+    // プレイヤーの削除（※対局履歴がない場合のみC#側から呼ばれる想定）
+    deletePlayer: function (playerId) {
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(['players'], 'readwrite');
+            tx.objectStore('players').delete(playerId);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = (e) => reject(e.target.error);
+        });
+    },
+    // プレイヤーの統合
+    mergePlayers: function (sourceId, targetId) {
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(['players', 'sessions', 'games'], 'readwrite');
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = (e) => reject(e.target.error);
+            const pStore = tx.objectStore('players');
+            const sStore = tx.objectStore('sessions');
+            const gStore = tx.objectStore('games');
+            // チップの合算と元データの削除
+            pStore.get(targetId).onsuccess = (e) => {
+                let targetPlayer = e.target.result;
+                pStore.get(sourceId).onsuccess = (e2) => {
+                    let sourcePlayer = e2.target.result;
+                    if (targetPlayer && sourcePlayer) {
+                        targetPlayer.cumulativeChips += sourcePlayer.cumulativeChips;
+                        pStore.put(targetPlayer);
+                        pStore.delete(sourceId);
+                    }
+                };
+            };
+            // レコードIDすげ替え
+            gStore.getAll().onsuccess = (e) => {
+                e.target.result.forEach(game => {
+                    let changed = false;
+                    for (let i = 0; i < game.playerIds.length; i++) {
+                        if (game.playerIds[i] === sourceId) {
+                            game.playerIds[i] = targetId;
+                            changed = true;
+                        }
+                    }
+                    if (changed) gStore.put(game);
+                });
+            };
+            // セッションIDすげ替え
+            sStore.getAll().onsuccess = (e) => {
+                e.target.result.forEach(session => {
+                    let changed = false;
+                    for (let i = 0; i < session.participantPlayerIds.length; i++) {
+                        if (session.participantPlayerIds[i] === sourceId) {
+                            session.participantPlayerIds[i] = targetId;
+                            changed = true;
+                        }
+                    }
+                    if (changed) sStore.put(session);
+                });
+            };
+        });
+    },
+    // 全データの完全初期化
+    clearAllData: function () {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                reject("Database not initialized");
+                return;
+            }
+            const tx = this.db.transaction(['players', 'sessions', 'games'], 'readwrite');
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = (e) => reject(e.target.error);
+            tx.objectStore('players').clear();
+            tx.objectStore('sessions').clear();
+            tx.objectStore('games').clear();
+        });
     }
 };

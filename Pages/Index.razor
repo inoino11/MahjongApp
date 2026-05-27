@@ -181,7 +181,7 @@
                 <MudItem xs="12" sm="6">
                     <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center justify-space-between px-2 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
                         @* 左ブロック: 名前入力 *@
-                        <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" SearchFunc="@SearchRegisteredPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" ShowOnFocus="true" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input" Style="font-weight: bold; font-size: 0.95rem; width: 5.5em;" Disabled="isSitOut" onfocus="this.select();" />
+                        <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" SearchFunc="@SearchRegisteredPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" ShowOnFocus="true" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input" Style="font-weight: bold; font-size: 0.95rem; width: 8.0em;" Disabled="isSitOut" onfocus="this.select();" />
                         <div class="d-flex align-center justify-center flex-grow-1">
                             @* 抜け番 *@
                             @if (activeParticipantCount > rules.PlayerCount)
@@ -1472,10 +1472,12 @@
     {
         try
         {
-            // 1. 本日の対局（ActiveHistory）に一度でも登場した「ユニークなプレイヤー名」をすべて抽出
+            // 1. 各局（h）の PlayerNames の中から、対応する素点（RawScores）が null ではない（実際に打った）プレイヤー名のみを抽出
             var sessionPlayerNames = ActiveHistory
-                .SelectMany(h => h.PlayerNames)
-                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .SelectMany(h => h.PlayerNames
+                    .Select((name, idx) => new { Name = name, HasScore = idx < h.RawScores.Count && h.RawScores[idx].HasValue })
+                    .Where(x => x.HasScore && !string.IsNullOrWhiteSpace(x.Name))
+                    .Select(x => x.Name))
                 .Distinct()
                 .ToList();
 
@@ -1483,7 +1485,7 @@
             var nameToIdMap = new Dictionary<string, string>();
             var playersToUpdate = new List<PlayerProfile>();
             var gameRecordsToSave = new List<SavedGameRecord>();
-
+            
             var newSessionId = Guid.NewGuid().ToString();
             var currentTimestamp = DateTime.Now;
 
@@ -1495,30 +1497,28 @@
                 if (existingPlayer != null)
                 {
                     nameToIdMap[name] = existingPlayer.Id;
-                    // 更新対象リストにディープコピーして追加（後でチップを足すため）
-                    playersToUpdate.Add(new PlayerProfile
-                    {
-                        Id = existingPlayer.Id,
-                        Name = existingPlayer.Name,
-                        CumulativeChips = existingPlayer.CumulativeChips,
+                    playersToUpdate.Add(new PlayerProfile 
+                    { 
+                        Id = existingPlayer.Id, 
+                        Name = existingPlayer.Name, 
+                        CumulativeChips = existingPlayer.CumulativeChips, // 互換性のために残しますが、更新はしません
                         CreatedAt = existingPlayer.CreatedAt
                     });
                 }
                 else
                 {
-                    // 新規プレイヤー
                     var newId = Guid.NewGuid().ToString();
-                    var newProfile = new PlayerProfile
-                    {
-                        Id = newId,
+                    var newProfile = new PlayerProfile 
+                    { 
+                        Id = newId, 
                         Name = name,
                         CumulativeChips = 0,
                         CreatedAt = currentTimestamp
                     };
-
-                    playerMaster.Add(newProfile); // メモリ上のマスターも更新
-                    playersToUpdate.Add(newProfile); // DB保存対象に追加
-
+                    
+                    playerMaster.Add(newProfile);
+                    playersToUpdate.Add(newProfile);
+                    
                     nameToIdMap[name] = newId;
                 }
             }
@@ -1528,7 +1528,7 @@
             {
                 var savedRecord = new SavedGameRecord
                 {
-                    Id = Guid.NewGuid().ToString(), // 局ごとに一意のID
+                    Id = Guid.NewGuid().ToString(),
                     SessionId = newSessionId,
                     RuleName = rules.Name,
                     PlayerCount = rules.PlayerCount,
@@ -1538,15 +1538,17 @@
                     Points = game.Points,
                     Yen = game.Yen
                 };
-
+                
                 gameRecordsToSave.Add(savedRecord);
             }
 
-            // 4. まとめて入力された本日の最終チップ枚数を各プレイヤーの累計データに反映し、セッション記録を作成
+            // 4. セッション総括記録を作成（当時のレート・チップレートをここでスナップショット保存）
             var sessionRecord = new SavedSessionRecord
             {
                 SessionId = newSessionId,
                 Date = currentTimestamp,
+                Rate = rules.Rate,         // ★追加：当時の基本レートを記録
+                ChipRate = rules.ChipRate, // ★追加：当時のチップレートを記録
                 ParticipantPlayerIds = new List<string>(),
                 SettledChips = new List<int>()
             };
@@ -1557,38 +1559,28 @@
                 if (!string.IsNullOrWhiteSpace(name) && nameToIdMap.TryGetValue(name, out var playerId))
                 {
                     int chipCount = ActiveSessionChips[i];
-
+                    
                     // セッション総括記録に追加
                     sessionRecord.ParticipantPlayerIds.Add(playerId);
                     sessionRecord.SettledChips.Add(chipCount);
 
-                    // プレイヤー名簿の累計チップを更新
-                    var profileToUpdate = playersToUpdate.FirstOrDefault(p => p.Id == playerId);
-                    if (profileToUpdate != null)
-                    {
-                        profileToUpdate.CumulativeChips += chipCount;
-
-                        // メモリ上のマスターも同期しておく
-                        var masterProfile = playerMaster.First(p => p.Id == playerId);
-                        masterProfile.CumulativeChips = profileToUpdate.CumulativeChips;
-                    }
+                    // 💡 名簿（PlayerProfile）側への生枚数の累積・上書き処理は、今回の仕様変更（セッション毎清算）に伴い完全に撤廃しました。
+                    // チップの金額は、すべてこのsessionRecordから動的に計算・集計します。
                 }
             }
 
-            // ==========================================
-            // ★ 5. JS相互運用で IndexedDB へ安全に一括保存（トランザクション）
-            // ==========================================
+            // 5. JS相互運用で IndexedDB へ安全に一括保存
             await DatabaseService.SaveSessionAsync(playersToUpdate, sessionRecord, gameRecordsToSave);
 
-            // 6. 【物理的な二重登録防止】 卓情報のクリア
+            // 6. 卓情報のクリア
             ActiveHistory.Clear();
             ActiveSessionChips = Enumerable.Repeat(0, MaxParticipants).ToList();
-
+            
             await LocalStorage.SetItemAsync("ActiveHistory", ActiveHistory);
             await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
 
             ResetInputForms();
-            Snackbar.Add("本日の対局結果を長期成績に保存しました！", Severity.Success);
+            Snackbar.Add("本日の対局結果を通算成績に保存しました！", Severity.Success);
             StateHasChanged();
         }
         catch (Exception ex)

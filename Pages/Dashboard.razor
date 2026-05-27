@@ -6,44 +6,129 @@
         <MudIcon Icon="@Icons.Material.Filled.QueryStats" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
         成績ダッシュボード
     </MudText>
-    @* 四麻・三麻の切り替えタブ *@
-    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4" Color="Color.Dark">
-        <MudTabPanel Text="四人麻雀" Icon="@Icons.Material.Filled.People">            
-            @* --- Hero Metrics (最重要指標) --- *@
-            <MudGrid Spacing="3" Class="mb-6">
-                <MudItem xs="12" sm="6">
-                    <MudPaper Class="pa-4 d-flex flex-column align-center justify-center" Style="height: 120px; background-color: rgba(255,255,255,0.05);">
-                        <MudText Typo="Typo.subtitle1" Color="Color.Secondary">総合収支</MudText>
-                        <MudText Typo="Typo.h3" Style="color: #ff6b6b; font-weight: bold;">+12,500円</MudText>
+
+    @if (isLoading)
+    {
+        <div class="d-flex flex-column align-center justify-center py-10">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" Class="mb-4" />
+            <MudText Typo="Typo.h6" Color="Color.Secondary">データを集計中...</MudText>
+        </div>
+    }
+    else
+    {
+        @* --- Hero Metrics (全ルール合算の最重要指標) --- *@
+        <MudGrid Spacing="3" Class="mb-6">
+            <MudItem xs="12" sm="6">
+                <MudPaper Class="pa-4 d-flex flex-column align-center justify-center" Style="min-height: 120px; background-color: rgba(255,255,255,0.05);">
+                    <MudText Typo="Typo.subtitle1" Color="Color.Secondary">トッププレイヤー総合収支 (@topPlayerName)</MudText>
+                    <MudText Typo="Typo.h3" Style="@(totalYenAllRules >= 0 ? "color: #ff6b6b; font-weight: bold;" : "color: #4dabf7; font-weight: bold;")">
+                        @(totalYenAllRules > 0 ? "+" : "")@totalYenAllRules.ToString("N0")<span style="font-size: 1.2rem;">円</span>
+                    </MudText>
+                    @* ポイントとチップの内訳表示 *@
+                    <div class="d-flex gap-4 mt-1" style="font-size: 0.85rem; color: #aaaaaa;">
+                        <span>ポイント: @(totalGameYenAllRules > 0 ? "+" : "")@totalGameYenAllRules.ToString("N0")円</span>
+                        <span>チップ: @(totalChipYenAllRules > 0 ? "+" : "")@totalChipYenAllRules.ToString("N0")円</span>
+                    </div>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudPaper Class="pa-4 d-flex flex-column align-center justify-center" Style="min-height: 120px; background-color: rgba(255,255,255,0.05);">
+                    <MudText Typo="Typo.subtitle1" Color="Color.Secondary">平均順位 (合算)</MudText>
+                    <MudText Typo="Typo.h3" Style="font-weight: bold;">@(topPlayerAverageRank > 0 ? topPlayerAverageRank.ToString("F2") : "-")<span style="font-size: 1rem; color: #9e9e9e;"> 位</span></MudText>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+        @* 四麻・三麻の切り替えタブ *@
+        <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4" Color="Color.Dark">
+            <MudTabPanel Text="四人麻雀" Icon="@Icons.Material.Filled.People">
+                <MudPaper Class="pa-4" Style="background-color: rgba(255,255,255,0.02);">
+                    <MudText Typo="Typo.h6" Class="mb-4">基本成績ランキング (四麻)</MudText>
+                    <div style="overflow-x: auto;">
+                        <MudTable Items="@stats4" Hover="true" Dense="true" Elevation="0" Style="min-width: 800px; background: transparent;">
+                            <HeaderContent>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">名前</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">対局数</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">総合Pt</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; color:#4caf50;">総合収支</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">(Pt収支)</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">(チップ収支)</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">平均順位</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">トップ率</MudText></MudTh>
+                                <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">ラス率</MudText></MudTh>
+                            </HeaderContent>
+                            <RowTemplate Context="stat">
+                                <MudTd DataLabel="名前"><strong style="font-size: 1.1rem;">@stat.Name</strong></MudTd>
+                                <MudTd DataLabel="対局数">@stat.TotalGames</MudTd>
+                                <MudTd DataLabel="総合Pt">
+                                    <span style="@(stat.TotalPoint >= 0 ? "color:#ff6b6b; font-weight:bold;" : "color:#4dabf7; font-weight:bold;")">
+                                        @(stat.TotalPoint > 0 ? "+" : "")@stat.TotalPoint.ToString("F1")
+                                    </span>
+                                </MudTd>
+                                <MudTd DataLabel="総合収支" Style="background-color: rgba(76, 175, 80, 0.05);">
+                                    <span style="@(stat.TotalYen >= 0 ? "color:#ff6b6b; font-weight:bold;" : "color:#4dabf7; font-weight:bold;")">
+                                        @(stat.TotalYen > 0 ? "+" : "")@stat.TotalYen.ToString("N0")円
+                                    </span>
+                                </MudTd>
+                                <MudTd DataLabel="(Pt収支)" Style="color:#aaa; font-size:0.85rem;">@(stat.TotalGameYen > 0 ? "+" : "")@stat.TotalGameYen.ToString("N0")円</MudTd>
+                                <MudTd DataLabel="(チップ収支)" Style="color:#aaa; font-size:0.85rem;">@(stat.TotalChipYen > 0 ? "+" : "")@stat.TotalChipYen.ToString("N0")円</MudTd>
+                                <MudTd DataLabel="平均順位">@stat.AverageRank.ToString("F2")</MudTd>
+                                <MudTd DataLabel="トップ率">@stat.FirstPlaceRate.ToString("F1")%</MudTd>
+                                <MudTd DataLabel="ラス率">@stat.LastPlaceRate(4).ToString("F1")%</MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </div>
+                </MudPaper>
+            </MudTabPanel>
+
+            <MudTabPanel Text="三人麻雀" Icon="@Icons.Material.Filled.PersonOutline">
+                @if (stats3.Count == 0)
+                {
+                    <MudText Typo="Typo.body1" Align="Align.Center" Class="py-10">三麻のデータはまだありません。</MudText>
+                }
+                else
+                {
+                    <MudPaper Class="pa-4 mt-2" Style="background-color: rgba(255,255,255,0.02);">
+                        <MudText Typo="Typo.h6" Class="mb-4">基本成績ランキング (三麻)</MudText>
+                        <div style="overflow-x: auto;">
+                            <MudTable Items="@stats3" Hover="true" Dense="true" Elevation="0" Style="min-width: 800px; background: transparent;">
+                                <HeaderContent>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">名前</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">対局数</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">総合Pt</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold; color:#4caf50;">総合収支</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">(Pt収支)</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">(チップ収支)</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">平均順位</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">トップ率</MudText></MudTh>
+                                    <MudTh><MudText Typo="Typo.caption" Style="font-weight: bold;">ラス率</MudText></MudTh>
+                                </HeaderContent>
+                                <RowTemplate Context="stat">
+                                    <MudTd DataLabel="名前"><strong style="font-size: 1.1rem;">@stat.Name</strong></MudTd>
+                                    <MudTd DataLabel="対局数">@stat.TotalGames</MudTd>
+                                    <MudTd DataLabel="総合Pt">
+                                        <span style="@(stat.TotalPoint >= 0 ? "color:#ff6b6b; font-weight:bold;" : "color:#4dabf7; font-weight:bold;")">
+                                            @(stat.TotalPoint > 0 ? "+" : "")@stat.TotalPoint.ToString("F1")
+                                        </span>
+                                    </MudTd>
+                                    <MudTd DataLabel="総合収支" Style="background-color: rgba(76, 175, 80, 0.05);">
+                                        <span style="@(stat.TotalYen >= 0 ? "color:#ff6b6b; font-weight:bold;" : "color:#4dabf7; font-weight:bold;")">
+                                            @(stat.TotalYen > 0 ? "+" : "")@stat.TotalYen.ToString("N0")円
+                                        </span>
+                                    </MudTd>
+                                    <MudTd DataLabel="(Pt収支)" Style="color:#aaa; font-size:0.85rem;">@(stat.TotalGameYen > 0 ? "+" : "")@stat.TotalGameYen.ToString("N0")円</MudTd>
+                                    <MudTd DataLabel="(チップ収支)" Style="color:#aaa; font-size:0.85rem;">@(stat.TotalChipYen > 0 ? "+" : "")@stat.TotalChipYen.ToString("N0")円</MudTd>
+                                    <MudTd DataLabel="平均順位">@stat.AverageRank.ToString("F2")</MudTd>
+                                    <MudTd DataLabel="トップ率">@stat.FirstPlaceRate.ToString("F1")%</MudTd>
+                                    <MudTd DataLabel="ラス率">@stat.LastPlaceRate(3).ToString("F1")%</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </div>
                     </MudPaper>
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudPaper Class="pa-4 d-flex flex-column align-center justify-center" Style="height: 120px; background-color: rgba(255,255,255,0.05);">
-                        <MudText Typo="Typo.subtitle1" Color="Color.Secondary">平均順位 (四麻)</MudText>
-                        <MudText Typo="Typo.h3" Style="font-weight: bold;">2.34<span style="font-size: 1rem; color: #9e9e9e;"> 位</span></MudText>
-                    </MudPaper>
-                </MudItem>
-            </MudGrid>
-            @* --- 詳細統計＆相性分析エリア (今後の実装枠) --- *@
-            <MudGrid Spacing="3">
-                <MudItem xs="12" md="6">
-                    <MudPaper Class="pa-4" Style="min-height: 300px; background-color: rgba(255,255,255,0.02);">
-                        <MudText Typo="Typo.h6" Class="mb-4">基本成績・順位分布</MudText>
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">※ここに円グラフやトップ率などの統計が入ります</MudText>
-                    </MudPaper>
-                </MudItem>
-                <MudItem xs="12" md="6">
-                    <MudPaper Class="pa-4" Style="min-height: 300px; background-color: rgba(255,255,255,0.02);">
-                        <MudText Typo="Typo.h6" Class="mb-4">対人相性・ライバル分析</MudText>
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">※ここに「カモ」や「天敵」のランキングが入ります</MudText>
-                    </MudPaper>
-                </MudItem>
-            </MudGrid>
-        </MudTabPanel>        
-        <MudTabPanel Text="三人麻雀" Icon="@Icons.Material.Filled.PersonOutline">
-            <MudText Typo="Typo.body1" Align="Align.Center" Class="py-10">三麻のデータはまだありません。</MudText>
-        </MudTabPanel>
-    </MudTabs>
+                }
+            </MudTabPanel>
+        </MudTabs>
+    }
+
     <div class="d-flex justify-center mt-6">
         <MudButton Href="/" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Home">
             入力画面に戻る
@@ -52,9 +137,143 @@
 </MudContainer>
 
 @code {
-    // 今後ここにIndexedDBからデータをロードする処理を書きます
+    @inject MahjongApp.Services.DatabaseService DatabaseService
+
+    // --- 集計結果を画面にバインドするためのViewModel ---
+    private class PlayerStats
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public int TotalGames { get; set; }
+        public double TotalPoint { get; set; }
+        // --- 収支関連（新設） ---
+        public int TotalGameYen { get; set; } // ポイントによる収支
+        public int TotalChipYen { get; set; } // チップによる収支
+        public int TotalYen => TotalGameYen + TotalChipYen; // 総合収支
+        public int[] RankCounts { get; set; } = new int[4];
+        public double AverageRank => TotalGames == 0 ? 0 : RankCounts.Select((count, index) => count * (index + 1)).Sum() / (double)TotalGames;
+        public double FirstPlaceRate => TotalGames == 0 ? 0 : (double)RankCounts[0] / TotalGames * 100;
+        public double LastPlaceRate(int playerCount) => TotalGames == 0 ? 0 : (double)RankCounts[playerCount - 1] / TotalGames * 100;
+    }
+
+    private bool isLoading = true;
+
+    // 三麻・四麻ごとの集計リスト
+    private List<PlayerStats> stats4 = new();
+    private List<PlayerStats> stats3 = new();
+
+    // 総合収支（全ルール＋チップ合算）の算出用
+    private string topPlayerName = "データなし";
+    private int totalYenAllRules = 0;
+    private int totalGameYenAllRules = 0;
+    private int totalChipYenAllRules = 0;
+    private double topPlayerAverageRank = 0;
+
     protected override async Task OnInitializedAsync()
     {
-        // await LoadDataFromDbAsync();
+        await LoadAndCalculateStatsAsync();
+        isLoading = false;
+    }
+
+    private async Task LoadAndCalculateStatsAsync()
+    {
+        try
+        {
+            var dbData = await DatabaseService.GetAllDataAsync();
+            if (dbData == null || dbData.Players.Count == 0 || dbData.Games.Count == 0) return;
+
+            var statsMap4 = dbData.Players.ToDictionary(p => p.Id, p => new PlayerStats { Id = p.Id, Name = p.Name });
+            var statsMap3 = dbData.Players.ToDictionary(p => p.Id, p => new PlayerStats { Id = p.Id, Name = p.Name });
+
+            // 1. 局データ（ゲーム収支とポイント）を集計
+            foreach (var game in dbData.Games)
+            {
+                bool isSanma = game.PlayerCount == 3;
+                var currentMap = isSanma ? statsMap3 : statsMap4;
+
+                var validPlayers = game.PlayerIds
+                    .Select((id, idx) => new { Id = id, Score = game.RawScores.Count > idx ? game.RawScores[idx] : null, Index = idx })
+                    .Where(x => !string.IsNullOrEmpty(x.Id) && x.Score.HasValue)
+                    .OrderByDescending(x => x.Score)
+                    .ToList();
+
+                for (int rank = 0; rank < validPlayers.Count; rank++)
+                {
+                    var p = validPlayers[rank];
+                    if (currentMap.ContainsKey(p.Id!))
+                    {
+                        var stat = currentMap[p.Id!];
+                        var idx = p.Index;
+
+                        stat.TotalGames++;
+                        stat.RankCounts[rank]++;
+                        stat.TotalPoint += game.Points.Count > idx ? game.Points[idx] : 0;
+                        stat.TotalGameYen += game.Yen.Count > idx ? game.Yen[idx] : 0;
+                    }
+                }
+            }
+
+            // 2. セッション記録からチップ収支を集計
+            foreach (var session in dbData.Sessions)
+            {
+                // そのセッションが三麻か四麻かを、紐づく最初のゲームから判定する
+                var firstGame = dbData.Games.FirstOrDefault(g => g.SessionId == session.SessionId);
+                bool isSanmaSession = firstGame != null && firstGame.PlayerCount == 3;
+                var currentMap = isSanmaSession ? statsMap3 : statsMap4;
+
+                for (int i = 0; i < session.ParticipantPlayerIds.Count; i++)
+                {
+                    string pId = session.ParticipantPlayerIds[i];
+                    if (!string.IsNullOrEmpty(pId) && currentMap.ContainsKey(pId) && session.SettledChips.Count > i)
+                    {
+                        // チップ枚数 × 当時のチップレートを円として加算
+                        currentMap[pId].TotalChipYen += session.SettledChips[i] * session.ChipRate;
+                    }
+                }
+            }
+
+            // 3. システム用の "deleted" を除外し、総合収支（TotalYen）順にソート
+            stats4 = statsMap4.Values.Where(s => s.Id != "deleted" && s.TotalGames > 0).OrderByDescending(s => s.TotalYen).ToList();
+            stats3 = statsMap3.Values.Where(s => s.Id != "deleted" && s.TotalGames > 0).OrderByDescending(s => s.TotalYen).ToList();
+
+            // 4. ヒーローメトリクス用（全ルール合算でのトッププレイヤーを抽出）
+            var combinedStats = dbData.Players.Where(p => p.Id != "deleted").Select(p => 
+            {
+                var s4 = statsMap4.ContainsKey(p.Id) ? statsMap4[p.Id] : null;
+                var s3 = statsMap3.ContainsKey(p.Id) ? statsMap3[p.Id] : null;
+                int games = (s4?.TotalGames ?? 0) + (s3?.TotalGames ?? 0);
+                
+                // 平均順位は対局数による重み付け平均
+                double avgRank = games == 0 ? 0 : 
+                    (((s4?.AverageRank ?? 0) * (s4?.TotalGames ?? 0)) + ((s3?.AverageRank ?? 0) * (s3?.TotalGames ?? 0))) / games;
+
+                return new {
+                    Name = p.Name,
+                    TotalGames = games,
+                    TotalYen = (s4?.TotalYen ?? 0) + (s3?.TotalYen ?? 0),
+                    TotalGameYen = (s4?.TotalGameYen ?? 0) + (s3?.TotalGameYen ?? 0),
+                    TotalChipYen = (s4?.TotalChipYen ?? 0) + (s3?.TotalChipYen ?? 0),
+                    AverageRank = avgRank
+                };
+            })
+            .Where(x => x.TotalGames > 0)
+            .OrderByDescending(x => x.TotalYen)
+            .ToList();
+
+            // 5. 合算トップのデータをメトリクスにセット
+            var topPlayer = combinedStats.FirstOrDefault();
+            if (topPlayer != null)
+            {
+                topPlayerName = topPlayer.Name;
+                totalYenAllRules = topPlayer.TotalYen;
+                totalGameYenAllRules = topPlayer.TotalGameYen;
+                totalChipYenAllRules = topPlayer.TotalChipYen;
+                topPlayerAverageRank = topPlayer.AverageRank;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ダッシュボードの集計エラー: {ex.Message}");
+        }
     }
 }

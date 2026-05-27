@@ -168,6 +168,8 @@ public class SavedSessionRecord
 {
     public string SessionId { get; set; } = string.Empty;           // セッションID
     public DateTime Date { get; set; } = DateTime.Now;              // 登録日時
+    public int Rate { get; set; } = 0;                              // 当時のレート (円/1k)
+    public int ChipRate { get; set; } = 0;                          // 当時のチップレート (円/枚)
     public List<string> ParticipantPlayerIds { get; set; } = new(); // プレイヤーIDリスト
    public List<int> SettledChips { get; set; } = new();             // 移動チップ枚数リスト
 }

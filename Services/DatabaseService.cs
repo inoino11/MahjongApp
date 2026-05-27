@@ -26,7 +26,7 @@ public class DatabaseService
     /// その日の対局（セッション）を保存
     public async Task SaveSessionAsync(List<PlayerProfile> playersToUpdate, SavedSessionRecord sessionRecord, List<SavedGameRecord> gameRecords)
     {
-        await EnsureInitializedAsync();        
+        await EnsureInitializedAsync();
         // JSの saveSession 関数にデータを丸ごと渡す
         await _jsRuntime.InvokeVoidAsync("mahjongDb.saveSession", playersToUpdate, sessionRecord, gameRecords);
     }
@@ -36,6 +36,30 @@ public class DatabaseService
     {
         await EnsureInitializedAsync();
         return await _jsRuntime.InvokeAsync<AllDbData>("mahjongDb.getAllData");
+    }
+
+    public async Task UpdatePlayerAsync(PlayerProfile player)
+    {
+        await EnsureInitializedAsync();
+        await _jsRuntime.InvokeVoidAsync("mahjongDb.updatePlayer", player);
+    }
+
+    public async Task DeletePlayerAsync(string playerId)
+    {
+        await EnsureInitializedAsync();
+        await _jsRuntime.InvokeVoidAsync("mahjongDb.deletePlayer", playerId);
+    }
+
+    public async Task MergePlayersAsync(string sourceId, string targetId)
+    {
+        await EnsureInitializedAsync();
+        await _jsRuntime.InvokeVoidAsync("mahjongDb.mergePlayers", sourceId, targetId);
+    }
+
+    public async Task ClearAllDataAsync()
+    {
+        await EnsureInitializedAsync();
+        await _jsRuntime.InvokeVoidAsync("mahjongDb.clearAllData");
     }
 }
 
