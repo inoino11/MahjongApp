@@ -1,0 +1,177 @@
+@page "/sessions"
+@using MahjongApp.Models
+@inject MahjongApp.Services.DatabaseService DatabaseService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 pb-10">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white;">
+        <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
+        セッション履歴
+    </MudText>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-center py-4">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </div>
+    }
+    else if (sessionGroups.Count == 0)
+    {
+        <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">記録されたセッションはありません。</MudText>
+    }
+    else
+    {
+        <MudTable Items="@sessionGroups" Hover="true" Dense="true" Elevation="0" Style="background-color: rgba(255,255,255,0.02);">
+            <HeaderContent>
+                <MudTh></MudTh> @* 展開ボタン用カラム *@
+                <MudTh>日付</MudTh>
+                <MudTh>参加者</MudTh>
+                <MudTh>対局数</MudTh>
+                <MudTh>操作</MudTh>
+            </HeaderContent>
+            <RowTemplate Context="group">
+                <MudTd>
+                    <MudIconButton Icon="@(group.ShowDetails ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" OnClick="@(() => group.ShowDetails = !group.ShowDetails)" Size="Size.Small" />
+                </MudTd>
+                <MudTd><strong>@group.Session.Date.ToString("yyyy/MM/dd HH:mm")</strong></MudTd>
+                <MudTd>@GetPlayerNames(group.Session.ParticipantPlayerIds)</MudTd>
+                <MudTd>@group.Games.Count 局</MudTd>
+                <MudTd>
+                    <MudButton Size="Size.Small" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" OnClick="@(() => ConfirmDeleteSession(group))">削除</MudButton>
+                </MudTd>
+            </RowTemplate>
+            <ChildRowContent Context="group">
+                @if (group.ShowDetails)
+                {
+                    <MudTr>
+                        <MudTd Colspan="5" Class="pa-4">
+                            <MudCard Elevation="0" Style="background-color: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);">
+                                <MudCardContent>
+                                    <MudText Typo="Typo.subtitle2" Class="mb-2" Color="Color.Secondary">◆ 対局一覧</MudText>
+                                    @if (group.Games.Count > 0)
+                                    {
+                                        <ResultTable History="@ConvertToGameResults(group.Games)" Players="@GetSessionPlayerNames(group)" ActiveParticipantCount="@group.Session.ParticipantPlayerIds.Count" IsReadOnly="true" />
+                                    }
+                                    else
+                                    {
+                                        <MudText Typo="Typo.body2" Class="mb-4">このセッションには対局記録がありません。</MudText>
+                                    }
+                                    @if (group.Session.SettledChips != null && group.Session.SettledChips.Count > 0 && group.Session.SettledChips.Any(c => c != 0))
+                                    {
+                                        <MudText Typo="Typo.subtitle2" Class="mt-4 mb-2" Color="Color.Secondary">◆ チップ精算 (レート: @group.Session.ChipRate 円)</MudText>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            @for (int i = 0; i < group.Session.ParticipantPlayerIds.Count; i++)
+                                            {
+                                                var pId = group.Session.ParticipantPlayerIds[i];
+                                                if (string.IsNullOrEmpty(pId)) continue;
+                                                var pName = GetPlayerName(pId);
+                                                var chips = group.Session.SettledChips.Count > i ? group.Session.SettledChips[i] : 0;
+                                                var chipYen = chips * group.Session.ChipRate;
+                                                var color = chips >= 0 ? "#ff6b6b" : "#4dabf7";
+                                                var sign = chips > 0 ? "+" : "";
+                                                if (chips != 0)
+                                                {
+                                                    <span style="font-size: 0.85rem; padding: 2px 6px; background-color: rgba(255,255,255,0.05); border-radius: 4px;">
+                                                        @pName: <span style="color: @color; font-weight: bold;">@sign@chips 枚 (@sign@chipYen.ToString("N0")円)</span>
+                                                    </span>
+                                                }
+                                            }
+                                        </div>
+                                    }
+                                </MudCardContent>
+                            </MudCard>
+                        </MudTd>
+                    </MudTr>
+                }
+            </ChildRowContent>
+        </MudTable>
+    }
+</MudContainer>
+
+@code {
+    private bool isLoading = true;
+    private List<SessionGroup> sessionGroups = new();
+    private List<PlayerProfile> allPlayers = new();
+    private Dictionary<string, string> playerMap = new();
+
+    public class SessionGroup
+    {
+        public SavedSessionRecord Session { get; set; } = new();
+        public List<SavedGameRecord> Games { get; set; } = new();
+        public bool ShowDetails { get; set; } // 展開状態のフラグ
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        var dbData = await DatabaseService.GetAllDataAsync();
+        if (dbData != null)
+        {
+            allPlayers = dbData.Players;
+            playerMap = dbData.Players.ToDictionary(p => p.Id, p => p.Name);
+            // セッションを日付の降順（新しい順）で並べ、紐づく対局データをグループ化
+            sessionGroups = dbData.Sessions
+                .OrderByDescending(s => s.Date)
+                .Select(s => new SessionGroup
+                {
+                    Session = s,
+                    Games = dbData.Games.Where(g => g.SessionId == s.SessionId).OrderBy(g => g.Timestamp).ToList(),
+                    ShowDetails = false
+                })
+                .ToList();
+        }
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private string GetPlayerName(string id) => playerMap.TryGetValue(id, out var name) ? name : "不明";
+
+    private string GetPlayerNames(List<string> ids)
+    {
+        var names = ids.Where(id => !string.IsNullOrEmpty(id) && id != "deleted").Select(GetPlayerName);
+        return string.Join(", ", names);
+    }
+
+    private async Task ConfirmDeleteSession(SessionGroup group)
+    {
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "セッションの削除",
+            $"このセッション（{group.Session.Date.ToString("yyyy/MM/dd HH:mm")}）と、\n含まれる対局履歴（{group.Games.Count}局）を完全に削除します。\nよろしいですか？",
+            yesText: "削除する", cancelText: "キャンセル");
+
+        if (result == true)
+        {
+            await DatabaseService.DeleteSessionAsync(group.Session.SessionId);
+            Snackbar.Add("セッションを削除しました", Severity.Success);
+            await LoadData();
+        }
+    }
+
+    // データベース用の型(SavedGameRecord)を、UI表示用の型(GameResult)に変換する
+    private List<GameResult> ConvertToGameResults(List<SavedGameRecord> savedGames)
+    {
+        return savedGames.Select(g => new GameResult
+        {
+            Timestamp = g.Timestamp,
+            RawScores = g.RawScores != null ? new List<int?>(g.RawScores) : new(),
+            Points = g.Points != null ? new List<double>(g.Points) : new(),
+            Yen = g.Yen != null ? new List<int>(g.Yen) : new()
+        }).ToList();
+    }
+
+    // ResultTableのヘッダーに表示するための「名前のリスト」を生成する
+    private List<string> GetSessionPlayerNames(SessionGroup group)
+    {
+        return group.Session.ParticipantPlayerIds
+            .Select(id => GetPlayerName(id))
+            .ToList();
+    }
+}

@@ -198,5 +198,28 @@ window.mahjongDb = {
                 reject("JSON Parsing or DB Error: " + e.message);
             }
         });
+    },
+    // セッションと、それに紐づく全対局履歴をまとめて削除する処理
+    deleteSession: function(sessionId) {
+        return new Promise((resolve, reject) => {
+            if (!this.db) return reject("Database not initialized");
+            const tx = this.db.transaction(['sessions', 'games'], 'readwrite');
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = (e) => reject(e.target.error);
+            // 1. セッション本体を削除
+            tx.objectStore('sessions').delete(sessionId);
+            // 2. このセッションIDを持つ対局(games)を探して全て削除
+            const gameStore = tx.objectStore('games');
+            gameStore.openCursor().onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                    const currentSessionId = cursor.value.SessionId || cursor.value.sessionId;
+                    if (currentSessionId === sessionId) {
+                        cursor.delete();
+                    }
+                    cursor.continue();
+                }
+            };
+        });
     }
 };

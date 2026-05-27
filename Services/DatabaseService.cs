@@ -79,6 +79,12 @@ public class DatabaseService
         await EnsureInitializedAsync();
         await _jsRuntime.InvokeVoidAsync("mahjongDb.restoreData", json, isMerge);
     }
+
+    public async Task DeleteSessionAsync(string sessionId)
+    {
+        await EnsureInitializedAsync();
+        await _jsRuntime.InvokeVoidAsync("mahjongDb.deleteSession", sessionId);
+    }
 }
 
 /// ダッシュボード読み込み用のデータ受け皿クラス
