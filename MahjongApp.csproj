@@ -24,5 +24,6 @@
   
   <Target Name="Create404" AfterTargets="Publish">
     <Copy SourceFiles="$(PublishDir)wwwroot\index.html" DestinationFiles="$(PublishDir)wwwroot\404.html" />
+    <WriteLinesToFile File="$(PublishDir)wwwroot\.nojekyll" Lines="" Overwrite="true" />
   </Target>
 </Project>
