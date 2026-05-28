@@ -4,7 +4,25 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 pb-10">
+<style>
+    .session-table { 
+        width: 100% !important; 
+    }
+    /* 親テーブルは横スクロールさせず、画面幅に収める */
+    .session-table .mud-table-container { 
+        overflow-x: hidden !important; 
+        width: 100% !important; 
+    }
+    /* 子テーブル（詳細領域）の横スクロール設定 */
+    .child-table-wrapper { 
+        overflow-x: auto !important; 
+        width: 0;
+        min-width: 100% !important; 
+        -webkit-overflow-scrolling: touch; 
+        padding-bottom: 4px; 
+    }
+</style>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 pb-10" @onclick="ClearArmedState">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white;">
         <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
         対局履歴
@@ -22,36 +40,52 @@
     }
     else
     {
-        <MudTable Items="@sessionGroups" Hover="true" Dense="true" Elevation="0" Style="background-color: rgba(255,255,255,0.02);">
-            <HeaderContent>
-                <MudTh></MudTh> @* 展開ボタン用カラム *@
-                <MudTh>日付</MudTh>
-                <MudTh>参加者</MudTh>
-                <MudTh>対局数</MudTh>
-                <MudTh>操作</MudTh>
-            </HeaderContent>
+        <MudTable Items="@sessionGroups" Class="session-table" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="background-color: rgba(255,255,255,0.02);">
             <RowTemplate Context="group">
-                <MudTd>
-                    <MudIconButton Icon="@(group.ShowDetails ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" OnClick="@(() => group.ShowDetails = !group.ShowDetails)" Size="Size.Small" />
-                </MudTd>
-                <MudTd><strong>@group.Session.Date.ToString("yyyy/MM/dd HH:mm")</strong></MudTd>
-                <MudTd>@GetPlayerNames(group.Session.ParticipantPlayerIds)</MudTd>
-                <MudTd>@group.Games.Count 局</MudTd>
-                <MudTd>
-                    <MudButton Size="Size.Small" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" OnClick="@(() => ConfirmDeleteSession(group))">削除</MudButton>
+                <MudTd Style="padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div class="d-flex align-center justify-space-between w-100" style="margin-bottom: 6px;">
+                        <div class="d-flex align-center" style="gap: 4px;">
+                            <MudIconButton Icon="@(group.ShowDetails ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" 
+                                           OnClick="@(() => group.ShowDetails = !group.ShowDetails)" 
+                                           Size="Size.Small" 
+                                           Style="padding: 4px; color: #fff;" />
+                            <span style="font-size: 0.95rem; font-weight: bold; color: #fff; letter-spacing: 0.5px;">
+                                @group.Session.Date.ToString("yyyy/MM/dd HH:mm")
+                            </span>
+                        </div>
+                        <div class="d-flex align-center" style="gap: 8px;">
+                            <span style="font-size: 0.8rem; color: #9e9e9e; background-color: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; font-weight: bold;">
+                                @group.Games.Count 局
+                            </span>
+                            <span @onclick="() => { }" @onclick:stopPropagation="true">
+                                <MudButton Size="Size.Small" 
+                                           Variant="Variant.Text"
+                                           Color="@(ArmedDeleteTarget == group ? Color.Error : Color.Default)" 
+                                           StartIcon="@(ArmedDeleteTarget == group ? DeleteEmpty : Icons.Material.Filled.Delete)" 
+                                           Style="@(ArmedDeleteTarget == group ? "font-weight: bold; min-width: 32px; padding: 4px;" : "color: #9e9e9e; min-width: 32px; padding: 4px;")"
+                                           OnClick="@(() => HandleDeleteClick(group))">
+                                </MudButton>
+                            </span>
+                        </div>
+                    </div>
+                    <div style="text-align: left; padding-left: 32px; font-size: 0.85rem; color: #aaaaaa; white-space: normal; word-break: break-all; line-height: 1.4;">
+                        @GetPlayerNames(group.Session.ParticipantPlayerIds)
+                    </div>
                 </MudTd>
             </RowTemplate>
             <ChildRowContent Context="group">
                 @if (group.ShowDetails)
                 {
                     <MudTr>
-                        <MudTd Colspan="5" Class="pa-4">
+                        <MudTd Colspan="1" Class="pa-4" Style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                             <MudCard Elevation="0" Style="background-color: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);">
                                 <MudCardContent>
                                     <MudText Typo="Typo.subtitle2" Class="mb-2" Color="Color.Secondary">◆ 対局一覧</MudText>
                                     @if (group.Games.Count > 0)
                                     {
-                                        <ResultTable History="@ConvertToGameResults(group.Games)" Players="@GetSessionPlayerNames(group)" ActiveParticipantCount="@group.Session.ParticipantPlayerIds.Count" IsReadOnly="true" />
+                                        <div class="child-table-wrapper mb-4">
+                                            <ResultTable History="@ConvertToGameResults(group.Games)" Players="@GetSessionPlayerNames(group)" ActiveParticipantCount="@group.Session.ParticipantPlayerIds.Count" IsReadOnly="true" />
+                                        </div>
                                     }
                                     else
                                     {
@@ -59,7 +93,7 @@
                                     }
                                     @if (group.Session.SettledChips != null && group.Session.SettledChips.Count > 0 && group.Session.SettledChips.Any(c => c != 0))
                                     {
-                                        <MudText Typo="Typo.subtitle2" Class="mt-4 mb-2" Color="Color.Secondary">◆ チップ精算 (レート: @group.Session.ChipRate 円)</MudText>
+                                        <MudText Typo="Typo.subtitle2" Class="mt-2 mb-2" Color="Color.Secondary">◆ チップ精算 (レート: @group.Session.ChipRate 円)</MudText>
                                         <div class="d-flex flex-wrap gap-2">
                                             @for (int i = 0; i < group.Session.ParticipantPlayerIds.Count; i++)
                                             {
@@ -94,12 +128,13 @@
     private List<SessionGroup> sessionGroups = new();
     private List<PlayerProfile> allPlayers = new();
     private Dictionary<string, string> playerMap = new();
+    private SessionGroup? ArmedDeleteTarget { get; set; }
 
     public class SessionGroup
     {
         public SavedSessionRecord Session { get; set; } = new();
         public List<SavedGameRecord> Games { get; set; } = new();
-        public bool ShowDetails { get; set; } // 展開状態のフラグ
+        public bool ShowDetails { get; set; }
     }
 
     protected override async Task OnInitializedAsync()
@@ -117,6 +152,7 @@
         {
             allPlayers = dbData.Players;
             playerMap = dbData.Players.ToDictionary(p => p.Id, p => p.Name);
+            
             // 対局を日付の降順（新しい順）で並べ、紐づく対局データをグループ化
             sessionGroups = dbData.Sessions
                 .OrderByDescending(s => s.Date)
@@ -128,8 +164,29 @@
                 })
                 .ToList();
         }
+        
         isLoading = false;
         StateHasChanged();
+    }
+
+    // ごみ箱ボタンのクリックハンドラー
+    private async Task HandleDeleteClick(SessionGroup group)
+    {
+        if (ArmedDeleteTarget != group)
+        {
+            ArmedDeleteTarget = group;
+            return;
+        }
+        await ConfirmDeleteSession(group);
+    }
+
+    // 別の場所をクリックしたときに警告（Armed）状態を解除する
+    private void ClearArmedState()
+    {
+        if (ArmedDeleteTarget != null)
+        {
+            ArmedDeleteTarget = null;
+        }
     }
 
     private string GetPlayerName(string id) => playerMap.TryGetValue(id, out var name) ? name : "不明";
@@ -146,12 +203,16 @@
             "対局の削除",
             $"この対局（{group.Session.Date.ToString("yyyy/MM/dd HH:mm")}）データを完全に削除します。\nよろしいですか？",
             yesText: "削除する", cancelText: "キャンセル");
-
+            
         if (result == true)
         {
             await DatabaseService.DeleteSessionAsync(group.Session.SessionId);
             Snackbar.Add("対局を削除しました", Severity.Success);
             await LoadData();
+        }
+        else
+        {
+            ArmedDeleteTarget = null;
         }
     }
 
@@ -174,4 +235,6 @@
             .Select(id => GetPlayerName(id))
             .ToList();
     }
+
+    private const string DeleteEmpty = "<path d=\"M20.37,8.91L19.37,10.64L7.24,3.64L8.24,1.91L11.28,3.66L12.64,3.29L16.97,5.79L17.34,7.16L20.37,8.91M6,19V7H11.07L18,11V19A2,2 0 0,1 16,21H8A2,2 0 0,1 6,19Z\"/>";
 }

@@ -42,23 +42,28 @@
         text-align: center !important;
     }
 
-    #table-scroll .mud-table-container table {
+    /* 【修正】最優先でスクロールバーを非表示にするため !important を追加 */
+    .sync-chip-scroll {
+        -ms-overflow-style: none !important; /* IE, Edge用 */
+        scrollbar-width: none !important;    /* Firefox用 */
+    }
+
+    /* 【修正】最優先でスクロールバーを非表示にするため !important を追加 */
+    .sync-chip-scroll::-webkit-scrollbar {
+        display: none !important; /* Chrome, Safari用 */
+    }
+
+    /* 【重要・追加】内側コンテナのスクロールを殺し、外側のJavaScript監視用divにスクロールを一任する */
+    .sync-table-scroll .mud-table-container {
+        overflow-x: visible !important;
+    }
+
+    /* テーブルの最小幅を設定 */
+    .sync-table-scroll .mud-table-container table {
         min-width: var(--table-min-width) !important;
     }
 
-    #chip-scroll {
-        -ms-overflow-style: none;
-        /* IE, Edge用 */
-        scrollbar-width: none;
-        /* Firefox用 */
-    }
-
-    #chip-scroll::-webkit-scrollbar {
-        display: none;
-        /* Chrome, Safari用 */
-    }
-
-    /* ▼ 実測・同期用の新設CSS ▼ */
+    /* 実測・同期用の新設CSS */
     #result-container {
         width: 100%;
         position: relative;
@@ -156,13 +161,13 @@
             <MudCard Class="mb-4" Elevation="0" Outlined="true">
                 <MudCardContent Class="py-3 px-0">
                     <MudText Typo="Typo.subtitle2" Class="mb-2 px-3">チップ集計</MudText>
-                    <div id="chip-scroll" style="width: 100%; overflow-x: auto; padding-bottom: 4px;">
+                    <div id="@ChipScrollId" class="sync-chip-scroll" style="width: 100%; overflow-x: auto; padding-bottom: 4px;">
                         @{
                             bool isChipError = !IsReadOnly && SessionChips.Take(ActiveParticipantCount).Sum() != 0;
                         }
                         <div style="display: table; width: 100%; min-width: @GetTableMinWidth(); table-layout: fixed; border-collapse: collapse;">
                             <div style="display: table-row;">
-                                <div style="display: table-cell; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box; position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1; padding: 0;"></div>
+                                <div style="display: table-cell; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box; position: sticky; left: -1px; background-color: var(--mud-palette-surface); z-index: 1; padding: 0;"></div>
                                 @for (int i = 0; i < ActiveParticipantCount; i++)
                                 {
                                     var idx = i;
@@ -200,7 +205,7 @@
         }
 
         @* テーブル *@
-        <div id="table-scroll" style="width: 100%; overflow-x: auto; --table-min-width: @GetTableMinWidth();">
+        <div id="@TableScrollId" class="sync-table-scroll" style="width: 100%; overflow-x: auto; --table-min-width: @GetTableMinWidth();">
             <MudTable Items="@History" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="width: 100%; table-layout: fixed;">
                 <ColGroup>
                     <col style="width: 45px;" />
@@ -216,7 +221,7 @@
                     }
                 </ColGroup>
                 <HeaderContent>
-                    <MudTh Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; white-space: nowrap; padding: 4px 0px !important; font-size: 0.65rem; letter-spacing: -0.5px; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box;">時刻</MudTh>
+                    <MudTh Style="position: sticky; left: -1px; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; white-space: nowrap; padding: 4px 0px !important; font-size: 0.65rem; letter-spacing: -0.5px; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box;">時刻</MudTh>
                     @for (int i = 0; i < ActiveParticipantCount; i++)
                     {
                         var idx = i;
@@ -234,7 +239,7 @@
                     }
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd Style="position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1; text-align: center; white-space: nowrap; padding: 4px 0px !important; font-size: 0.6rem; color: #666; letter-spacing: -0.5px; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box;">
+                    <MudTd Style="position: sticky; left: -1px; background-color: var(--mud-palette-surface); z-index: 1; text-align: center; white-space: nowrap; padding: 4px 0px !important; font-size: 0.6rem; color: #666; letter-spacing: -0.5px; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box;">
                         @context.Timestamp.ToString("HH:mm")
                     </MudTd>
                     @for (int i = 0; i < ActiveParticipantCount; i++)
@@ -257,7 +262,7 @@
                     }
                 </RowTemplate>
                 <FooterContent>
-                    <MudTd Style="position: sticky; left: 0; background: linear-gradient(rgba(46, 125, 50, 0.08), rgba(46, 125, 50, 0.08)), var(--mud-palette-surface); z-index: 2; text-align: center; border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 6px 0px !important; font-size: 0.75rem; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box;">
+                    <MudTd Style="position: sticky; left: -1px; background: linear-gradient(rgba(46, 125, 50, 0.08), rgba(46, 125, 50, 0.08)), var(--mud-palette-surface); z-index: 2; text-align: center; border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 6px 0px !important; font-size: 0.75rem; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box;">
                         <MudIcon Icon="@(DisplayMode == 0 ? Icons.Material.Filled.Calculate : Icons.Material.Filled.Functions)" Style="font-size: 1rem; vertical-align: text-bottom; margin-right: 2px; color: #2e7d32;" />
                         @(DisplayMode == 0 ? "平均" : "合計")
                     </MudTd>
@@ -296,6 +301,11 @@
     [Parameter] public EventCallback OnResetRequested { get; set; }
     [Parameter] public EventCallback<(int Index, int Value)> OnChipChanged { get; set; }
 
+    // スクロール要素に個別IDを設定
+    private readonly string _uid = Guid.NewGuid().ToString("N");
+    private string ChipScrollId => $"chip-{_uid}";
+    private string TableScrollId => $"table-{_uid}";
+
     // --- グラフ用データ定義 ---
     private List<ChartSeries<double>> _chartSeries = new();
     private string[] _xAxisLabels = Array.Empty<string>();
@@ -331,7 +341,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (DisplayMode != 7)
-            await JSRuntime.InvokeVoidAsync("syncScroll", "chip-scroll", "table-scroll");
+            await JSRuntime.InvokeVoidAsync("syncScroll", ChipScrollId, TableScrollId);
         await JSRuntime.InvokeVoidAsync("syncContainerHeight");
     }
 
