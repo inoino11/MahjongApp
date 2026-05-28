@@ -85,18 +85,24 @@
     }
     else
     {
-        @* タブの代わりに、中央寄せ＆最大幅指定のボタングループを使用 *@
         <div class="d-flex justify-center mb-6 px-4">
-            <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined" Style="width: 100%; max-width: 400px; background-color: rgba(255,255,255,0.02);">
-                <MudButton Variant="@(_selectedPlayerCount == 4 ? Variant.Filled : Variant.Outlined)" OnClick="() => _selectedPlayerCount = 4" Style="width: 50%; font-weight: bold;">
+            <div class="d-flex" style="width: 100%; max-width: 400px; background-color: rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 4px;">
+                <MudButton Variant="@(_selectedPlayerCount == 4 ? Variant.Filled : Variant.Text)" 
+                           Color="@(_selectedPlayerCount == 4 ? Color.Primary : Color.Default)"
+                           DisableElevation="true"
+                           OnClick="() => _selectedPlayerCount = 4" 
+                           Style="@($"width: 50%; font-weight: bold; border-radius: 6px; {(_selectedPlayerCount == 4 ? "color: #0d140d !important;" : "")}")">
                     四人麻雀
                 </MudButton>
-                <MudButton Variant="@(_selectedPlayerCount == 3 ? Variant.Filled : Variant.Outlined)" OnClick="() => _selectedPlayerCount = 3" Style="width: 50%; font-weight: bold;">
+                <MudButton Variant="@(_selectedPlayerCount == 3 ? Variant.Filled : Variant.Text)" 
+                           Color="@(_selectedPlayerCount == 3 ? Color.Primary : Color.Default)"
+                           DisableElevation="true"
+                           OnClick="() => _selectedPlayerCount = 3" 
+                           Style="@($"width: 50%; font-weight: bold; border-radius: 6px; {(_selectedPlayerCount == 3 ? "color: #0d140d !important;" : "")}")">
                     三人麻雀
                 </MudButton>
-            </MudButtonGroup>
+            </div>
         </div>
-
         @* 選択された人数に応じてコンテンツを切り替え *@
         @if (_selectedPlayerCount == 4)
         {
