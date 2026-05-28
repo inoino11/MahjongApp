@@ -112,18 +112,79 @@
 
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js" autostart="false"></script>
     <script>
+        // PWAのキャッシュとService Workerを破棄して再起動する復旧用関数
+        window.recoverPwaAndReload = async function() {
+            const btn = document.getElementById('recovery-btn');
+            if (btn) {
+                btn.innerText = "修復中...";
+                btn.disabled = true;
+                btn.style.opacity = "0.7";
+            }
+            // 1. Service Worker の登録を全解除
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                    }
+                } catch (err) {
+                    console.error("SW解除エラー:", err);
+                }
+            }
+
+            // 2. ブラウザの Cache Storage を全消去（古いDLLやアセットを消す）
+            if ('caches' in window) {
+                try {
+                    const keys = await caches.keys();
+                    for (let key of keys) {
+                        await caches.delete(key);
+                    }
+                } catch (err) {
+                    console.error("キャッシュ消去エラー:", err);
+                }
+            }
+
+            // 3. サーバーから最新ファイルを強制取得してリロード
+            window.location.reload(true);
+        };
+
+        // Blazorの手動起動とエラーハンドリング
         Blazor.start().then(() => {
+            // 起動成功時：ローディング画面をフェードアウト
             const loader = document.getElementById('mahjong-loader');
             if (loader) {
-                loader.style.opacity = '0'; // フェードアウト開始
-                loader.style.pointerEvents = 'none'; // クリックを透過させる
+                loader.style.opacity = '0';
+                loader.style.pointerEvents = 'none';
                 setTimeout(() => {
                     loader.remove();
                 }, 600);
             }
+        }).catch((error) => {
+            // 起動失敗時（クラッシュ）
+            console.error("Blazor起動エラー:", error);
+            const loader = document.getElementById('mahjong-loader');
+            if (loader) {
+                // ローディングアニメーションをエラーメッセージと修復ボタンに書き換える
+                loader.innerHTML = `
+                    <div style="font-size: 4rem; margin-bottom: 16px;">🚨</div>
+                    <div style="font-size: 1.2rem; font-weight: bold; color: #ff6b6b; margin-bottom: 12px; letter-spacing: 0.1em;">
+                        アプリの起動に失敗しました
+                    </div>
+                    <div style="font-size: 0.9rem; color: #e0e0e0; text-align: center; line-height: 1.6; margin-bottom: 24px; padding: 0 20px;">
+                        アップデートの競合、またはキャッシュが<br/>破損している可能性があります。
+                    </div>
+                    <button id="recovery-btn" onclick="recoverPwaAndReload()" style="background-color: #ef5350; color: white; border: none; padding: 12px 24px; font-size: 1rem; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: background-color 0.2s;">
+                        修復して再読み込み
+                    </button>
+                `;
+            }
+            // 画面下部に出るBlazor標準の黄色いエラーバー（blazor-error-ui）は独自の全画面エラーと被るので非表示にする
+            const errorUi = document.getElementById('blazor-error-ui');
+            if (errorUi) {
+                errorUi.style.display = 'none';
+            }
         });
-
-        // Service Worker の処理（既存のまま）
+        // 既存の Service Worker 更新検知ロジックはそのまま残す
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js').then(registration => {
                 registration.onupdatefound = () => {
