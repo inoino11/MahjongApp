@@ -78,6 +78,7 @@
             font-family: 'Roboto', 'Zen Kaku Gothic Antique', sans-serif;
         }
 
+        /* スマホ向け：スナックバーの究極小型化（カプセル型） */
         @media (max-width: 599.98px) {
             .mud-snackbar-location-bottom-center,
             .mud-snackbar-location-bottom-left,
@@ -86,14 +87,35 @@
                 width: 100% !important;
                 padding: 0 16px !important;
                 pointer-events: none;
+                display: flex !important;
+                justify-content: center !important; /* 中央に寄せる */
             }
             .mud-snackbar {
-                width: 100% !important;
-                max-width: 400px !important;
-                margin: 0 auto 16px auto !important;
-                border-radius: 8px !important;
+                width: auto !important; /* 100%をやめて、文字幅に合わせて縮ませる */
+                min-width: 0 !important;
+                max-width: 90% !important; /* 画面からはみ出さないように */
+                margin: 8px auto !important;
+                padding: 2px 12px !important; /* 余白を限界まで削る */
+                border-radius: 50px !important; /* 完全な角丸（カプセル型）にする */
                 pointer-events: auto;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+            }
+            /* 内部のメッセージとアイコンの余白・サイズ調整 */
+            .mud-snackbar-content {
+                padding: 4px 0 !important;
+                align-items: center !important;
+            }
+            .mud-snackbar-content-message {
+                font-size: 0.85rem !important; /* 文字を少し小さく */
+                line-height: 1.2 !important;
+                margin: 0 4px !important;
+            }
+            .mud-snackbar .mud-icon-root {
+                font-size: 1.25rem !important; /* アイコンも少し小さく */
+            }
+            .mud-snackbar-action {
+                padding-left: 4px !important;
+                margin-right: -8px !important; /* 閉じるボタンの余白を詰める */
             }
         }
     </style>
