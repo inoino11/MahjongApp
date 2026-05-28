@@ -192,7 +192,7 @@
                     </MudText>
                     @* 分析対象プレイヤーの選択（タブの上にグローバルに配置） *@
                     <div class="mb-4" style="max-width: 150px;">
-                        <MudSelect T="string" Label="分析対象プレイヤー" Value="@selectedHeroId" ValueChanged="OnHeroSelected" Class="align-center-select">
+                        <MudSelect T="string" Label="分析対象者" Value="@selectedHeroId" ValueChanged="OnHeroSelected" Class="align-center-select">
                             @foreach (var player in availablePlayers)
                             {
                                 <MudSelectItem Value="@player.Id">@player.Name</MudSelectItem>

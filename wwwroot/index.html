@@ -13,7 +13,6 @@
             document.write('<base href="/MahjongApp/" />');
         }
     </script>
-    <!-- <base href="/" /> -->
 
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="icon-515.png" />
@@ -32,73 +31,77 @@
 
     <script type="importmap"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        .mahjong-loading-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #0d140d;
+            color: #e0e0e0;
+            font-family: 'Kaisei Decol', serif;
+        }
+
+        .loading-tile {
+            font-size: 4rem;
+            animation: float 2s ease-in-out infinite;
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        body, .mud-typography {
+            font-family: 'Roboto', 'Zen Kaku Gothic Antique', sans-serif !important;
+        }
+
+        @media (max-width: 599.98px) {
+            .mud-snackbar-location-bottom-center,
+            .mud-snackbar-location-bottom-left,
+            .mud-snackbar-location-bottom-right,
+            .mud-snackbar-location-top-center {
+                width: 100% !important;
+                padding: 0 16px !important;
+                pointer-events: none;
+            }
+            .mud-snackbar {
+                width: 100% !important;
+                max-width: 400px !important;
+                margin: 0 auto 16px auto !important;
+                border-radius: 8px !important;
+                pointer-events: auto;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <div id="app">
-        <style>
-            .mahjong-loading-container {
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                background-color: #0d140d;
-                color: #e0e0e0;
-                font-family: 'Kaisei Decol', serif;
-            }
-
-            .loading-tile {
-                font-size: 4rem;
-                animation: float 2s ease-in-out infinite;
-            }
-
-            .loading-text {
-                margin-top: 20px;
-                font-size: 1.2rem;
-                font-weight: 700;
-                letter-spacing: 0.1em;
-                animation: pulse 1.5s ease-in-out infinite;
-            }
-
-            @keyframes float {
-                0% {
-                    transform: translateY(0px);
-                }
-
-                50% {
-                    transform: translateY(-15px);
-                }
-
-                100% {
-                    transform: translateY(0px);
-                }
-            }
-
-            @keyframes pulse {
-                0% {
-                    opacity: 0.5;
-                }
-
-                50% {
-                    opacity: 1;
-                }
-
-                100% {
-                    opacity: 0.5;
-                }
-            }
-
-            body,
-            .mud-typography {
-                font-family: 'Roboto', 'Zen Kaku Gothic Antique', sans-serif !important;
-            }
-        </style>
-        <div class="mahjong-loading-container">
-            <div class="loading-tile">🀄</div>
-            <div class="loading-text">雀卓準備中...</div>
-        </div>
+    <div id="mahjong-loader" class="mahjong-loading-container" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; transition: opacity 0.5s ease; pointer-events: none;">
+        <div class="loading-tile">🀄</div>
+        <div class="loading-text">雀卓準備中...</div>
     </div>
+
+    <div id="app"></div>
+
     <div id="blazor-error-ui">
         An unhandled error has occurred.
         <a href="" class="reload">Reload</a>
@@ -243,17 +246,26 @@
         };
     </script>
     <script>
+        // 表とグラフの高さ合わせ
         window.syncContainerHeight = () => {
             const container = document.getElementById('result-container');
             const chart = document.getElementById('chart-wrapper');
             const table = document.getElementById('table-wrapper');
             if (!container || !chart || !table) return;
-            // 表とグラフの実際の高さをピクセル単位で実測
             const chartHeight = chart.offsetHeight;
             const tableHeight = table.offsetHeight;
-            // 高い方のサイズ（最低450px）をコンテナの min-height に直接セット
             const maxHeight = Math.max(chartHeight, tableHeight);
             container.style.minHeight = maxHeight + 'px';
+        };
+        // ロード画面のフェードアウト
+        window.hideMahjongLoader = () => {
+            const loader = document.getElementById('mahjong-loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 800);
+            }
         };
     </script>
     <script src="js/db.js"></script>

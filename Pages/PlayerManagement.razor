@@ -4,13 +4,25 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
+<style>
+    /* テーブルを画面幅に収め、横スクロールを防止する */
+    .player-table {
+        width: 100% !important;
+    }
+
+    .player-table .mud-table-container {
+        overflow-x: hidden !important;
+        width: 100% !important;
+    }
+</style>
+
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 pb-10">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white;">
         <MudIcon Icon="@Icons.Material.Filled.ManageAccounts" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
         名簿管理
     </MudText>
 
-    <MudPaper Class="pa-4" Style="background-color: rgba(255,255,255,0.02);">
+    <MudPaper Class="py-2 px-0 px-sm-4" Style="background-color: rgba(255,255,255,0.02);">
         @if (isLoading)
         {
             <div class="d-flex justify-center py-4">
@@ -19,84 +31,81 @@
         }
         else
         {
-            <MudTable Items="@players" Hover="true" Dense="true" Elevation="0" Style="background: transparent;">
-                <HeaderContent>
-                    <MudTh>名前</MudTh>
-                    <MudTh>通算収支</MudTh>
-                    <MudTh>対局数</MudTh>
-                    <MudTh>登録日</MudTh>
-                    <MudTh>操作</MudTh>
-                </HeaderContent>
+            <MudTable Items="@players" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="background: transparent;" Class="player-table">
                 <RowTemplate Context="player">
-                    @if (editTargetId == player.Id)
-                    {
-                        @* 編集モード *@
-                        <MudTd>
-                            <MudTextField @bind-Value="editName" Margin="Margin.Dense" AutoFocus="true" Label="新しい名前" />
-                        </MudTd>
-                        <MudTd Style="color: #888; font-style: italic;">
-                            @GetTotalYenDisplayText(player.Id) @GetChipYenDetailText(player.Id)
-                        </MudTd>
-                        <MudTd>@GetGameCount(player.Id)</MudTd>
-                        <MudTd>@player.CreatedAt.ToString("yyyy/MM/dd")</MudTd>
-                        <MudTd>
-                            <MudButton Size="Size.Small" Color="Color.Primary" OnClick="SaveEdit" Class="mr-2">保存</MudButton>
-                            <MudButton Size="Size.Small" Color="Color.Default" OnClick="CancelEdit">取消</MudButton>
-                        </MudTd>
-                    }
-                    else if (mergeSourceId == player.Id)
-                    {
-                        @* ... (統合モードの部分は変更なし) ... *@
-                        <MudTd Colspan="4">
-                            <div class="d-flex align-center gap-4">
-                                <MudText Color="Color.Warning" Typo="Typo.body2" Style="font-weight:bold;">統合先を選択 ➡</MudText>
-                                <MudSelect T="string" @bind-Value="mergeTargetId" Margin="Margin.Dense" Style="width: 200px;">
-                                    @foreach (var target in players.Where(p => p.Id != player.Id))
+                    <MudTd Style="padding: 12px 12px !important; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        @if (editTargetId == player.Id)
+                        {
+                            @* --- 編集モード --- *@
+                            <div class="d-flex flex-column gap-3 py-2">
+                                <MudTextField @bind-Value="editName" Margin="Margin.Dense" AutoFocus="true" Label="新しい名前" Variant="Variant.Outlined" Style="background-color: rgba(0,0,0,0.2);" />
+                                <div class="d-flex justify-end gap-2">
+                                    <MudButton Size="Size.Small" Color="Color.Default" OnClick="CancelEdit">取消</MudButton>
+                                    <MudButton Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveEdit">保存</MudButton>
+                                </div>
+                            </div>
+                        }
+                        else if (mergeTargetId == player.Id)
+                        {
+                            @* --- 統合モード --- *@
+                            <div class="d-flex flex-column gap-3 py-2">
+                                <MudText Color="Color.Warning" Typo="Typo.body2" Style="font-weight:bold;">
+                                    統合する名前を選択してください
+                                </MudText>
+                                <MudSelect T="string" @bind-Value="mergeSourceId" Margin="Margin.Dense" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" Style="background-color: rgba(0,0,0,0.2);">
+                                    @foreach (var target in players.Where(p => p.Id != player.Id && !HasPlayedTogether(player.Id, p.Id)))
                                     {
                                         <MudSelectItem Value="@target.Id">@target.Name</MudSelectItem>
                                     }
                                 </MudSelect>
+                                <div class="d-flex justify-end gap-2">
+                                    <MudButton Size="Size.Small" Color="Color.Default" OnClick="CancelMerge">取消</MudButton>
+                                    <MudButton Size="Size.Small" Color="Color.Error" Variant="Variant.Filled" Disabled="@string.IsNullOrEmpty(mergeSourceId)" OnClick="ExecuteMerge">統合</MudButton>
+                                </div>
                             </div>
-                        </MudTd>
-                        <MudTd>
-                            <MudButton Size="Size.Small" Color="Color.Error" Disabled="@string.IsNullOrEmpty(mergeTargetId)" OnClick="ExecuteMerge" Class="mr-2">統合確定</MudButton>
-                            <MudButton Size="Size.Small" Color="Color.Default" OnClick="CancelMerge">取消</MudButton>
-                        </MudTd>
-                    }
-                    else
-                    {
-                        @* 通常表示モード *@
-                        <MudTd><strong style="font-size: 1.1rem;">@player.Name</strong></MudTd>
-                        <MudTd>
-                            @* 総合収支（色付き）と、チップ内訳（小さめのグレー）を並べて表示 *@
-                            <span style="@GetTotalYenStyle(player.Id)">
-                                @GetTotalYenDisplayText(player.Id)
-                            </span>
-                            <span style="font-size: 0.85rem; color: #aaa; margin-left: 6px;">
-                                @GetChipYenDetailText(player.Id)
-                            </span>
-                        </MudTd>
-                        <MudTd>@GetGameCount(player.Id)</MudTd>
-                        <MudTd>@player.CreatedAt.ToString("yyyy/MM/dd")</MudTd>
-                        <MudTd>
-                            <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-                                <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => StartEdit(player))">名前を変更</MudMenuItem>
-                                <MudMenuItem Icon="@Icons.Material.Filled.MergeType" OnClick="@(() => StartMerge(player.Id))">他の名前と統合</MudMenuItem>
-                                <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error" OnClick="@(() => ConfirmDelete(player))">完全に削除</MudMenuItem>
-                            </MudMenu>
-                        </MudTd>
-                    }
+                        }
+                        else
+                        {
+                            @* --- 通常表示モード --- *@
+                            <div class="d-flex flex-column gap-2">
+                                @* 1行目: 名前と操作メニュー *@
+                                <div class="d-flex justify-space-between align-center">
+                                    <strong style="font-size: 1.15rem; color: #ffffff; letter-spacing: 0.5px;">@player.Name</strong>
+                                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Medium" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Style="color: #aaaaaa;">
+                                        <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => StartEdit(player))">名前を変更</MudMenuItem>
+                                        <MudMenuItem Icon="@Icons.Material.Filled.MergeType" OnClick="@(() => StartMerge(player.Id))">名前を統合</MudMenuItem>
+                                        <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error" OnClick="@(() => ConfirmDelete(player))">削除</MudMenuItem>
+                                    </MudMenu>
+                                </div>
+
+                                @* 2行目: 収支データ・対局数・登録日 *@
+                                <div class="d-flex justify-space-between align-end mt-1">
+                                    <div class="d-flex flex-column gap-1">
+                                        <div class="d-flex align-baseline gap-2">
+                                            <span style="font-size: 0.75rem; color: #888;">通算収支</span>
+                                            <span style="@GetTotalYenStyle(player.Id); font-size: 1.1rem; letter-spacing: 0.5px;">
+                                                @GetTotalYenDisplayText(player.Id)
+                                            </span>
+                                        </div>
+                                        <span style="font-size: 0.8rem; color: #aaaaaa;">
+                                            @GetChipYenDetailText(player.Id)
+                                        </span>
+                                    </div>
+                                    <div class="d-flex flex-column align-end gap-1">
+                                        <span style="font-size: 0.8rem; color: #cccccc; background-color: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; font-weight: bold;">
+                                            @GetGameCount(player.Id) 局
+                                        </span>
+                                        <span style="font-size: 0.7rem; color: #777777;">
+                                            登録: @player.CreatedAt.ToString("yyyy/MM/dd")
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </MudTd>
                 </RowTemplate>
             </MudTable>
         }
-    </MudPaper>
-
-    <MudPaper Class="pa-4 mt-8" Style="background-color: rgba(255, 0, 0, 0.05); border: 1px solid #ff4444;">
-        <MudText Typo="Typo.h6" Color="Color.Error" Class="mb-2">⚠️ 危険な操作 (Danger Zone)</MudText>
-        <MudText Typo="Typo.body2" Class="mb-4">すべてのプレイヤー名簿と対局履歴を完全に消去します。</MudText>
-        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="ConfirmWipeAllData">
-            全データを初期化する
-        </MudButton>
     </MudPaper>
 </MudContainer>
 
@@ -104,7 +113,7 @@
     private bool isLoading = true;
     private List<PlayerProfile> players = new();
     private List<SavedGameRecord> allGames = new();
-    private List<SavedSessionRecord> allSessions = new(); // ★追加：チップ集計用のセッション履歴
+    private List<SavedSessionRecord> allSessions = new();
     private List<PlayerProfile> rawMasterPlayers = new();
 
     private string? editTargetId = null;
@@ -122,20 +131,20 @@
     {
         isLoading = true;
         StateHasChanged();
-        
+
         var dbData = await DatabaseService.GetAllDataAsync();
         if (dbData != null)
         {
             rawMasterPlayers = dbData.Players;
             allGames = dbData.Games;
-            allSessions = dbData.Sessions; // ★セッション履歴をロード
-            
+            allSessions = dbData.Sessions;
+
             players = dbData.Players
-                .Where(p => p.Id != "deleted")
-                .OrderByDescending(p => GetGameCountSafe(dbData.Games, p.Id))
-                .ToList();
+                            .Where(p => p.Id != "deleted")
+                            .OrderByDescending(p => GetGameCountSafe(dbData.Games, p.Id))
+                            .ToList();
         }
-        
+
         isLoading = false;
         StateHasChanged();
     }
@@ -144,7 +153,7 @@
 
     private int GetGameCountSafe(List<SavedGameRecord> games, string playerId)
     {
-        return games.Count(g => 
+        return games.Count(g =>
         {
             int idx = g.PlayerIds.IndexOf(playerId);
             return idx >= 0 && idx < g.RawScores.Count && g.RawScores[idx].HasValue;
@@ -158,10 +167,7 @@
         foreach (var game in allGames)
         {
             int idx = game.PlayerIds.IndexOf(playerId);
-            if (idx >= 0 && idx < game.Yen.Count)
-            {
-                totalGameYen += game.Yen[idx];
-            }
+            if (idx >= 0 && idx < game.Yen.Count) totalGameYen += game.Yen[idx];
         }
         return totalGameYen;
     }
@@ -174,9 +180,7 @@
         {
             int idx = session.ParticipantPlayerIds.IndexOf(playerId);
             if (idx >= 0 && idx < session.SettledChips.Count)
-            {
                 totalChipYen += session.SettledChips[idx] * session.ChipRate;
-            }
         }
         return totalChipYen;
     }
@@ -219,88 +223,72 @@
     private async Task SaveEdit()
     {
         var player = players.First(p => p.Id == editTargetId);
-        
         if (players.Any(p => p.Id != player.Id && p.Name == editName))
         {
-            Snackbar.Add("その名前は既に存在します。別名にするか、統合機能を使用してください。", Severity.Warning);
+            Snackbar.Add("その名前は既に存在します。", Severity.Warning);
             return;
         }
-
         player.Name = editName;
-        // チップ直接編集は撤廃されたため、名前のみ更新
-        
         await DatabaseService.UpdatePlayerAsync(player);
-        Snackbar.Add("プレイヤー名を変更しました", Severity.Success);
-        
+        Snackbar.Add("名前を変更しました", Severity.Success);
         editTargetId = null;
         await LoadData();
     }
 
     private void StartMerge(string playerId)
     {
-        mergeSourceId = playerId;
-        mergeTargetId = null;
+        mergeTargetId = playerId;
+        mergeSourceId = null;
         editTargetId = null;
     }
 
-    private void CancelMerge() => mergeSourceId = null;
+    private void CancelMerge()
+    {
+        mergeTargetId = null;
+        mergeSourceId = null;
+    }
+
+    // 2人のプレイヤーが実際に同卓したことがあるかを判定する
+    private bool HasPlayedTogether(string playerId1, string playerId2)
+    {
+        return allGames.Any(g =>
+        {
+            int idx1 = g.PlayerIds.IndexOf(playerId1);
+            int idx2 = g.PlayerIds.IndexOf(playerId2);
+            return idx1 >= 0 && idx2 >= 0 &&
+                               idx1 < g.RawScores.Count && g.RawScores[idx1].HasValue &&
+                               idx2 < g.RawScores.Count && g.RawScores[idx2].HasValue;
+        });
+    }
 
     private async Task ExecuteMerge()
     {
         if (string.IsNullOrEmpty(mergeSourceId) || string.IsNullOrEmpty(mergeTargetId)) return;
-
         var sourceName = players.First(p => p.Id == mergeSourceId).Name;
         var targetName = players.First(p => p.Id == mergeTargetId).Name;
-
         bool? result = await DialogService.ShowMessageBoxAsync(
-            "🚨 プレイヤーの統合（名寄せ）",
-            $"【{sourceName}】のすべての履歴とチップを、\n【{targetName}】に吸収させます。\n※この操作は取り消せません。実行しますか？",
+            "🚨 名前の統合",
+            (MarkupString)$"【{sourceName}】のすべての履歴とチップは<br />【{targetName}】の中でこれからも生き続けます。<br /><br />※この操作は取り消せません。実行しますか？",
             yesText: "統合を実行", cancelText: "キャンセル");
-
         if (result == true)
         {
             await DatabaseService.MergePlayersAsync(mergeSourceId, mergeTargetId);
             Snackbar.Add("統合が完了しました！", Severity.Success);
+            mergeTargetId = null;
             mergeSourceId = null;
             await LoadData();
-        }
-    }
-
-    private async Task ConfirmWipeAllData()
-    {
-        bool? result1 = await DialogService.ShowMessageBoxAsync(
-            "全データの初期化", "すべてのプレイヤー名簿と対局履歴を完全に消去します。よろしいですか？",
-            yesText: "はい、消去します", cancelText: "キャンセル");
-
-        if (result1 == true)
-        {
-            bool? result2 = await DialogService.ShowMessageBoxAsync(
-                "最終確認", "本当にすべてのデータを消去しますか？（※絶対に取り消せません）",
-                yesText: "完全に消去する", cancelText: "キャンセル");
-
-            if (result2 == true)
-            {
-                await DatabaseService.ClearAllDataAsync();
-                Snackbar.Add("すべてのデータを初期化しました。", Severity.Success);
-                await LoadData();
-            }
         }
     }
 
     private async Task ConfirmDelete(PlayerProfile player)
     {
         int gameCount = GetGameCount(player.Id);
-
-        string message = gameCount == 0 
-            ? $"【{player.Name}】を削除しますか？\n(対局履歴がないため、完全に消去されます)"
-            : $"【{player.Name}】を削除しますか？\n\n⚠️注意: このプレイヤーには {gameCount} 件の対局履歴があります。\n履歴の整合性を保つため、データは「削除済みのプレイヤー(deleted)」へ一括統合されます。";
-
+        string message = $"【{player.Name}】を削除しますか？<br />⚠️ {gameCount} 件の対局履歴が紐づいています。";
         bool? result = await DialogService.ShowMessageBoxAsync(
-            "プレイヤーの削除確認", message,
-            yesText: "削除（統合）する", cancelText: "キャンセル");
-
+            "名前の削除確認",
+            (MarkupString)message,
+            yesText: "削除する", cancelText: "キャンセル");
         if (result != true) return;
-
         if (gameCount == 0)
         {
             await DatabaseService.DeletePlayerAsync(player.Id);
@@ -308,24 +296,20 @@
             await LoadData();
             return;
         }
-
         var hasDeletedContainer = rawMasterPlayers.Any(p => p.Id == "deleted");
         if (!hasDeletedContainer)
         {
             var deletedProfile = new PlayerProfile
             {
                 Id = "deleted",
-                Name = "削除済みのプレイヤー",
+                Name = "削除済み",
                 CumulativeChips = 0,
                 CreatedAt = DateTime.Now
             };
             await DatabaseService.UpdatePlayerAsync(deletedProfile);
         }
-
         await DatabaseService.MergePlayersAsync(player.Id, "deleted");
-        Snackbar.Add($"{player.Name} を削除し、履歴を「削除済みのプレイヤー」に統合しました。", Severity.Success);
+        Snackbar.Add($"{player.Name} を削除し、履歴を「削除済み」に統合しました。", Severity.Success);
         await LoadData();
     }
-
-    
 }

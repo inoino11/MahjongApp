@@ -10,19 +10,19 @@
         設定・データ管理
     </MudText>
     <MudPaper Class="pa-6 mb-6" Style="background-color: rgba(255,255,255,0.02);">
-        <MudText Typo="Typo.h6" Class="mb-2">データのバックアップ (エクスポート)</MudText>
-        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-            現在のすべての成績データとプレイヤー名簿をJSONファイルとしてダウンロードします。<br/>
-            定期的に保存しておくと、端末の変更や万が一のデータ消失時に復元できます。
+        <MudText Typo="Typo.h6" Class="mb-2">データのバックアップ</MudText>
+        <MudText Typo="Typo.body2" Class="mb-4">
+            現在のすべての成績データと対局者名簿を<br/>
+            JSONファイルとしてダウンロードします。
         </MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Download" OnClick="ExportData">
             バックアップファイルを保存
         </MudButton>
     </MudPaper>
-    <MudPaper Class="pa-6" Style="background-color: rgba(255,255,255,0.02); border: 1px solid rgba(255, 152, 0, 0.3);">
-        <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Warning">データの復元・統合 (インポート)</MudText>
-        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-            保存しておいたJSONファイルを読み込みます。読み込み方法を選択してください。
+    <MudPaper Class="pa-6 mb-6" Style="background-color: rgba(255,255,255,0.02); border: 1px solid rgba(255, 152, 0, 0.3);">
+        <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Warning">データの復元・統合</MudText>
+        <MudText Typo="Typo.body2" Class="mb-4">
+            バックアップされたJSONファイルを読み込みます。
         </MudText>
         @* モード選択のラジオボタン *@
         <MudRadioGroup @bind-Value="importMode" Class="mb-4 d-flex flex-column">
@@ -38,10 +38,18 @@
         </MudButton>
         <InputFile id="backup-upload" OnChange="ImportData" accept=".json" style="display: none;" />
     </MudPaper>
+    @* ▼ 追加: 危険な操作 (Danger Zone) ▼ *@
+    <MudPaper Class="pa-6" Style="background-color: rgba(255, 0, 0, 0.05); border: 1px solid #ff4444;">
+        <MudText Typo="Typo.h6" Color="Color.Error" Class="mb-2">⚠️データの初期化</MudText>
+        <MudText Typo="Typo.body2" Class="mb-4">すべての対局者名簿と対局履歴を完全に消去します。</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="ConfirmWipeAllData">
+            全データを初期化する
+        </MudButton>
+    </MudPaper>
 </MudContainer>
 
 @code {
-    private string importMode = "overwrite"; // 初期値は上書き
+    private string importMode = "merge"; // 初期値は統合
 
     private async Task ExportData()
     {
@@ -81,6 +89,25 @@
         catch (Exception)
         {
             Snackbar.Add("ファイルの読み込みに失敗しました。正しいバックアップファイルか確認してください。", Severity.Error);
+        }
+    }
+
+    // 全データ初期化
+    private async Task ConfirmWipeAllData()
+    {
+        bool? result1 = await DialogService.ShowMessageBoxAsync(
+            "全データの初期化", "すべての対局者名簿と対局履歴を完全に消去します。よろしいですか？",
+            yesText: "はい、消去します", cancelText: "キャンセル");
+        if (result1 == true)
+        {
+            bool? result2 = await DialogService.ShowMessageBoxAsync(
+                "最終確認", "本当にすべてのデータを消去しますか？（※絶対に取り消せません）",
+                yesText: "完全に消去する", cancelText: "キャンセル");
+            if (result2 == true)
+            {
+                await DatabaseService.ClearAllDataAsync();
+                Snackbar.Add("すべてのデータを初期化しました。", Severity.Success);
+            }
         }
     }
 }
