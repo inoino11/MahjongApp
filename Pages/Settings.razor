@@ -3,6 +3,7 @@
 @inject MahjongApp.Services.DatabaseService DatabaseService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject MahjongApp.Services.StatsCacheService StatsCache
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4 pb-10">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white;">
@@ -83,6 +84,7 @@
             using var reader = new System.IO.StreamReader(stream);
             var json = await reader.ReadToEndAsync();
             await DatabaseService.ImportDataAsync(json, isMerge);
+            _ = StatsCache.InitializeAsync(forceReload: true);
             string successMsg = isMerge ? "データを統合しました！" : "データを完全に復元しました！";
             Snackbar.Add(successMsg, Severity.Success);
         }

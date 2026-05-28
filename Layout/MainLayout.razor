@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@inject MahjongApp.Services.StatsCacheService StatsCache
 
 <MudThemeProvider Theme="@mahjongTheme" @bind-IsDarkMode="_isDarkMode" />
 <MudDialogProvider />
@@ -31,6 +32,12 @@
 @code {
     bool _drawerOpen = false;
     bool _isDarkMode = true; // デフォルトをダークモードに設定
+
+    // 起動直後に裏で中間構造体を作成
+    protected override async Task OnInitializedAsync()
+    {
+        _ = StatsCache.InitializeAsync();
+    }
 
     void DrawerToggle()
     {

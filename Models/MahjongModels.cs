@@ -173,3 +173,30 @@ public class SavedSessionRecord
     public List<string> ParticipantPlayerIds { get; set; } = new(); // プレイヤーIDリスト
    public List<int> SettledChips { get; set; } = new();             // 移動チップ枚数リスト
 }
+
+// --- ダッシュボード集計・キャッシュ用モデル ---
+public class PlayerStats
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public int TotalGames { get; set; }
+    public double TotalPoint { get; set; }
+    public int TotalGameYen { get; set; }
+    public int TotalChipYen { get; set; }
+    public int TotalYen => TotalGameYen + TotalChipYen;
+    public int[] RankCounts { get; set; } = new int[4];
+    public double AverageRank => TotalGames == 0 ? 0 : RankCounts.Select((count, index) => count * (index + 1)).Sum() / (double)TotalGames;
+    public double FirstPlaceRate => TotalGames == 0 ? 0 : (double)RankCounts[0] / TotalGames * 100;
+    public double AvoidLastPlaceRate(int playerCount) => TotalGames == 0 ? 0 : (1.0 - (double)RankCounts[playerCount - 1] / TotalGames) * 100;
+}
+
+public class MatchupStat
+{
+    public string OpponentName { get; set; } = "";
+    public int GamesTogether { get; set; }
+    public double HeroNetPoint { get; set; }
+    public int HeroNetYen { get; set; }
+    public int HeroWins { get; set; }
+    public int HeroLosses { get; set; }
+    public double DirectWinRate => (HeroWins + HeroLosses) == 0 ? 0 : (double)HeroWins / (HeroWins + HeroLosses) * 100;
+}

@@ -85,20 +85,34 @@
     }
     else
     {
-        @* 四麻・三麻の切り替えタブ（相性データと、それぞれのレイアウトマネージャーを渡す） *@
-        <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4" Color="Color.Dark">
-            <MudTabPanel Text="四人麻雀">
-                @RenderTabContent("四麻", stats4, matchupStats4, 4, _rank4Layout, _matchupLayout4)
-            </MudTabPanel>
-            <MudTabPanel Text="三人麻雀">
-                @RenderTabContent("三麻", stats3, matchupStats3, 3, _rank3Layout, _matchupLayout3)
-            </MudTabPanel>
-        </MudTabs>
+        @* タブの代わりに、中央寄せ＆最大幅指定のボタングループを使用 *@
+        <div class="d-flex justify-center mb-6 px-4">
+            <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined" Style="width: 100%; max-width: 400px; background-color: rgba(255,255,255,0.02);">
+                <MudButton Variant="@(_selectedPlayerCount == 4 ? Variant.Filled : Variant.Outlined)" OnClick="() => _selectedPlayerCount = 4" Style="width: 50%; font-weight: bold;">
+                    四人麻雀
+                </MudButton>
+                <MudButton Variant="@(_selectedPlayerCount == 3 ? Variant.Filled : Variant.Outlined)" OnClick="() => _selectedPlayerCount = 3" Style="width: 50%; font-weight: bold;">
+                    三人麻雀
+                </MudButton>
+            </MudButtonGroup>
+        </div>
+
+        @* 選択された人数に応じてコンテンツを切り替え *@
+        @if (_selectedPlayerCount == 4)
+        {
+            @RenderTabContent("四麻", stats4, matchupStats4, 4, _rank4Layout, _matchupLayout4)
+        }
+        else
+        {
+            @RenderTabContent("三麻", stats3, matchupStats3, 3, _rank3Layout, _matchupLayout3)
+        }
     }
 </MudContainer>
 
 @code {
-    // --- ランキングテーブルを共通化するRenderFragment ---
+    @inject MahjongApp.Services.StatsCacheService StatsCache
+
+    // --- ランキングテーブルを共通化するRenderFragment (HTML部分は変更なしのため省略せずに記載) ---
     private RenderFragment RenderTabContent(string title, List<PlayerStats> stats, List<MatchupStat> matchupList, int playerCount, TableLayoutManager layout, TableLayoutManager matchupLayout) => __builder =>
     {
         <text>
@@ -142,7 +156,6 @@
                             {
                                 var colIndex = i;
                                 var headerText = RankHeaders[colIndex];
-                                // 総合Pt(2) と 総合収支(3) だけ緑色にするルール
                                 var colorStyle = (colIndex == 2 || colIndex == 3) ? "color:#4caf50;" : "";
                                 <MudTh Style="@(layout.GetTdStyle(colIndex))">
                                     <MudText Typo="Typo.caption" Align="Align.Center" Style="@($"font-weight: bold; white-space: nowrap; {colorStyle}")">
@@ -184,13 +197,12 @@
                         </RowTemplate>
                     </MudTable>
                 </MudPaper>
-                @* --- 相性分析エリア (タブ内に移動 & ルール別に分離) --- *@
+                @* --- 相性分析エリア --- *@
                 <MudPaper Class="pa-4 mt-6" Style="background-color: rgba(255,255,255,0.02);">
                     <MudText Typo="Typo.h6" Class="d-flex align-center gap-2 mb-4">
                         <MudIcon Icon="@Icons.Material.Filled.Handshake" />
                         @(title) 相性分析
                     </MudText>
-                    @* 分析対象プレイヤーの選択（タブの上にグローバルに配置） *@
                     <div class="mb-4" style="max-width: 150px;">
                         <MudSelect T="string" Label="分析対象者" Value="@selectedHeroId" ValueChanged="OnHeroSelected" Class="align-center-select">
                             @foreach (var player in availablePlayers)
@@ -254,143 +266,44 @@
         </text>
     };
 
-    // --- ヘッダー定義の一元管理---
     private static readonly string[] RankHeaders = { "名前", "対局数", "総合Pt", "総合収支", "(Pt収支)", "(チップ収支)", "平均順位", "トップ率", "ラス回避率" };
     private static readonly string[] MatchupHeaders = { "相手", "同卓数", "Pt差", "収支差", "直接対決", "先着率" };
 
-    // --- 集計結果を画面にバインドするためのViewModel ---
-    private class PlayerStats
-    {
-        public string Id { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public int TotalGames { get; set; }
-        public double TotalPoint { get; set; }
-        // --- 収支関連（新設） ---
-        public int TotalGameYen { get; set; } // ポイントによる収支
-        public int TotalChipYen { get; set; } // チップによる収支
-        public int TotalYen => TotalGameYen + TotalChipYen; // 総合収支
-        public int[] RankCounts { get; set; } = new int[4];
-        public double AverageRank => TotalGames == 0 ? 0 : RankCounts.Select((count, index) => count * (index + 1)).Sum() / (double)TotalGames;
-        public double FirstPlaceRate => TotalGames == 0 ? 0 : (double)RankCounts[0] / TotalGames * 100;
-        public double AvoidLastPlaceRate(int playerCount) => 
-            TotalGames == 0 ? 0 : (1.0 - (double)RankCounts[playerCount - 1] / TotalGames) * 100;
-    }
-
     private bool isLoading = true;
-
-    // 三麻・四麻ごとの集計リスト
+    private int _selectedPlayerCount = 4;
     private List<PlayerStats> stats4 = new();
     private List<PlayerStats> stats3 = new();
 
-    // 総合収支（全ルール＋チップ合算）の算出用
-    private string topPlayerName = "データなし";
-    private int totalYenAllRules = 0;
-    private int totalGameYenAllRules = 0;
-    private int totalChipYenAllRules = 0;
-    private double topPlayerAverageRank = 0;
-
-    // --- 相性分析用の変数 (四麻・三麻で分離) ---
     private List<PlayerProfile> availablePlayers = new();
-    private List<SavedGameRecord> allGames = new();
     private string? selectedHeroId;
     private List<MatchupStat> matchupStats4 = new();
     private List<MatchupStat> matchupStats3 = new();
 
-    // --- レイアウト管理クラスのインスタンス ---
     private TableLayoutManager _rank4Layout = new(9);
     private TableLayoutManager _rank3Layout = new(9);
     private TableLayoutManager _matchupLayout4 = new(6);
     private TableLayoutManager _matchupLayout3 = new(6);
 
-    private class MatchupStat
-    {
-        public string OpponentName { get; set; } = "";
-        public int GamesTogether { get; set; }
-        public double HeroNetPoint { get; set; }
-        public int HeroNetYen { get; set; }
-        public int HeroWins { get; set; }
-        public int HeroLosses { get; set; }
-        public double DirectWinRate => (HeroWins + HeroLosses) == 0 ? 0 : (double)HeroWins / (HeroWins + HeroLosses) * 100;
-    }
-
     protected override async Task OnInitializedAsync()
     {
-        await LoadAndCalculateStatsAsync();
+        // キャッシュが未初期化なら初期化されるまで待機（通常は起動時に済んでいるため一瞬で終わります）
+        await StatsCache.InitializeAsync();
+
+        // キャッシュからデータをもらうだけ
+        stats4 = StatsCache.Stats4;
+        stats3 = StatsCache.Stats3;
+        availablePlayers = StatsCache.AvailablePlayers;
+
+        if (string.IsNullOrEmpty(selectedHeroId))
+        {
+            var defaultHero = stats4.FirstOrDefault() ?? stats3.FirstOrDefault();
+            selectedHeroId = defaultHero?.Id;
+        }
+
+        CalculateMatchups();
+        CalculateDashboardWidths();
+
         isLoading = false;
-    }
-
-    private async Task LoadAndCalculateStatsAsync()
-    {
-        try
-        {
-            var dbData = await DatabaseService.GetAllDataAsync();
-            if (dbData == null || dbData.Players.Count == 0 || dbData.Games.Count == 0) return;
-            allGames = dbData.Games;
-            availablePlayers = dbData.Players.Where(p => p.Id != "deleted").OrderBy(p => p.Name).ToList();
-            var statsMap4 = dbData.Players.ToDictionary(p => p.Id, p => new PlayerStats { Id = p.Id, Name = p.Name });
-            var statsMap3 = dbData.Players.ToDictionary(p => p.Id, p => new PlayerStats { Id = p.Id, Name = p.Name });
-
-            // 1. 局データ（ゲーム収支とポイント）を集計
-            foreach (var game in dbData.Games)
-            {
-                bool isSanma = game.PlayerCount == 3;
-                var currentMap = isSanma ? statsMap3 : statsMap4;
-                var validPlayers = game.PlayerIds
-                    .Select((id, idx) => new { Id = id, Score = game.RawScores.Count > idx ? game.RawScores[idx] : null, Index = idx })
-                    .Where(x => !string.IsNullOrEmpty(x.Id) && x.Score.HasValue)
-                    .OrderByDescending(x => x.Score)
-                    .ToList();
-                for (int rank = 0; rank < validPlayers.Count; rank++)
-                {
-                    var p = validPlayers[rank];
-                    if (currentMap.ContainsKey(p.Id!))
-                    {
-                        var stat = currentMap[p.Id!];
-                        var idx = p.Index;
-                        stat.TotalGames++;
-                        stat.RankCounts[rank]++;
-                        stat.TotalPoint += game.Points.Count > idx ? game.Points[idx] : 0;
-                        stat.TotalGameYen += game.Yen.Count > idx ? game.Yen[idx] : 0;
-                    }
-                }
-            }
-
-            // 2. セッション記録からチップ収支を集計
-            foreach (var session in dbData.Sessions)
-            {
-                // そのセッションが三麻か四麻かを、紐づく最初のゲームから判定する
-                var firstGame = dbData.Games.FirstOrDefault(g => g.SessionId == session.SessionId);
-                bool isSanmaSession = firstGame != null && firstGame.PlayerCount == 3;
-                var currentMap = isSanmaSession ? statsMap3 : statsMap4;
-                for (int i = 0; i < session.ParticipantPlayerIds.Count; i++)
-                {
-                    string pId = session.ParticipantPlayerIds[i];
-                    if (!string.IsNullOrEmpty(pId) && currentMap.ContainsKey(pId) && session.SettledChips.Count > i)
-                    {
-                        // チップ枚数 × 当時のチップレートを円として加算
-                        currentMap[pId].TotalChipYen += session.SettledChips[i] * session.ChipRate;
-                    }
-                }
-            }
-
-            // 3. システム用の "deleted" を除外し、総合収支（TotalYen）順にソート
-            stats4 = statsMap4.Values.Where(s => s.Id != "deleted" && s.TotalGames > 0).OrderByDescending(s => s.TotalYen).ToList();
-            stats3 = statsMap3.Values.Where(s => s.Id != "deleted" && s.TotalGames > 0).OrderByDescending(s => s.TotalYen).ToList();
-
-            // 4. 相性分析の初期化（デフォルトで四麻のトッププレイヤーを選択、いなければ三麻から）
-            if (string.IsNullOrEmpty(selectedHeroId))
-            {
-                var defaultHero = stats4.FirstOrDefault() ?? stats3.FirstOrDefault();
-                selectedHeroId = defaultHero?.Id;
-            }
-
-            CalculateMatchups();
-            CalculateDashboardWidths();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"ダッシュボードの集計エラー: {ex.Message}");
-        }
     }
 
     private void OnHeroSelected(string id)
@@ -402,59 +315,19 @@
 
     private void CalculateMatchups()
     {
-        // 四麻(4)と三麻(3)をそれぞれ別ロジックで抽出
-        matchupStats4 = CalculateMatchupsForPlayerCount(4);
-        matchupStats3 = CalculateMatchupsForPlayerCount(3);
+        // 相性計算はキャッシュサービスに委譲
+        matchupStats4 = string.IsNullOrEmpty(selectedHeroId) ? new() : StatsCache.CalculateMatchups(selectedHeroId, 4);
+        matchupStats3 = string.IsNullOrEmpty(selectedHeroId) ? new() : StatsCache.CalculateMatchups(selectedHeroId, 3);
     }
 
-    private List<MatchupStat> CalculateMatchupsForPlayerCount(int playerCount)
-    {
-        var result = new List<MatchupStat>();
-        if (string.IsNullOrEmpty(selectedHeroId)) return result;
-        var map = new Dictionary<string, MatchupStat>();
-
-        // 指定されたプレイヤーカーウント（4または3）の局のみに絞り込む
-        foreach (var game in allGames.Where(g => g.PlayerCount == playerCount))
-        {
-            int heroIdx = game.PlayerIds.IndexOf(selectedHeroId);
-            if (heroIdx < 0 || heroIdx >= game.RawScores.Count || !game.RawScores[heroIdx].HasValue) continue;
-
-            double heroPt = game.Points.Count > heroIdx ? game.Points[heroIdx] : 0;
-            int heroYen = game.Yen.Count > heroIdx ? game.Yen[heroIdx] : 0;
-            double heroRaw = game.RawScores[heroIdx]!.Value;
-
-            for (int i = 0; i < game.PlayerIds.Count; i++)
-            {
-                string? oppId = game.PlayerIds[i];
-                if (string.IsNullOrEmpty(oppId) || oppId == "deleted" || oppId == selectedHeroId) continue;
-                if (!game.RawScores[i].HasValue) continue;
-                if (!map.ContainsKey(oppId))
-                    map[oppId] = new MatchupStat { OpponentName = availablePlayers.FirstOrDefault(p => p.Id == oppId)?.Name ?? "不明" };
-                var stat = map[oppId];
-                stat.GamesTogether++;
-                double oppPt = game.Points.Count > i ? game.Points[i] : 0;
-                int oppYen = game.Yen.Count > i ? game.Yen[i] : 0;
-                stat.HeroNetPoint += (heroPt - oppPt);
-                stat.HeroNetYen += (heroYen - oppYen);
-
-                double oppRaw = game.RawScores[i]!.Value;
-                if (heroRaw > oppRaw) stat.HeroWins++;
-                else if (heroRaw < oppRaw) stat.HeroLosses++;
-            }
-        }
-        return map.Values.OrderByDescending(s => s.HeroNetYen).ToList();
-    }
-
-    // --- 各列の幅計算ロジック（TableLayoutManagerへ委譲） ---
+    // --- 各列の幅計算ロジック ---
     private void CalculateDashboardWidths()
     {
-        // 毎回新規インスタンスでリセットし、古いキャッシュを破棄する
         _rank4Layout = new TableLayoutManager(9);
         _rank3Layout = new TableLayoutManager(9);
         _matchupLayout4 = new TableLayoutManager(6);
         _matchupLayout3 = new TableLayoutManager(6);
 
-        // 1. 四麻ランキングのデータ幅を計算
         foreach (var stat in stats4)
         {
             _rank4Layout.UpdateDataWidth(0, GetShortName(stat.Name));
@@ -468,7 +341,6 @@
             _rank4Layout.UpdateDataWidth(8, stat.AvoidLastPlaceRate(4).ToString("F1") + "%");
         }
 
-        // 2. 三麻ランキングのデータ幅を計算
         foreach (var stat in stats3)
         {
             _rank3Layout.UpdateDataWidth(0, GetShortName(stat.Name));
@@ -482,7 +354,6 @@
             _rank3Layout.UpdateDataWidth(8, stat.AvoidLastPlaceRate(3).ToString("F1") + "%");
         }
 
-        // 3. 四麻相性のデータ幅を計算
         foreach (var stat in matchupStats4)
         {
             _matchupLayout4.UpdateDataWidth(0, GetShortName(stat.OpponentName));
@@ -493,7 +364,6 @@
             _matchupLayout4.UpdateDataWidth(5, stat.DirectWinRate.ToString("F1") + "%");
         }
 
-        // 4. 三麻相性のデータ幅を計算
         foreach (var stat in matchupStats3)
         {
             _matchupLayout3.UpdateDataWidth(0, GetShortName(stat.OpponentName));
@@ -504,14 +374,12 @@
             _matchupLayout3.UpdateDataWidth(5, stat.DirectWinRate.ToString("F1") + "%");
         }
 
-        // 5. ランキングテーブルのヘッダー幅を列幅に反映（一元管理された配列を使用）
         for (int i = 0; i < RankHeaders.Length; i++)
         {
             _rank4Layout.UpdateHeaderWidth(i, RankHeaders[i]);
             _rank3Layout.UpdateHeaderWidth(i, RankHeaders[i]);
         }
 
-        // 6. 相性テーブルのヘッダー幅を列幅に反映（一元管理された配列を使用）
         for (int i = 0; i < MatchupHeaders.Length; i++)
         {
             _matchupLayout4.UpdateHeaderWidth(i, MatchupHeaders[i]);

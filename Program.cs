@@ -13,5 +13,6 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddMudServices();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<MahjongApp.Services.DatabaseService>();
+builder.Services.AddScoped<MahjongApp.Services.StatsCacheService>();
 
 await builder.Build().RunAsync();

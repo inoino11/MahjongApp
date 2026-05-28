@@ -5,6 +5,7 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 @inject MahjongApp.Services.DatabaseService DatabaseService
+@inject MahjongApp.Services.StatsCacheService StatsCache
 
 @* 素点入力欄のスタイル *@
 <style>
@@ -588,6 +589,15 @@
     @* 対局者名が変更された時の処理 *@
     private async Task OnPlayerNameChanged(int index, string value)
     {
+        if (value == "削除済み")
+        {
+            Snackbar.Add("名前「削除済み」は使用できません。", Severity.Warning);
+            currentPlayers[index].Name = string.Empty;
+            currentPlayers[index].Id = null;   
+            var clearedNameList = currentPlayers.Select(p => p.Name).ToList();
+            await LocalStorage.SetItemAsync(StorageKeys.CurrentPlayers, clearedNameList);
+            return;
+        }
         currentPlayers[index].Name = value;
         var matchedPlayer = playerMaster.FirstOrDefault(p => p.Name == value);
         if (matchedPlayer != null)
@@ -721,6 +731,24 @@
         var activePlayers = activeIndices.Select(i => currentPlayers[i].Name).ToList();
         var activeYaki = activeIndices.Select(i => currentYaki[i]).ToList();
         var activeTobiBonus = activeIndices.Select(i => currentTobiBonus[i]).ToList();
+        // 名無しチェック
+        if (activePlayers.Any(string.IsNullOrWhiteSpace))
+        {
+            Snackbar.Add("参加する対局者の名前を入力してください。", Severity.Error);
+            return;
+        }
+        // 同名チェック
+        if (activePlayers.Distinct().Count() != activePlayers.Count)
+        {
+            Snackbar.Add("アクティブな対局者の中に同じ名前があります。", Severity.Error);
+            return;
+        }
+        // 削除済みチェック
+        if (activePlayers.Any(name => name == "削除済み"))
+        {
+            Snackbar.Add("名前「削除済み」は使用できません。", Severity.Error);
+            return;
+        }
         // 簡易入力ミスチェック
         if (rules.IsTobiEnabled)
         {
@@ -1581,6 +1609,7 @@
 
             ResetInputForms();
             Snackbar.Add("本日の対局結果を通算成績に保存しました！", Severity.Success);
+            _ = StatsCache.InitializeAsync(forceReload: true);
             StateHasChanged();
         }
         catch (Exception ex)

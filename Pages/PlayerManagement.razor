@@ -3,6 +3,7 @@
 @inject MahjongApp.Services.DatabaseService DatabaseService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject MahjongApp.Services.StatsCacheService StatsCache
 
 <style>
     /* テーブルを画面幅に収め、横スクロールを防止する */
@@ -230,6 +231,7 @@
         }
         player.Name = editName;
         await DatabaseService.UpdatePlayerAsync(player);
+        _ = StatsCache.InitializeAsync(forceReload: true);
         Snackbar.Add("名前を変更しました", Severity.Success);
         editTargetId = null;
         await LoadData();
@@ -273,6 +275,7 @@
         if (result == true)
         {
             await DatabaseService.MergePlayersAsync(mergeSourceId, mergeTargetId);
+            _ = StatsCache.InitializeAsync(forceReload: true);
             Snackbar.Add("統合が完了しました！", Severity.Success);
             mergeTargetId = null;
             mergeSourceId = null;
@@ -292,6 +295,7 @@
         if (gameCount == 0)
         {
             await DatabaseService.DeletePlayerAsync(player.Id);
+            _ = StatsCache.InitializeAsync(forceReload: true);
             Snackbar.Add($"{player.Name} を削除しました。", Severity.Info);
             await LoadData();
             return;
@@ -309,6 +313,7 @@
             await DatabaseService.UpdatePlayerAsync(deletedProfile);
         }
         await DatabaseService.MergePlayersAsync(player.Id, "deleted");
+        _ = StatsCache.InitializeAsync(forceReload: true);
         Snackbar.Add($"{player.Name} を削除し、履歴を「削除済み」に統合しました。", Severity.Success);
         await LoadData();
     }
