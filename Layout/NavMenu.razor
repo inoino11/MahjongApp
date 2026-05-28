@@ -11,22 +11,21 @@
         <MudNavLink Href="players" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.ManageAccounts">名簿管理</MudNavLink>
         <MudNavLink Href="settings" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">データ管理</MudNavLink>
     </MudNavMenu>
-    <div style="margin-top: auto; padding: 16px; text-align: center;">
-        @* バージョン表示をボタン化 *@
+    <div style="margin-top: auto; padding: 16px 8px; text-align: center; display: flex; justify-content: center;">
+        @* バージョン表示をボタン化（見切れ防止の調整版） *@
         <MudButton Variant="Variant.Text" 
-                   Size="Size.Small" 
                    OnClick="CheckForUpdateAsync" 
-                   Style="color: var(--mud-palette-text-disabled); font-family: monospace; text-transform: none; width: 100%;"
+                   Style="color: var(--mud-palette-text-disabled); font-family: monospace; text-transform: none; padding: 4px 8px; min-width: 0; font-size: 0.8rem;"
                    Disabled="@isChecking">
             @if (isChecking)
             {
                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                <span>確認中...</span>
+                <span style="white-space: nowrap;">確認中...</span>
             }
             else
             {
                 <MudIcon Icon="@Icons.Material.Filled.Update" Size="Size.Small" Class="mr-1" />
-                <span>@AppVersion</span>
+                <span style="white-space: nowrap;">@AppVersion</span>
             }
         </MudButton>
     </div>
