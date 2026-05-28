@@ -364,6 +364,24 @@
                 }, 800);
             }
         };
+        // PWAの手動アップデートチェック関数
+        window.checkForUpdate = async function() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (registration) {
+                        await registration.update();
+                        return "CHECKED";
+                    } else {
+                        return "NOT_REGISTERED";
+                    }
+                } catch (err) {
+                    console.error("更新チェックエラー:", err);
+                    return "ERROR";
+                }
+            }
+            return "UNSUPPORTED";
+        };
     </script>
     <script src="js/db.js"></script>
 </body>

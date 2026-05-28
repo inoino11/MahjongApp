@@ -1,4 +1,7 @@
 ﻿@using System.Reflection
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
 
 <div style="display: flex; flex-direction: column; height: 100%;">
     <MudNavMenu>
@@ -9,18 +12,69 @@
         <MudNavLink Href="settings" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">データ管理</MudNavLink>
     </MudNavMenu>
     <div style="margin-top: auto; padding: 16px; text-align: center;">
-        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-disabled); font-family: monospace;">
-            @AppVersion
-        </MudText>
+        @* バージョン表示をボタン化 *@
+        <MudButton Variant="Variant.Text" 
+                   Size="Size.Small" 
+                   OnClick="CheckForUpdateAsync" 
+                   Style="color: var(--mud-palette-text-disabled); font-family: monospace; text-transform: none; width: 100%;"
+                   Disabled="@isChecking">
+            @if (isChecking)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>確認中...</span>
+            }
+            else
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Update" Size="Size.Small" Class="mr-1" />
+                <span>@AppVersion</span>
+            }
+        </MudButton>
     </div>
 </div>
 
 @code {
     private string AppVersion { get; set; } = "v--.--.--";
+    private bool isChecking = false;
     protected override void OnInitialized()
     {
         var assembly = Assembly.GetExecutingAssembly();
         var attr = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
         if (attr != null) AppVersion = attr.InformationalVersion;
+    }
+
+    private async Task CheckForUpdateAsync()
+    {
+        isChecking = true;
+        StateHasChanged();
+
+        try
+        {
+            // 少しだけ待機して、ボタンが押された感（UX）を出す
+            await Task.Delay(500); 
+            var result = await JSRuntime.InvokeAsync<string>("checkForUpdate");            
+            if (result == "CHECKED")
+            {
+                // ※更新があれば index.html 側のイベントが発火してダイアログが出るため、
+                // ここでは「最新です」または「確認しました」とだけ通知する。
+                Snackbar.Add("アップデートを確認しました。（新しいバージョンがあればダイアログが表示されます）", Severity.Info);
+            }
+            else if (result == "NOT_REGISTERED")
+            {
+                Snackbar.Add("Service Workerが未登録です。（初回ロード時、またはPWA非対応ブラウザ）", Severity.Warning);
+            }
+            else
+            {
+                Snackbar.Add("アップデートの確認に失敗しました。", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"エラーが発生しました: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isChecking = false;
+            StateHasChanged();
+        }
     }
 }
