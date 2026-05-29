@@ -244,7 +244,7 @@
                     }
                     installingWorker.onstatechange = () => {
                         if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            if (confirm("アプリの新しいバージョンがあります。更新して再読み込みしますか？\n（現在の入力状態は保存されます）")) {
+                            if (confirm("アプリの新しいバージョンがあります。\n更新して再読み込みしますか？")) {
                                 installingWorker.postMessage('SKIP_WAITING');
                             }
                         }
