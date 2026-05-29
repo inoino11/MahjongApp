@@ -383,7 +383,7 @@
     </script>
     <script src="js/db.js"></script>
     <script>
-        // ▼ トーストの上・横スワイプ消去ロジック ▼
+        // ▼ トーストの上・横スワイプ消去ロジック（Blazor再描画対策版） ▼
         document.addEventListener('DOMContentLoaded', () => {
             let startX = 0;
             let startY = 0;
@@ -397,19 +397,22 @@
                     startX = e.touches[0].clientX;
                     startY = e.touches[0].clientY;
                     isDragging = true;
-                    // トランジションを切って指の動きに即座に追従させる
+                    
+                    // 個別のIDがない場合は付与する（動的CSSでターゲットにするため）
+                    if (!currentSnackbar.id) {
+                        currentSnackbar.id = 'toast-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+                    }
+                    // 指の動きに即座に追従させる
                     currentSnackbar.style.transition = 'none';
                 }
             }, { passive: true });
 
             document.addEventListener('touchmove', (e) => {
                 if (!isDragging || !currentSnackbar) return;
-                const currentX = e.touches[0].clientX;
-                const currentY = e.touches[0].clientY;
-                const deltaX = currentX - startX;
-                const deltaY = currentY - startY;
+                const deltaX = e.touches[0].clientX - startX;
+                const deltaY = e.touches[0].clientY - startY;
 
-                // 指の動きに合わせてトーストを移動させる（下方向への移動は少し制限）
+                // 下方向への移動は少し制限しつつ、指に追従
                 const moveY = deltaY < 0 ? deltaY : deltaY * 0.3;
                 currentSnackbar.style.transform = `translate(${deltaX}px, ${moveY}px)`;
             }, { passive: true });
@@ -417,33 +420,39 @@
             document.addEventListener('touchend', (e) => {
                 if (!isDragging || !currentSnackbar) return;
                 
-                const endX = e.changedTouches[0].clientX;
-                const endY = e.changedTouches[0].clientY;
-                const deltaX = endX - startX;
-                const deltaY = endY - startY;
+                const deltaX = e.changedTouches[0].clientX - startX;
+                const deltaY = e.changedTouches[0].clientY - startY;
 
-                // 吹き飛ばす判定の閾値（ピクセル）
-                const thresholdX = 50; 
+                // 吹き飛ばす判定の閾値
+                const thresholdX = 50;  // 横方向
                 const thresholdY = -40; // 上方向
 
-                // 指を離した後はアニメーションを有効にする
-                currentSnackbar.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
-
                 if (Math.abs(deltaX) > thresholdX || deltaY < thresholdY) {
-                    // 閾値を超えたら画面外へ飛ばして透明にする
+                    // --- 閾値を超えたら吹き飛ばす ---
                     const escapeX = Math.abs(deltaX) > thresholdX ? (deltaX > 0 ? 150 : -150) : 0;
                     const escapeY = deltaY < thresholdY ? -150 : 0;
-                    
-                    currentSnackbar.style.transform = `translate(${escapeX}px, ${escapeY}px)`;
-                    currentSnackbar.style.opacity = '0';
+                    const toastId = currentSnackbar.id;
 
-                    // アニメーション完了後に要素を隠す（Blazor側のタイマーが後からDOMを掃除してくれます）
-                    const target = currentSnackbar;
+                    // 【最重要】Blazorの再描画によるチラつきを防ぐため、強制力の高いCSSを動的生成してHeadに注入する
+                    const styleEl = document.createElement('style');
+                    styleEl.innerHTML = `
+                        #${toastId} {
+                            transform: translate(${escapeX}px, ${escapeY}px) !important;
+                            opacity: 0 !important;
+                            transition: transform 0.2s ease-out, opacity 0.2s ease-out !important;
+                            pointer-events: none !important;
+                        }
+                    `;
+                    document.head.appendChild(styleEl);
+
+                    // Blazor側で要素が安全に破棄された頃合い（3秒後）に、この不要なStyleタグもお掃除する
                     setTimeout(() => {
-                        target.style.display = 'none';
-                    }, 250);
+                        styleEl.remove();
+                    }, 3000);
+
                 } else {
-                    // 閾値未満なら元の位置にポヨンと戻す
+                    // --- 閾値未満なら元の位置にポヨンと戻す ---
+                    currentSnackbar.style.transition = 'transform 0.25s ease-out';
                     currentSnackbar.style.transform = 'translate(0px, 0px)';
                 }
 
