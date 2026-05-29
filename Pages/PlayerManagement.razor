@@ -226,7 +226,7 @@
         var player = players.First(p => p.Id == editTargetId);
         if (players.Any(p => p.Id != player.Id && p.Name == editName))
         {
-            Snackbar.Add("その名前は既に存在します。", Severity.Warning);
+            Snackbar.Add("その名前は既に存在します", Severity.Warning);
             return;
         }
         player.Name = editName;
@@ -276,7 +276,7 @@
         {
             await DatabaseService.MergePlayersAsync(mergeSourceId, mergeTargetId);
             _ = StatsCache.InitializeAsync(forceReload: true);
-            Snackbar.Add("統合が完了しました！", Severity.Success);
+            Snackbar.Add("名前を統合しました！", Severity.Success);
             mergeTargetId = null;
             mergeSourceId = null;
             await LoadData();
@@ -296,7 +296,7 @@
         {
             await DatabaseService.DeletePlayerAsync(player.Id);
             _ = StatsCache.InitializeAsync(forceReload: true);
-            Snackbar.Add($"{player.Name} を削除しました。", Severity.Info);
+            Snackbar.Add($"{player.Name} を削除しました", Severity.Info);
             await LoadData();
             return;
         }
@@ -314,7 +314,7 @@
         }
         await DatabaseService.MergePlayersAsync(player.Id, "deleted");
         _ = StatsCache.InitializeAsync(forceReload: true);
-        Snackbar.Add($"{player.Name} を削除し、履歴を「削除済み」に統合しました。", Severity.Success);
+        Snackbar.Add($"{player.Name} を削除しました", Severity.Success);
         await LoadData();
     }
 }

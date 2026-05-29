@@ -53,22 +53,20 @@
             var result = await JSRuntime.InvokeAsync<string>("checkForUpdate");            
             if (result == "CHECKED")
             {
-                // ※更新があれば index.html 側のイベントが発火してダイアログが出るため、
-                // ここでは「最新です」または「確認しました」とだけ通知する。
-                Snackbar.Add("アップデートを確認しました。（新しいバージョンがあればダイアログが表示されます）", Severity.Info);
+                Snackbar.Add("アップデートをチェックしました", Severity.Info);
             }
             else if (result == "NOT_REGISTERED")
             {
-                Snackbar.Add("Service Workerが未登録です。（初回ロード時、またはPWA非対応ブラウザ）", Severity.Warning);
+                Snackbar.Add("Service Workerが未登録です\n初回ロードまたはPWA非対応ブラウザ", Severity.Warning);
             }
             else
             {
-                Snackbar.Add("アップデートの確認に失敗しました。", Severity.Error);
+                Snackbar.Add("アップデートの確認に失敗しました", Severity.Error);
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"エラーが発生しました: {ex.Message}", Severity.Error);
+            Snackbar.Add($"エラーが発生しました:\n{ex.Message}", Severity.Error);
         }
         finally
         {

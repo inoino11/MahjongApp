@@ -600,7 +600,7 @@
     {
         if (value == "削除済み")
         {
-            Snackbar.Add("名前「削除済み」は使用できません。", Severity.Warning);
+            Snackbar.Add("名前「削除済み」は使用できません", Severity.Warning);
             currentPlayers[index].Name = string.Empty;
             currentPlayers[index].Id = null;   
             var clearedNameList = currentPlayers.Select(p => p.Name).ToList();
@@ -743,19 +743,19 @@
         // 名無しチェック
         if (activePlayers.Any(string.IsNullOrWhiteSpace))
         {
-            Snackbar.Add("参加する対局者の名前を入力してください。", Severity.Error);
+            Snackbar.Add("対局者の名前を入力してください", Severity.Error);
             return;
         }
         // 同名チェック
         if (activePlayers.Distinct().Count() != activePlayers.Count)
         {
-            Snackbar.Add("アクティブな対局者の中に同じ名前があります。", Severity.Error);
+            Snackbar.Add("対局者の中に同じ名前があります", Severity.Error);
             return;
         }
         // 削除済みチェック
         if (activePlayers.Any(name => name == "削除済み"))
         {
-            Snackbar.Add("名前「削除済み」は使用できません。", Severity.Error);
+            Snackbar.Add("名前「削除済み」は使用できません", Severity.Error);
             return;
         }
         // 簡易入力ミスチェック
@@ -766,8 +766,8 @@
             if (hasTobi != hasTobiBonus)
             {
                 string msg = hasTobi
-                ? "トビが発生していますが、ボーナス獲得者（🚀）が選択されていません。"
-                : "トビが発生していないのに、ボーナス獲得者（🚀）が選択されています。";
+                ? "トビが発生していますが\nボーナス獲得者（🚀）が選択されていません"
+                : "トビが発生していないのに\nボーナス獲得者（🚀）が選択されています";
                 Snackbar.Add(msg, Severity.Error);
                 return;
             }
@@ -1170,7 +1170,7 @@
             var result = await JSRuntime.InvokeAsync<string>("exportAndShareResult", "share-target");
             if (result == "COPIED") Snackbar.Add("画像をクリップボードにコピーしました！", Severity.Success);
             else if (result == "DOWNLOADED") Snackbar.Add("画像をダウンロードしました！", Severity.Info);
-            else if (result.StartsWith("ERROR")) Snackbar.Add($"画像の生成に失敗しました: {result}", Severity.Error);
+            else if (result.StartsWith("ERROR")) Snackbar.Add($"画像の生成に失敗しました:\n{result}", Severity.Error);
         }
         catch (Exception)
         {
@@ -1333,11 +1333,11 @@
             string shareUrl = $"{NavigationManager.BaseUri}shared?d={urlEncoded}";
             string result = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 対局結果", shareUrl);
             if (result == "COPIED") Snackbar.Add("閲覧用URLをクリップボードにコピーしました！", Severity.Success);
-            else if (result.StartsWith("ERROR")) Snackbar.Add("共有またはコピーに失敗しました。", Severity.Error);
+            else if (result.StartsWith("ERROR")) Snackbar.Add("共有またはコピーに失敗しました", Severity.Error);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"URLの生成に失敗しました: {ex.Message}", Severity.Error);
+            Snackbar.Add($"URLの生成に失敗しました:\n{ex.Message}", Severity.Error);
         }
     }
 
@@ -1595,14 +1595,10 @@
                 string name = currentPlayers[i].Name;
                 if (!string.IsNullOrWhiteSpace(name) && nameToIdMap.TryGetValue(name, out var playerId))
                 {
-                    int chipCount = ActiveSessionChips[i];
-                    
+                    int chipCount = ActiveSessionChips[i];                    
                     // セッション総括記録に追加
                     sessionRecord.ParticipantPlayerIds.Add(playerId);
                     sessionRecord.SettledChips.Add(chipCount);
-
-                    // 💡 名簿（PlayerProfile）側への生枚数の累積・上書き処理は、今回の仕様変更（セッション毎清算）に伴い完全に撤廃しました。
-                    // チップの金額は、すべてこのsessionRecordから動的に計算・集計します。
                 }
             }
 
@@ -1617,13 +1613,13 @@
             await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
 
             ResetInputForms();
-            Snackbar.Add("本日の対局結果を通算成績に保存しました！", Severity.Success);
+            Snackbar.Add("対局結果を通算成績に保存しました！", Severity.Success);
             _ = StatsCache.InitializeAsync(forceReload: true);
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            Snackbar.Add("保存中にエラーが発生しました: " + ex.Message, Severity.Error);
+            Snackbar.Add("保存中にエラーが発生しました:\n" + ex.Message, Severity.Error);
         }
     }
 }

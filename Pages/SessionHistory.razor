@@ -207,7 +207,7 @@
         if (result == true)
         {
             await DatabaseService.DeleteSessionAsync(group.Session.SessionId);
-            Snackbar.Add("対局を削除しました", Severity.Success);
+            Snackbar.Add("対局記録を削除しました", Severity.Success);
             await LoadData();
         }
         else

@@ -59,27 +59,50 @@
         }
 
         @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0px); }
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-15px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
         }
 
         @keyframes pulse {
-            0% { opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { opacity: 0.5; }
+            0% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.5;
+            }
         }
 
         body {
             background-color: #0d140d;
         }
 
-        body, .mud-typography {
+        body,
+        .mud-typography {
             font-family: 'Roboto', 'Zen Kaku Gothic Antique', sans-serif;
+        }
+
+        /* トースト通知内の改行\nを有効化 */
+        .mud-snackbar-content-message {
+            white-space: pre-wrap !important;
         }
 
         /* スマホ向け：スナックバーの究極小型化（カプセル型） */
         @media (max-width: 599.98px) {
+
             .mud-snackbar-location-bottom-center,
             .mud-snackbar-location-bottom-left,
             .mud-snackbar-location-bottom-right,
@@ -88,30 +111,37 @@
                 padding: 0 16px !important;
                 pointer-events: none;
                 display: flex !important;
-                justify-content: center !important; /* 中央揃えに変更してフリックしやすく */
+                justify-content: center !important;
+                /* 中央揃えに変更してフリックしやすく */
             }
+
             .mud-snackbar {
                 width: auto !important;
                 min-width: 0 !important;
                 max-width: 90% !important;
                 margin: 8px auto !important;
-                padding: 2px 16px !important; /* ボタンが消えた分、少し左右の余白を確保 */
+                padding: 2px 16px !important;
+                /* ボタンが消えた分、少し左右の余白を確保 */
                 border-radius: 50px !important;
                 pointer-events: auto;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
                 /* ▼ スワイプのための追加設定 */
-                touch-action: none; /* ブラウザのデフォルトスクロールを防止 */
+                touch-action: none;
+                /* ブラウザのデフォルトスクロールを防止 */
                 will-change: transform, opacity;
             }
+
             .mud-snackbar-content {
                 padding: 4px 0 !important;
                 align-items: center !important;
             }
+
             .mud-snackbar-content-message {
                 font-size: 0.85rem !important;
                 line-height: 1.2 !important;
                 margin: 0 4px !important;
             }
+
             .mud-snackbar .mud-icon-root {
                 font-size: 1.25rem !important;
             }
@@ -137,7 +167,7 @@
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js" autostart="false"></script>
     <script>
         // PWAのキャッシュとService Workerを破棄して再起動する復旧用関数
-        window.recoverPwaAndReload = async function() {
+        window.recoverPwaAndReload = async function () {
             const btn = document.getElementById('recovery-btn');
             if (btn) {
                 btn.innerText = "修復中...";
@@ -363,7 +393,7 @@
             }
         };
         // PWAの手動アップデートチェック関数
-        window.checkForUpdate = async function() {
+        window.checkForUpdate = async function () {
             if ('serviceWorker' in navigator) {
                 try {
                     const registration = await navigator.serviceWorker.getRegistration();
@@ -383,13 +413,12 @@
     </script>
     <script src="js/db.js"></script>
     <script>
-        // ▼ トーストの上・横スワイプ消去ロジック（Blazor再描画対策版） ▼
+        // トーストのスワイプ消去ロジック
         document.addEventListener('DOMContentLoaded', () => {
             let startX = 0;
             let startY = 0;
             let currentSnackbar = null;
             let isDragging = false;
-
             document.addEventListener('touchstart', (e) => {
                 const snackbar = e.target.closest('.mud-snackbar');
                 if (snackbar) {
@@ -397,7 +426,6 @@
                     startX = e.touches[0].clientX;
                     startY = e.touches[0].clientY;
                     isDragging = true;
-                    
                     // 個別のIDがない場合は付与する（動的CSSでターゲットにするため）
                     if (!currentSnackbar.id) {
                         currentSnackbar.id = 'toast-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
@@ -406,34 +434,31 @@
                     currentSnackbar.style.transition = 'none';
                 }
             }, { passive: true });
-
             document.addEventListener('touchmove', (e) => {
                 if (!isDragging || !currentSnackbar) return;
                 const deltaX = e.touches[0].clientX - startX;
                 const deltaY = e.touches[0].clientY - startY;
-
-                // 下方向への移動は少し制限しつつ、指に追従
-                const moveY = deltaY < 0 ? deltaY : deltaY * 0.3;
-                currentSnackbar.style.transform = `translate(${deltaX}px, ${moveY}px)`;
+                // 制限を解除し、全方向に指へ完全に追従させる
+                currentSnackbar.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
             }, { passive: true });
-
             document.addEventListener('touchend', (e) => {
                 if (!isDragging || !currentSnackbar) return;
-                
                 const deltaX = e.changedTouches[0].clientX - startX;
                 const deltaY = e.changedTouches[0].clientY - startY;
-
-                // 吹き飛ばす判定の閾値
-                const thresholdX = 50;  // 横方向
-                const thresholdY = -40; // 上方向
-
-                if (Math.abs(deltaX) > thresholdX || deltaY < thresholdY) {
+                // 吹き飛ばす判定の閾値（全方向共通で50px）
+                const threshold = 50;
+                if (Math.abs(deltaX) > threshold || Math.abs(deltaY) > threshold) {
                     // --- 閾値を超えたら吹き飛ばす ---
-                    const escapeX = Math.abs(deltaX) > thresholdX ? (deltaX > 0 ? 150 : -150) : 0;
-                    const escapeY = deltaY < thresholdY ? -150 : 0;
+                    let escapeX = 0;
+                    let escapeY = 0;
+                    // より大きく動かした方向（X軸かY軸か）へ一直線に飛ばす
+                    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                        escapeX = deltaX > 0 ? 200 : -200; // 左右
+                    } else {
+                        escapeY = deltaY > 0 ? 200 : -200; // 上下
+                    }
                     const toastId = currentSnackbar.id;
-
-                    // 【最重要】Blazorの再描画によるチラつきを防ぐため、強制力の高いCSSを動的生成してHeadに注入する
+                    // Blazorの再描画によるチラつきを防ぐ動的CSS
                     const styleEl = document.createElement('style');
                     styleEl.innerHTML = `
                         #${toastId} {
@@ -444,23 +469,19 @@
                         }
                     `;
                     document.head.appendChild(styleEl);
-
-                    // Blazor側で要素が安全に破棄された頃合い（3秒後）に、この不要なStyleタグもお掃除する
+                    // Blazor側で要素が安全に破棄された頃合いにお掃除
                     setTimeout(() => {
                         styleEl.remove();
                     }, 3000);
-
                 } else {
                     // --- 閾値未満なら元の位置にポヨンと戻す ---
                     currentSnackbar.style.transition = 'transform 0.25s ease-out';
                     currentSnackbar.style.transform = 'translate(0px, 0px)';
                 }
-
                 isDragging = false;
                 currentSnackbar = null;
             });
         });
-        // ▲ トーストのスワイプ消去ロジックここまで ▲
     </script>
 </body>
 

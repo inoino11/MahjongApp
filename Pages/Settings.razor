@@ -61,7 +61,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"エクスポートに失敗しました: {ex.Message}", Severity.Error);
+            Snackbar.Add($"エクスポートに失敗しました:\n{ex.Message}", Severity.Error);
         }
     }
 
@@ -73,7 +73,7 @@
         string title = isMerge ? "データの統合" : "データの完全上書き";
         string message = isMerge
             ? "現在のデータにバックアップファイルのデータを追加・統合します。\n（※同じIDの履歴はバックアップ側の内容で更新されます）\n本当によろしいですか？"
-            : "現在のアプリ内のデータはすべて消去され、選択したファイルの内容で完全に上書きされます。\n本当によろしいですか？";
+            : "現在のアプリ内のデータはすべて消去され、選択したファイルの内容で上書きされます。\n本当によろしいですか？";
         bool? result = await DialogService.ShowMessageBoxAsync(
             title, message, yesText: "はい、実行します", cancelText: "キャンセル");
         if (result != true) return;
@@ -85,12 +85,12 @@
             var json = await reader.ReadToEndAsync();
             await DatabaseService.ImportDataAsync(json, isMerge);
             _ = StatsCache.InitializeAsync(forceReload: true);
-            string successMsg = isMerge ? "データを統合しました！" : "データを完全に復元しました！";
+            string successMsg = isMerge ? "データを統合しました！" : "データを復元しました！";
             Snackbar.Add(successMsg, Severity.Success);
         }
         catch (Exception)
         {
-            Snackbar.Add("ファイルの読み込みに失敗しました。正しいバックアップファイルか確認してください。", Severity.Error);
+            Snackbar.Add("ファイルの読み込みに失敗しました", Severity.Error);
         }
     }
 
@@ -108,7 +108,7 @@
             if (result2 == true)
             {
                 await DatabaseService.ClearAllDataAsync();
-                Snackbar.Add("すべてのデータを初期化しました。", Severity.Success);
+                Snackbar.Add("すべてのデータを初期化しました", Severity.Success);
             }
         }
     }
