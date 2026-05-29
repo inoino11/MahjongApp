@@ -88,34 +88,32 @@
                 padding: 0 16px !important;
                 pointer-events: none;
                 display: flex !important;
-                justify-content: right !important;
+                justify-content: center !important; /* 中央揃えに変更してフリックしやすく */
             }
             .mud-snackbar {
-                width: auto !important; /* 100%をやめて、文字幅に合わせて縮ませる */
+                width: auto !important;
                 min-width: 0 !important;
-                max-width: 90% !important; /* 画面からはみ出さないように */
+                max-width: 90% !important;
                 margin: 8px auto !important;
-                padding: 2px 12px !important; /* 余白を限界まで削る */
-                border-radius: 50px !important; /* 完全な角丸（カプセル型）にする */
+                padding: 2px 16px !important; /* ボタンが消えた分、少し左右の余白を確保 */
+                border-radius: 50px !important;
                 pointer-events: auto;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+                /* ▼ スワイプのための追加設定 */
+                touch-action: none; /* ブラウザのデフォルトスクロールを防止 */
+                will-change: transform, opacity;
             }
-            /* 内部のメッセージとアイコンの余白・サイズ調整 */
             .mud-snackbar-content {
                 padding: 4px 0 !important;
                 align-items: center !important;
             }
             .mud-snackbar-content-message {
-                font-size: 0.85rem !important; /* 文字を少し小さく */
+                font-size: 0.85rem !important;
                 line-height: 1.2 !important;
                 margin: 0 4px !important;
             }
             .mud-snackbar .mud-icon-root {
-                font-size: 1.25rem !important; /* アイコンも少し小さく */
-            }
-            .mud-snackbar-action {
-                padding-left: 4px !important;
-                margin-right: -8px !important; /* 閉じるボタンの余白を詰める */
+                font-size: 1.25rem !important;
             }
         }
     </style>
@@ -384,6 +382,77 @@
         };
     </script>
     <script src="js/db.js"></script>
+    <script>
+        // ▼ トーストの上・横スワイプ消去ロジック ▼
+        document.addEventListener('DOMContentLoaded', () => {
+            let startX = 0;
+            let startY = 0;
+            let currentSnackbar = null;
+            let isDragging = false;
+
+            document.addEventListener('touchstart', (e) => {
+                const snackbar = e.target.closest('.mud-snackbar');
+                if (snackbar) {
+                    currentSnackbar = snackbar;
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                    isDragging = true;
+                    // トランジションを切って指の動きに即座に追従させる
+                    currentSnackbar.style.transition = 'none';
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!isDragging || !currentSnackbar) return;
+                const currentX = e.touches[0].clientX;
+                const currentY = e.touches[0].clientY;
+                const deltaX = currentX - startX;
+                const deltaY = currentY - startY;
+
+                // 指の動きに合わせてトーストを移動させる（下方向への移動は少し制限）
+                const moveY = deltaY < 0 ? deltaY : deltaY * 0.3;
+                currentSnackbar.style.transform = `translate(${deltaX}px, ${moveY}px)`;
+            }, { passive: true });
+
+            document.addEventListener('touchend', (e) => {
+                if (!isDragging || !currentSnackbar) return;
+                
+                const endX = e.changedTouches[0].clientX;
+                const endY = e.changedTouches[0].clientY;
+                const deltaX = endX - startX;
+                const deltaY = endY - startY;
+
+                // 吹き飛ばす判定の閾値（ピクセル）
+                const thresholdX = 50; 
+                const thresholdY = -40; // 上方向
+
+                // 指を離した後はアニメーションを有効にする
+                currentSnackbar.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
+
+                if (Math.abs(deltaX) > thresholdX || deltaY < thresholdY) {
+                    // 閾値を超えたら画面外へ飛ばして透明にする
+                    const escapeX = Math.abs(deltaX) > thresholdX ? (deltaX > 0 ? 150 : -150) : 0;
+                    const escapeY = deltaY < thresholdY ? -150 : 0;
+                    
+                    currentSnackbar.style.transform = `translate(${escapeX}px, ${escapeY}px)`;
+                    currentSnackbar.style.opacity = '0';
+
+                    // アニメーション完了後に要素を隠す（Blazor側のタイマーが後からDOMを掃除してくれます）
+                    const target = currentSnackbar;
+                    setTimeout(() => {
+                        target.style.display = 'none';
+                    }, 250);
+                } else {
+                    // 閾値未満なら元の位置にポヨンと戻す
+                    currentSnackbar.style.transform = 'translate(0px, 0px)';
+                }
+
+                isDragging = false;
+                currentSnackbar = null;
+            });
+        });
+        // ▲ トーストのスワイプ消去ロジックここまで ▲
+    </script>
 </body>
 
 </html>
