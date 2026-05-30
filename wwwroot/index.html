@@ -86,10 +86,6 @@
             }
         }
 
-        body {
-            background-color: #0d140d;
-        }
-
         body,
         .mud-typography {
             font-family: 'Roboto', 'Zen Kaku Gothic Antique', sans-serif;
@@ -482,6 +478,14 @@
                 currentSnackbar = null;
             });
         });
+    </script>
+    <script>
+        window.scrollToInput = (elementId) => {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
     </script>
 </body>
 

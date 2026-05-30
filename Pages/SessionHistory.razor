@@ -23,11 +23,10 @@
     }
 </style>
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 pb-10" @onclick="ClearArmedState">
-    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white;">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
         <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
         対局履歴
     </MudText>
-
     @if (isLoading)
     {
         <div class="d-flex justify-center py-4">
@@ -40,16 +39,16 @@
     }
     else
     {
-        <MudTable Items="@sessionGroups" Class="session-table" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="background-color: rgba(255,255,255,0.02);">
+        <MudTable Items="@sessionGroups" Class="session-table" Hover="true" Dense="true" Elevation="1" Breakpoint="Breakpoint.None">
             <RowTemplate Context="group">
-                <MudTd Style="padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <MudTd Style="padding: 10px 12px; border-bottom: 1px solid var(--mud-palette-divider);">
                     <div class="d-flex align-center justify-space-between w-100" style="margin-bottom: 6px;">
                         <div class="d-flex align-center" style="gap: 4px;">
                             <MudIconButton Icon="@(group.ShowDetails ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" 
                                            OnClick="@(() => group.ShowDetails = !group.ShowDetails)" 
                                            Size="Size.Small" 
-                                           Style="padding: 4px; color: #fff;" />
-                            <span style="font-size: 0.95rem; font-weight: bold; color: #fff; letter-spacing: 0.5px;">
+                                           Style="padding: 4px;" />
+                            <span style="font-size: 0.95rem; font-weight: bold; letter-spacing: 0.5px;">
                                 @group.Session.Date.ToString("yyyy/MM/dd HH:mm")
                             </span>
                         </div>

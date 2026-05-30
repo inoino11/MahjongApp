@@ -6,6 +6,7 @@
 @inject NavigationManager NavigationManager
 @inject MahjongApp.Services.DatabaseService DatabaseService
 @inject MahjongApp.Services.StatsCacheService StatsCache
+@inject IJSRuntime JS
 
 @* 素点入力欄のスタイル *@
 <style>
@@ -62,15 +63,141 @@
         align-self: center !important;
         margin-top: 0 !important;
     }
+
+    /* オリジナルテンキーの固定コンテナ */
+    .custom-keypad-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: #1a261a;
+        /* 雀卓のカード背景に近いシックな黒緑 */
+        border-top: 2px solid #2e7d32;
+        z-index: 1000;
+        transform: translateY(100%);
+        transition: transform 0.2s ease-out;
+        padding: 8px 12px 24px 12px;
+        /* スマホの下部バーを考慮した余白 */
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.6);
+        box-sizing: border-box;
+    }
+
+    /* テンキーが開いている時の状態 */
+    .custom-keypad-container.open {
+        transform: translateY(0);
+    }
+
+    .keypad-table {
+        width: 100%;
+        max-width: 480px;
+        margin: 0 auto;
+        border-collapse: separate;
+        border-spacing: 6px;
+        table-layout: fixed;
+    }
+
+    .keypad-btn {
+        width: 100%;
+        height: 48px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.06);
+        color: #e0e0e0;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+        white-space: nowrap;
+    }
+
+    .keypad-btn:active {
+        background-color: rgba(255, 255, 255, 0.18);
+    }
+
+    /* 演算子ボタン（＋、ー、閉じる） */
+    .keypad-btn.op-key {
+        background-color: #2e7d32;
+        color: white;
+    }
+
+    .keypad-btn.op-key:active {
+        background-color: #1b5e20;
+    }
+
+    /* アクションボタン（⌫、C） */
+    .keypad-btn.action-key {
+        background-color: #b71c1c;
+        color: white;
+    }
+
+    .keypad-btn.action-key:active {
+        background-color: #7f0000;
+    }
+
+    /* スコア入力欄がテンキー選択中の時のハイライト */
+    .score-input-active {
+        border: 1px solid #81c784 !important;
+        box-shadow: 0 0 6px rgba(129, 199, 132, 0.5);
+        background-color: rgba(76, 175, 80, 0.05) !important;
+    }
+
+    /* アプローチ1: 他の枠を入力中、自動入力（補完）枠を仮状態として半透明・斜体にする */
+    .score-input-auto-filling input {
+        opacity: 0.4 !important;
+        transition: opacity 0.15s ease;
+    }
+
+    /* アプローチ2: 点数がピッタリ合致した時に出現する「 記録」ボタンのスタイル */
+    .keypad-btn.record-key {
+        background-color: #ff9800 !important;
+        /* 目立つアクセントオレンジ */
+        color: white !important;
+        font-weight: bold;
+        animation: keypad-pulse-border 1.5s infinite;
+    }
+
+    .keypad-btn.record-key:active {
+        background-color: #e65100 !important;
+    }
+
+    /* 記録ボタンをフワフワと発光させてアピールするアニメーション */
+    @@keyframes keypad-pulse-border {
+        0% {
+            box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7);
+        }
+
+        70% {
+            box-shadow: 0 0 0 6px rgba(255, 152, 0, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(255, 152, 0, 0);
+        }
+    }
+
+    /* テンキーが開いている時だけ、画面の一番下にテンキー分の大きな余白を作る */
+    .keypad-open-padding {
+        padding-bottom: 320px !important;
+    }
+
+    /* ▽アイコンの幅に合わせて左側を押し込む */
+    .balanced-center-select input {
+        text-align: center !important;
+        padding-left: 10px !important;
+    }
 </style>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 pb-10" @onclick="CancelDelete">
+<MudContainer MaxWidth="MaxWidth.Medium" Class="@($"mt-4 pb-10 {(activeScoreInputIndex.HasValue ? "keypad-open-padding" : "")}")" @onclick="OnContainerClick" Style="min-height: 100vh;">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
-        麻雀集計ツール
+        素点集計
     </MudText>
 
     @* --- セクション1: 設定 (折りたたみ可) --- *@
-    <MudExpansionPanels Class="mb-6" @onclick:stopPropagation="true">
+    <MudExpansionPanels Class="mb-6">
         <MudExpansionPanel Text="ルール設定" Style="font-weight:bold; white-space: nowrap;" @bind-Expanded="isSettingsExpanded">
             <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mb-4" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="OpenPresetDialog">
                 保存済みの設定を呼び出し
@@ -135,7 +262,7 @@
     </MudExpansionPanels>
 
     @* --- セクション2: 対局者＆素点入力 --- *@
-    <MudPaper Class="pa-2 pa-sm-4 mb-6" Elevation="2" @onclick:stopPropagation="true">
+    <MudPaper Class="pa-2 pa-sm-4 mb-6" Elevation="2">
         <div class="mb-3 px-1">
             <MudText Style="font-weight: bold;" Class="mb-1">素点入力</MudText>
 
@@ -181,7 +308,7 @@
                 <MudItem xs="12" sm="6">
                     <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center justify-space-between px-2 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
                         @* 左ブロック: 名前入力 *@
-                        <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" SearchFunc="@SearchRegisteredPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" ShowOnFocus="true" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input" Style="font-weight: bold; font-size: 0.95rem; width: 8.0em;" Disabled="isSitOut" onfocus="this.select();" />
+                        <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" SearchFunc="@SearchRegisteredPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" ShowOnFocus="true" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input balanced-center-select" Style="font-weight: bold; font-size: 0.95rem; width: 9.5em;" Disabled="isSitOut" onfocus="this.select();" />
                         <div class="d-flex align-center justify-center flex-grow-1">
                             @* 抜け番 *@
                             @if (activeParticipantCount > rules.PlayerCount)
@@ -200,9 +327,9 @@
                             }
                         </div>
                         @* 右ブロック: 素点入力 *@
-                        <div class="d-flex align-baseline">
-                            <MudTextField T="string" Value="@(currentScores[index]?.ToString())" ValueChanged="@(v => HandleScoreStringInput(index, v))" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == autoFilledIndex ? "auto-filled" : "")}")" Style="width: 77px;" Disabled="isSitOut" Adornment="@(index == autoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
-                            <span class="score-zeros">00</span>
+                        <div id="score-input-@index" class="d-flex align-baseline" @onclick="@(async () => await OpenKeypad(index))" @onclick:stopPropagation="true">
+                            <MudTextField T="string" Value="@scoreInputBuffers[index]" ReadOnly="true" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == autoFilledIndex ? "auto-filled" : "")} {(activeScoreInputIndex == index ? "score-input-active" : "")} {(activeScoreInputIndex.HasValue && index == autoFilledIndex ? "score-input-auto-filling" : "")}")" Style="width: 77px; cursor: pointer;" Disabled="isSitOut" Adornment="@(index == autoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
+                            <span class="score-zeros" style="cursor: pointer;">00</span>
                         </div>
                     </MudPaper>
                 </MudItem>
@@ -212,7 +339,7 @@
     </MudPaper>
 
     @* --- セクション3: 集計結果 --- *@
-    <MudPaper Class="pa-2 px-sm-4" Elevation="2" @onclick="CancelDelete">
+    <MudPaper Class="pa-2 px-sm-4" Elevation="2">
         <ResultTable History="ActiveHistory" Players="currentPlayers.Select(p => p.Name).ToList()" ActiveParticipantCount="TableParticipantCount" @bind-DisplayMode="displayMode" Rules="rules" SessionChips="ActiveSessionChips" IsReadOnly="false" ArmedDeleteTarget="armedDeleteTarget" OnDeleteRequested="HandleDeleteRequest" OnResetRequested="ConfirmReset" OnChipChanged="HandleChipChangedCallback" />
         @* DBへ保存するボタン *@
         <div class="d-flex justify-center mt-6">
@@ -332,6 +459,42 @@
         </div>
     </div>
 </MudContainer>
+<div class="@($"custom-keypad-container {(activeScoreInputIndex.HasValue ? "open" : "")}")" @onclick:stopPropagation="true">
+    <table class="keypad-table">
+        <tr>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("7")'>7</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("8")'>8</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("9")'>9</button></td>
+            <td><button type="button" class="keypad-btn action-key" @onclick='() => OnKeypadPress("⌫")'>⌫</button></td>
+        </tr>
+        <tr>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("4")'>4</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("5")'>5</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("6")'>6</button></td>
+            <td><button type="button" class="keypad-btn op-key" @onclick='() => OnKeypadPress("+")'>＋</button></td>
+        </tr>
+        <tr>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("1")'>1</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("2")'>2</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("3")'>3</button></td>
+            <td><button type="button" class="keypad-btn op-key" @onclick='() => OnKeypadPress("-")'>ー</button></td>
+        </tr>
+        <tr>
+            <td><button type="button" class="keypad-btn action-key" @onclick='() => OnKeypadPress("C")'>C</button></td>
+            <td colspan="2"><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("0")'>0</button></td>
+            <td>
+                @if (IsTotalCorrect)
+                {
+                    <button type="button" class="keypad-btn record-key" @onclick='() => OnKeypadPress("記録")'>記録</button>
+                }
+                else
+                {
+                    <button type="button" class="keypad-btn op-key" @onclick='() => OnKeypadPress("閉じる")'>閉じる</button>
+                }
+            </td>
+        </tr>
+    </table>
+</div>
 
 @code {
     // 画面の入力状態を管理するための内部クラス
@@ -347,7 +510,7 @@
     private List<PlayerInputState> currentPlayers = Enumerable.Range(0, MaxParticipants)
         .Select(_ => new PlayerInputState()).ToList();
     private List<PlayerProfile> playerMaster = new();
-    private List<int?> currentScores = new() { null, null, null, null };
+    private List<int?> currentScores => scoreInputBuffers.Select(val => EvaluateScoreExpression(val)).ToList();
     private List<int?> previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
     private List<GameResult> ActiveHistory = new();
     private List<int> ActiveSessionChips = Enumerable.Repeat(0, MaxParticipants).ToList();
@@ -370,6 +533,8 @@
     private GameResult? armedDeleteTarget = null;
     private bool isSharing = false;
     private string FormatPlus(double val, string fmt = "F1") => val > 0 ? $"+{val.ToString(fmt)}" : val.ToString(fmt);
+    private int? activeScoreInputIndex = null;
+    private string[] scoreInputBuffers = Enumerable.Repeat(string.Empty, MaxParticipants).ToArray();
 
     @* ローカルストレージからのデータ復元と初期化 *@
     protected override async Task OnInitializedAsync()
@@ -453,6 +618,16 @@
             ActiveSessionChips = Enumerable.Repeat(0, MaxParticipants).ToList();
         }
         ResetInputForms();
+        var backupBuffers = await LocalStorage.GetItemAsync<string[]>("backup_score_buffers");
+        if (backupBuffers != null && backupBuffers.Length == MaxParticipants)
+        {
+            // 空ではない入力が1つでもあれば復元を採用する
+            if (backupBuffers.Any(b => !string.IsNullOrEmpty(b)))
+            {
+                scoreInputBuffers = backupBuffers;
+                EvaluateAutoFill(); // 自動計算枠などを再評価
+            }
+        }
     }
 
     // 初回の描画（データバインド済みの状態）が完了した瞬間に、ローディング画面をフェードアウトさせる
@@ -602,7 +777,7 @@
         {
             Snackbar.Add("名前「削除済み」は使用できません", Severity.Warning);
             currentPlayers[index].Name = string.Empty;
-            currentPlayers[index].Id = null;   
+            currentPlayers[index].Id = null;
             var clearedNameList = currentPlayers.Select(p => p.Name).ToList();
             await LocalStorage.SetItemAsync(StorageKeys.CurrentPlayers, clearedNameList);
             return;
@@ -1125,7 +1300,6 @@
     {
         if (ActiveHistory.Count == 0) return;
         var lastGame = ActiveHistory.Last();
-        // コピー対象の人数に応じて、足りない場合は「枠を追加」する
         int requiredCount = lastGame.RawScores.Count;
         while (activeParticipantCount < requiredCount && activeParticipantCount < MaxParticipants)
         {
@@ -1133,17 +1307,18 @@
             await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
         }
         for (int i = 0; i < activeParticipantCount; i++)
+        {
             if (i < lastGame.RawScores.Count)
             {
-                currentScores[i] = lastGame.RawScores[i];
-                if (lastGame.YakiPlayers != null && i < lastGame.YakiPlayers.Count)
-                    currentYaki[i] = lastGame.YakiPlayers[i];
-                if (lastGame.TobiBonusRecipients != null && i < lastGame.TobiBonusRecipients.Count)
-                    currentTobiBonus[i] = lastGame.TobiBonusRecipients[i];
+                scoreInputBuffers[i] = lastGame.RawScores[i]?.ToString() ?? string.Empty;
+                if (lastGame.YakiPlayers != null && i < lastGame.YakiPlayers.Count) currentYaki[i] = lastGame.YakiPlayers[i];
+                if (lastGame.TobiBonusRecipients != null && i < lastGame.TobiBonusRecipients.Count) currentTobiBonus[i] = lastGame.TobiBonusRecipients[i];
             }
+        }
         autoFilledIndex = null;
         EvaluateAutoFill();
         StateHasChanged();
+        await LocalStorage.SetItemAsync("backup_score_buffers", scoreInputBuffers);
     }
 
     @* 結果表示人数を求める *@
@@ -1186,12 +1361,12 @@
     @* 素点入力欄を初期化 *@
     private void ResetInputForms()
     {
-        currentScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
         previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
         currentYaki = new(new bool[MaxParticipants]);
         currentTobiBonus = new(new bool[MaxParticipants]);
         currentSitOuts = new(new bool[MaxParticipants]);
         autoFilledIndex = null;
+        scoreInputBuffers = Enumerable.Repeat(string.Empty, MaxParticipants).ToArray();
     }
 
     @* 特殊ルールOFF時のスコア表示モード切替 *@
@@ -1381,7 +1556,7 @@
         if (activeParticipantCount > rules.PlayerCount)
         {
             activeParticipantCount--;
-            currentScores[activeParticipantCount] = null;
+            scoreInputBuffers[activeParticipantCount] = string.Empty;
             currentSitOuts[activeParticipantCount] = false;
             currentYaki[activeParticipantCount] = false;
             currentTobiBonus[activeParticipantCount] = false;
@@ -1392,9 +1567,10 @@
                     if (currentSitOuts[i])
                     {
                         currentSitOuts[i] = false;
-                        if (previousScores[i].HasValue)
+                        var prevScore = previousScores[i];
+                        if (prevScore.HasValue)
                         {
-                            currentScores[i] = previousScores[i];
+                            scoreInputBuffers[i] = prevScore.Value.ToString();
                             previousScores[i] = null;
                         }
                     }
@@ -1411,19 +1587,18 @@
         currentSitOuts[index] = isSitOut;
         if (isSitOut)
         {
-            // 消す前に直前の素点をバックアップ
             previousScores[index] = currentScores[index];
-            currentScores[index] = null;
+            scoreInputBuffers[index] = string.Empty;
             currentYaki[index] = false;
             currentTobiBonus[index] = false;
             if (index == autoFilledIndex) autoFilledIndex = null;
         }
         else
         {
-            // 復帰時、バックアップがあれば素点を復元する
-            if (previousScores[index].HasValue)
+            var prevScore = previousScores[index];
+            if (prevScore.HasValue)
             {
-                currentScores[index] = previousScores[index];
+                scoreInputBuffers[index] = prevScore.Value.ToString();
                 previousScores[index] = null;
             }
         }
@@ -1437,51 +1612,42 @@
     private void EvaluateAutoFill()
     {
         var activeIndices = Enumerable.Range(0, activeParticipantCount).Where(i => !currentSitOuts[i]).ToList();
-
         if (activeIndices.Count != rules.PlayerCount)
         {
             ClearAutoFill();
             return;
         }
+        var scores = currentScores;
         var manualIndices = activeIndices.Where(i => i != autoFilledIndex).ToList();
-        var nullManualIndices = manualIndices.Where(i => !currentScores[i].HasValue).ToList();
+        var nullManualIndices = manualIndices.Where(i => !scores[i].HasValue).ToList();
         if (nullManualIndices.Count == 0)
         {
-            // 手動枠がすべて埋まっている場合、自動枠を再計算（追従）
             if (autoFilledIndex.HasValue)
             {
                 int targetTotal = (rules.StartingPoints * rules.PlayerCount) / 100;
-                int currentTotal = manualIndices.Sum(i => currentScores[i] ?? 0);
-                currentScores[autoFilledIndex.Value] = targetTotal - currentTotal;
+                int currentTotal = manualIndices.Sum(i => scores[i] ?? 0);
+                scoreInputBuffers[autoFilledIndex.Value] = (targetTotal - currentTotal).ToString();
             }
         }
         else if (nullManualIndices.Count == 1)
         {
-            if (autoFilledIndex.HasValue)
-            {
-                // 自動枠があるのに空欄ができた＝ユーザーが数値を消した（消去）
-                ClearAutoFill();
-            }
+            if (autoFilledIndex.HasValue) ClearAutoFill();
             else
             {
-                // 新規で自動計算を発動
                 autoFilledIndex = nullManualIndices[0];
                 int targetTotal = (rules.StartingPoints * rules.PlayerCount) / 100;
-                int currentTotal = activeIndices.Where(i => i != autoFilledIndex).Sum(i => currentScores[i] ?? 0);
-                currentScores[autoFilledIndex.Value] = targetTotal - currentTotal;
+                int currentTotal = activeIndices.Where(i => i != autoFilledIndex).Sum(i => scores[i] ?? 0);
+                scoreInputBuffers[autoFilledIndex.Value] = (targetTotal - currentTotal).ToString();
             }
         }
-        else
-        {
-            ClearAutoFill();
-        }
+        else ClearAutoFill();
     }
 
     private void ClearAutoFill()
     {
         if (autoFilledIndex.HasValue)
         {
-            currentScores[autoFilledIndex.Value] = null;
+            scoreInputBuffers[autoFilledIndex.Value] = string.Empty;
             autoFilledIndex = null;
         }
     }
@@ -1522,7 +1688,7 @@
             var nameToIdMap = new Dictionary<string, string>();
             var playersToUpdate = new List<PlayerProfile>();
             var gameRecordsToSave = new List<SavedGameRecord>();
-            
+
             var newSessionId = Guid.NewGuid().ToString();
             var currentTimestamp = DateTime.Now;
 
@@ -1534,10 +1700,10 @@
                 if (existingPlayer != null)
                 {
                     nameToIdMap[name] = existingPlayer.Id;
-                    playersToUpdate.Add(new PlayerProfile 
-                    { 
-                        Id = existingPlayer.Id, 
-                        Name = existingPlayer.Name, 
+                    playersToUpdate.Add(new PlayerProfile
+                    {
+                        Id = existingPlayer.Id,
+                        Name = existingPlayer.Name,
                         CumulativeChips = existingPlayer.CumulativeChips, // 互換性のために残しますが、更新はしません
                         CreatedAt = existingPlayer.CreatedAt
                     });
@@ -1545,17 +1711,17 @@
                 else
                 {
                     var newId = Guid.NewGuid().ToString();
-                    var newProfile = new PlayerProfile 
-                    { 
-                        Id = newId, 
+                    var newProfile = new PlayerProfile
+                    {
+                        Id = newId,
                         Name = name,
                         CumulativeChips = 0,
                         CreatedAt = currentTimestamp
                     };
-                    
+
                     playerMaster.Add(newProfile);
                     playersToUpdate.Add(newProfile);
-                    
+
                     nameToIdMap[name] = newId;
                 }
             }
@@ -1575,7 +1741,7 @@
                     Points = game.Points,
                     Yen = game.Yen
                 };
-                
+
                 gameRecordsToSave.Add(savedRecord);
             }
 
@@ -1584,7 +1750,7 @@
             {
                 SessionId = newSessionId,
                 Date = currentTimestamp,
-                Rate = rules.Rate,         // ★追加：当時の基本レートを記録
+                Rate = rules.Rate, // ★追加：当時の基本レートを記録
                 ChipRate = rules.ChipRate, // ★追加：当時のチップレートを記録
                 ParticipantPlayerIds = new List<string>(),
                 SettledChips = new List<int>()
@@ -1595,7 +1761,7 @@
                 string name = currentPlayers[i].Name;
                 if (!string.IsNullOrWhiteSpace(name) && nameToIdMap.TryGetValue(name, out var playerId))
                 {
-                    int chipCount = ActiveSessionChips[i];                    
+                    int chipCount = ActiveSessionChips[i];
                     // セッション総括記録に追加
                     sessionRecord.ParticipantPlayerIds.Add(playerId);
                     sessionRecord.SettledChips.Add(chipCount);
@@ -1608,7 +1774,7 @@
             // 6. 卓情報のクリア
             ActiveHistory.Clear();
             ActiveSessionChips = Enumerable.Repeat(0, MaxParticipants).ToList();
-            
+
             await LocalStorage.SetItemAsync("ActiveHistory", ActiveHistory);
             await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
 
@@ -1621,5 +1787,75 @@
         {
             Snackbar.Add("保存中にエラーが発生しました:\n" + ex.Message, Severity.Error);
         }
+    }
+
+    private async Task OpenKeypad(int index)
+    {
+        if (currentSitOuts[index]) return; // 抜け番の時は開かない
+        activeScoreInputIndex = index;
+        var score = currentScores[index];
+        if (string.IsNullOrEmpty(scoreInputBuffers[index]) && score.HasValue)
+            scoreInputBuffers[index] = score.Value.ToString();
+        await Task.Delay(50);
+        // 対象の入力欄を画面の中央付近にスムーズに自動スクロール
+        await JS.InvokeVoidAsync("scrollToInput", $"score-input-{index}");
+    }
+
+    private void CloseKeypad()
+    {
+        activeScoreInputIndex = null;
+    }
+
+    // 画面外をタップした時の統合ハンドラー
+    private void OnContainerClick()
+    {
+        CancelDelete(); // 既存の削除待機解除
+        CloseKeypad(); // テンキーを閉じる
+    }
+
+    // テンキーのボタンが押された時のコアロジック
+    private async Task OnKeypadPress(string key)
+    {
+        if (!activeScoreInputIndex.HasValue) return;
+        int idx = activeScoreInputIndex.Value;
+        if (key == "閉じる")
+        {
+            CloseKeypad();
+            return;
+        }
+        if (key == "記録")
+        {
+            CloseKeypad();
+            await CalculateAndRecordGame();
+            await LocalStorage.RemoveItemAsync("backup_score_buffers");
+            return;
+        }
+        if (key == "C")
+        {
+            scoreInputBuffers[idx] = string.Empty;
+            if (idx == autoFilledIndex) autoFilledIndex = null;
+            EvaluateAutoFill();
+            await LocalStorage.SetItemAsync("backup_score_buffers", scoreInputBuffers);
+            return;
+        }
+        if (idx == autoFilledIndex)
+        {
+            scoreInputBuffers[idx] = string.Empty;
+            autoFilledIndex = null;
+        }
+        if (key == "⌫")
+        {
+            if (scoreInputBuffers[idx].Length > 0)
+            {
+                scoreInputBuffers[idx] = scoreInputBuffers[idx].Substring(0, scoreInputBuffers[idx].Length - 1);
+            }
+        }
+        else
+        {
+            scoreInputBuffers[idx] += key;
+            scoreInputBuffers[idx] = System.Text.RegularExpressions.Regex.Replace(scoreInputBuffers[idx], @"(^|[-+])0+(?=[0-9])", "$1");
+        }
+        EvaluateAutoFill();
+        await LocalStorage.SetItemAsync("backup_score_buffers", scoreInputBuffers);
     }
 }

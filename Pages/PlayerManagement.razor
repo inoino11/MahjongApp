@@ -18,12 +18,11 @@
 </style>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 pb-10">
-    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white;">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
         <MudIcon Icon="@Icons.Material.Filled.ManageAccounts" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
         名簿管理
     </MudText>
-
-    <MudPaper Class="py-2 px-0 px-sm-4" Style="background-color: rgba(255,255,255,0.02);">
+    <MudPaper Class="py-2 px-0 px-sm-4" Outlined="true">
         @if (isLoading)
         {
             <div class="d-flex justify-center py-4">
@@ -71,7 +70,7 @@
                             <div class="d-flex flex-column gap-2">
                                 @* 1行目: 名前と操作メニュー *@
                                 <div class="d-flex justify-space-between align-center">
-                                    <strong style="font-size: 1.15rem; color: #ffffff; letter-spacing: 0.5px;">@player.Name</strong>
+                                    <strong style="font-size: 1.15rem; letter-spacing: 0.5px;">@player.Name</strong>
                                     <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Medium" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Style="color: #aaaaaa;">
                                         <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => StartEdit(player))">名前を変更</MudMenuItem>
                                         <MudMenuItem Icon="@Icons.Material.Filled.MergeType" OnClick="@(() => StartMerge(player.Id))">名前を統合</MudMenuItem>
