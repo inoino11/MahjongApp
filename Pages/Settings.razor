@@ -11,10 +11,10 @@
         データ管理
     </MudText>
     @* アップロード *@
-    <MudPaper Class="pa-6 mb-6" Outlined="true">
-        <MudText Typo="Typo.h6" Class="mb-2">データのバックアップ</MudText>
+    <MudPaper Class="pa-6 mb-6" Outlined="true" Style="border-color: var(--mud-palette-info);">
+        <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Info">データのバックアップ</MudText>
         <MudText Typo="Typo.body2" Class="mb-4">
-            現在のすべての成績データと対局者名簿を<br/>
+            現在のすべての成績データと対局者名簿を<br />
             JSONファイルとしてダウンロードします。
         </MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Download" OnClick="ExportData">
@@ -36,7 +36,7 @@
                 <strong>データ統合</strong> (現在のデータに差分を追加します)
             </MudRadio>
         </MudRadioGroup>
-        <MudButton HtmlTag="label" for="backup-upload" Variant="Variant.Outlined" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Upload">
+        <MudButton HtmlTag="label" for="backup-upload" Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Upload">
             ファイルを選択して実行
         </MudButton>
         <InputFile id="backup-upload" OnChange="ImportData" accept=".json" style="display: none;" />

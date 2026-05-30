@@ -220,39 +220,39 @@
                 <MudCardContent Class="pa-2 pa-sm-3 pt-1 mt-2">
                     <MudGrid Spacing="2">
                         <MudItem xs="6" sm="8">
-                            <MudTextField Label="ルール名" @bind-Value="rules.Name" Margin="Margin.Dense" onfocus="this.select();" />
+                            <MudTextField Label="ルール名" @bind-Value="rules.Name" Margin="Margin.Dense" onfocus="this.select();" Class="px-2" />
                         </MudItem>
                         <MudItem xs="6" sm="4">
-                            <MudSelect T="int" Label="対局人数" Value="rules.PlayerCount" ValueChanged="OnPlayerCountChanged" Margin="Margin.Dense">
+                            <MudSelect T="int" Label="対局人数" Value="rules.PlayerCount" ValueChanged="OnPlayerCountChanged" Margin="Margin.Dense" Class="px-2">
                                 <MudSelectItem Value="@(4)">四人麻雀</MudSelectItem>
                                 <MudSelectItem Value="@(3)">三人麻雀</MudSelectItem>
                             </MudSelect>
                         </MudItem>
                         <MudItem xs="6" sm="4">
-                            <MudNumericField T="int" Label="持ち点" Value="rules.StartingPoints" ValueChanged="OnStartingPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" />
+                            <MudNumericField T="int" Label="持ち点" Value="rules.StartingPoints" ValueChanged="OnStartingPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" Class="px-2" />
                         </MudItem>
                         <MudItem xs="6" sm="4">
-                            <MudNumericField T="int" Label="返し点" Value="rules.ReturnPoints" ValueChanged="OnReturnPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" />
+                            <MudNumericField T="int" Label="返し点" Value="rules.ReturnPoints" ValueChanged="OnReturnPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" Class="px-2" />
                         </MudItem>
                         <MudItem xs="6" sm="4">
-                            <MudNumericField Label="レート(円/1k)" @bind-Value="rules.Rate" Step="10" Min="0" Margin="Margin.Dense" />
+                            <MudNumericField Label="レート(円/1k)" @bind-Value="rules.Rate" Step="10" Min="0" Margin="Margin.Dense" Class="px-2" />
                         </MudItem>
                         <MudItem xs="6" sm="4">
-                            <MudNumericField Label="チップ(円/枚)" @bind-Value="rules.ChipRate" Step="50" Min="0" Margin="Margin.Dense" />
+                            <MudNumericField Label="チップ(円/枚)" @bind-Value="rules.ChipRate" Step="50" Min="0" Margin="Margin.Dense" Class="px-2" />
                         </MudItem>
                         @if (rules.IsCustomUma)
                         {
                             <MudItem xs="12" sm="8">
-                                <MudTextField Label="カスタム順位ウマ" Value="@rules.GetUmaDisplayText(true)" ReadOnly="true" Margin="Margin.Dense" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Close" OnAdornmentClick="DisableCustomUma" Style="font-variant-numeric: tabular-nums;" />
+                                <MudTextField Label="カスタム順位ウマ" Value="@rules.GetUmaDisplayText(true)" ReadOnly="true" Margin="Margin.Dense" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Close" OnAdornmentClick="DisableCustomUma" Style="font-variant-numeric: tabular-nums;" Class="px-2" />
                             </MudItem>
                         }
                         else
                         {
                             <MudItem xs="6" sm="4">
-                                <MudNumericField T="int" Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←2)" : "順位ウマ(2←3)")" Value="rules.Uma1" ValueChanged="@((int v) => { rules.Uma1 = v; SyncNormalToCustomUma(); })" Step="5" Min="0" Margin="Margin.Dense" />
+                                <MudNumericField T="int" Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←2)" : "順位ウマ(2←3)")" Value="rules.Uma1" ValueChanged="@((int v) => { rules.Uma1 = v; SyncNormalToCustomUma(); })" Step="5" Min="0" Margin="Margin.Dense" Class="px-2" />
                             </MudItem>
                             <MudItem xs="6" sm="4">
-                                <MudNumericField T="int" Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←3)" : "順位ウマ(1←4)")" Value="rules.Uma2" ValueChanged="@((int v) => { rules.Uma2 = v; SyncNormalToCustomUma(); })" Step="5" Min="0" Margin="Margin.Dense" />
+                                <MudNumericField T="int" Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←3)" : "順位ウマ(1←4)")" Value="rules.Uma2" ValueChanged="@((int v) => { rules.Uma2 = v; SyncNormalToCustomUma(); })" Step="5" Min="0" Margin="Margin.Dense" Class="px-2" />
                             </MudItem>
                         }
                     </MudGrid>
@@ -644,19 +644,15 @@
     private void OnStartingPointsChanged(int val)
     {
         int currentOka = Math.Max(0, rules.ReturnPoints - rules.StartingPoints);
-        int diff = val - rules.StartingPoints;
-        if (Math.Abs(diff) == 5000) rules.StartingPoints = val;
-        else rules.StartingPoints = val * 100;
-        rules.ReturnPoints = rules.StartingPoints + currentOka;
+        rules.StartingPoints = val;
+        rules.ReturnPoints = rules.StartingPoints + currentOka;        
         EvaluateAutoFill();
     }
 
     @* 返し点の処理 *@
     private void OnReturnPointsChanged(int val)
     {
-        int diff = val - rules.ReturnPoints;
-        if (Math.Abs(diff) == 5000) rules.ReturnPoints = val;
-        else rules.ReturnPoints = val * 100;
+        rules.ReturnPoints = val;
         if (rules.ReturnPoints < rules.StartingPoints)
             rules.ReturnPoints = rules.StartingPoints;
     }
@@ -725,7 +721,7 @@
                 char c = input[i];
                 if (c == '+' || c == '-')
                 {
-                    // 先頭が符号（例: "-100"）の場合の処理
+                    // 先頭が符号の場合の処理
                     if (string.IsNullOrEmpty(currentNumber))
                     {
                         currentOp = c == '-' && currentOp == '+' ? '-' : c;
@@ -1659,12 +1655,12 @@
         for (int i = 0; i < TableParticipantCount; i++)
             chipSum += ActiveSessionChips[i];
         bool isChipError = chipSum != 0;
-        string msg = "本日のすべての対局結果とチップの精算枚数を長期成績DBに記録し、現在の入力フォームをリセットしますか？";
-        if (isChipError) msg = "<span style='color: #ff6b6b; font-weight: bold;'>【警告】チップの合計枚数がプラスマイナスゼロになっていません（現在: " + (chipSum > 0 ? "+" : "") + chipSum + "枚）。</span><br />このまま長期成績に強制保存しますか？";
+        string msg = "対局結果とチップ枚数を通算成績に記録して<br />現在の入力フォームをリセットしますか？";
+        if (isChipError) msg += "<br /><span style='color: #ff6b6b; font-weight: bold;'>⚠️チップの合計枚数が" + (chipSum > 0 ? "+" : "") + chipSum + "枚です。</span>";
         bool? result = await DialogService.ShowMessageBoxAsync(
             "対局セッションの終了確定",
             (MarkupString)msg,
-            yesText: "終了して保存する",
+            yesText: "記録してリセット",
             cancelText: "戻る"
         );
         if (result == true) await FinalizeAndSaveToDbAsync();
