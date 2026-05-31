@@ -335,7 +335,7 @@
                 </MudItem>
             }
         </MudGrid>
-        <MudButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true" Class="mt-2 py-3" Disabled="@(!IsTotalCorrect)" OnClick="CalculateAndRecordGame">結果を記録する</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Warning" FullWidth="true" Class="mt-2 py-3" Disabled="@(!IsTotalCorrect)" OnClick="CalculateAndRecordGame">結果を記録する</MudButton>
     </MudPaper>
 
     @* --- セクション3: 集計結果 --- *@
@@ -462,9 +462,9 @@
 <div class="@($"custom-keypad-container {(activeScoreInputIndex.HasValue ? "open" : "")}")" @onclick:stopPropagation="true">
     <table class="keypad-table">
         <tr>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("7")'>7</button></td>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("8")'>8</button></td>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("9")'>9</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("1")'>1</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("2")'>2</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("3")'>3</button></td>
             <td><button type="button" class="keypad-btn action-key" @onclick='() => OnKeypadPress("⌫")'>⌫</button></td>
         </tr>
         <tr>
@@ -474,9 +474,9 @@
             <td><button type="button" class="keypad-btn op-key" @onclick='() => OnKeypadPress("+")'>＋</button></td>
         </tr>
         <tr>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("1")'>1</button></td>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("2")'>2</button></td>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("3")'>3</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("7")'>7</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("8")'>8</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("9")'>9</button></td>
             <td><button type="button" class="keypad-btn op-key" @onclick='() => OnKeypadPress("-")'>ー</button></td>
         </tr>
         <tr>
