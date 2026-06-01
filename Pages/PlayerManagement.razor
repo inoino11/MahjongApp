@@ -300,6 +300,13 @@
 
     private void StartMerge(string playerId)
     {
+        // 統合候補が存在するか（自分以外 ＆ 同卓履歴がない）を事前にチェック
+        bool hasCandidates = players.Any(p => p.Id != playerId && !HasPlayedTogether(playerId, p.Id));
+        if (!hasCandidates)
+        {
+            Snackbar.Add("統合できる候補がいません\n同卓歴がある名前同士は統合できません", Severity.Warning);
+            return;
+        }
         mergeTargetId = playerId;
         mergeSourceId = null;
         editTargetId = null;
