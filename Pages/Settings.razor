@@ -25,15 +25,16 @@
     <MudPaper Class="pa-6 mb-6" Outlined="true" Style="border-color: var(--mud-palette-warning);">
         <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Warning">データの復元・統合</MudText>
         <MudText Typo="Typo.body2" Class="mb-4">
-            バックアップされたJSONファイルを読み込みます。
+            バックアップされたJSONファイルを<br />
+            読み込みます。
         </MudText>
         @* モード選択のラジオボタン *@
         <MudRadioGroup @bind-Value="importMode" Class="mb-4 d-flex flex-column">
             <MudRadio Value='"overwrite"' Color="Color.Error">
-                <strong>完全上書き</strong> (現在のデータをすべて消去して入れ替えます)
+                <strong>完全上書き</strong><br />(データを消去して入れ替えます)
             </MudRadio>
             <MudRadio Value='"merge"' Color="Color.Success">
-                <strong>データ統合</strong> (現在のデータに差分を追加します)
+                <strong>データ統合</strong><br />(データに差分を追加します)
             </MudRadio>
         </MudRadioGroup>
         <MudButton HtmlTag="label" for="backup-upload" Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Upload">
@@ -44,7 +45,10 @@
     @* 全データ初期化 *@
     <MudPaper Class="pa-6" Outlined="true" Style="border-color: var(--mud-palette-error);">
         <MudText Typo="Typo.h6" Color="Color.Error" Class="mb-2">⚠️データの初期化</MudText>
-        <MudText Typo="Typo.body2" Class="mb-4">すべての対局者名簿と対局履歴を完全に消去します。</MudText>
+        <MudText Typo="Typo.body2" Class="mb-4">
+            すべての対局者名簿と対局履歴を<br />
+            完全に消去します。
+        </MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="ConfirmWipeAllData">
             全データを初期化する
         </MudButton>

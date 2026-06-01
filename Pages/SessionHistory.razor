@@ -188,11 +188,15 @@
         }
     }
 
-    private string GetPlayerName(string id) => playerMap.TryGetValue(id, out var name) ? name : "不明";
+    private string GetPlayerName(string id)
+    {
+        if (id == "deleted") return "削除済み";
+        return playerMap.TryGetValue(id, out var name) ? name : "不明";
+    }
 
     private string GetPlayerNames(List<string> ids)
     {
-        var names = ids.Where(id => !string.IsNullOrEmpty(id) && id != "deleted").Select(GetPlayerName);
+        var names = ids.Where(id => !string.IsNullOrEmpty(id)).Select(GetPlayerName);
         return string.Join(", ", names);
     }
 
@@ -200,8 +204,10 @@
     {
         bool? result = await DialogService.ShowMessageBoxAsync(
             "対局の削除",
-            $"この対局（{group.Session.Date.ToString("yyyy/MM/dd HH:mm")}）データを完全に削除します。\nよろしいですか？",
-            yesText: "削除する", cancelText: "キャンセル");
+            (MarkupString)$"対局（{group.Session.Date.ToString("yyyy/MM/dd HH:mm")}）データを削除します。<br />よろしいですか？",
+            yesText: "削除する", 
+            cancelText: "キャンセル"
+        );
             
         if (result == true)
         {

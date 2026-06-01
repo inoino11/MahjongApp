@@ -1277,6 +1277,7 @@
         ResetInputForms();
         armedDeleteIndex = null;
         await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
+        await LocalStorage.RemoveItemAsync("backup_score_buffers");
     }
 
     @* 全スコアリセット *@
@@ -1793,6 +1794,8 @@
     private async Task OpenKeypad(int index)
     {
         if (currentSitOuts[index]) return; // 抜け番の時は開かない
+        if (activeScoreInputIndex.HasValue && activeScoreInputIndex.Value != index)
+            await CommitScoreBuffer(activeScoreInputIndex.Value);
         activeScoreInputIndex = index;
         var score = currentScores[index];
         if (string.IsNullOrEmpty(scoreInputBuffers[index]) && score.HasValue)
@@ -1801,31 +1804,34 @@
         await JS.InvokeVoidAsync("scrollToInput", "score-input-section");
     }
 
-    private void CloseKeypad()
+    private async Task CloseKeypad()
     {
+        if (activeScoreInputIndex.HasValue)
+            await CommitScoreBuffer(activeScoreInputIndex.Value);
         activeScoreInputIndex = null;
     }
 
     // 画面外をタップした時の統合ハンドラー
-    private void OnContainerClick()
+    private async Task OnContainerClick()
     {
-        CancelDelete(); // 既存の削除待機解除
-        CloseKeypad(); // テンキーを閉じる
+        CancelDelete();
+        await CloseKeypad();
     }
 
     // テンキーのボタンが押された時のコアロジック
     private async Task OnKeypadPress(string key)
     {
-        if (!activeScoreInputIndex.HasValue) return;
+       if (!activeScoreInputIndex.HasValue) return;
+
         int idx = activeScoreInputIndex.Value;
         if (key == "閉じる")
         {
-            CloseKeypad();
+            await CloseKeypad();
             return;
         }
         if (key == "記録")
         {
-            CloseKeypad();
+            await CloseKeypad();
             await CalculateAndRecordGame();
             await LocalStorage.RemoveItemAsync("backup_score_buffers");
             return;
@@ -1858,6 +1864,22 @@
             scoreInputBuffers[idx] = System.Text.RegularExpressions.Regex.Replace(scoreInputBuffers[idx], @"(^|[-+])0+(?=[0-9])", "$1");
         }
         EvaluateAutoFill();
+        await LocalStorage.SetItemAsync("backup_score_buffers", scoreInputBuffers);
+    }
+
+    // 指定したインデックスの入力内容を計算・確定するヘルパーメソッド
+    private async Task CommitScoreBuffer(int idx)
+    {
+        int? finalScore = EvaluateScoreExpression(scoreInputBuffers[idx]);
+        if (finalScore.HasValue)
+        {
+            scoreInputBuffers[idx] = finalScore.Value.ToString();
+        }
+        else if (!string.IsNullOrWhiteSpace(scoreInputBuffers[idx]))
+        {
+            scoreInputBuffers[idx] = string.Empty;
+        }
+       EvaluateAutoFill();
         await LocalStorage.SetItemAsync("backup_score_buffers", scoreInputBuffers);
     }
 }

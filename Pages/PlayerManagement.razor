@@ -4,6 +4,7 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject MahjongApp.Services.StatsCacheService StatsCache
+@inject ILocalStorageService LocalStorage
 
 <style>
     /* テーブルを画面幅に収め、横スクロールを防止する */
@@ -157,6 +158,57 @@
         StateHasChanged();
     }
 
+    // 素点入力欄に古い名前が残っていた場合、新しい名前に書き換える
+    private async Task SyncActiveSessionNames(string oldName, string newName)
+    {
+        try
+        {
+            // 完全削除（newNameが空）であっても、進行中のセッション履歴がある場合は「削除済み」にフォールバックする
+            string resolvedName = string.IsNullOrEmpty(newName) ? "削除済み" : newName;
+            // 1. 素点入力枠の名前リストを更新
+            var currentPlayers = await LocalStorage.GetItemAsync<List<string>>(StorageKeys.CurrentPlayers);
+            if (currentPlayers != null && currentPlayers.Contains(oldName))
+            {
+                for (int i = 0; i < currentPlayers.Count; i++)
+                {
+                    if (currentPlayers[i] == oldName)
+                        currentPlayers[i] = string.IsNullOrEmpty(newName) ? string.Empty : newName;
+                }
+                await LocalStorage.SetItemAsync(StorageKeys.CurrentPlayers, currentPlayers);
+            }
+            // 2. 入力中チップ（Dictionary）の名前キーを更新
+            var activeChips = await LocalStorage.GetItemAsync<Dictionary<string, int>>("ActiveSessionChips");
+            if (activeChips != null && activeChips.ContainsKey(oldName))
+            {
+                int chipValue = activeChips[oldName];
+                activeChips.Remove(oldName);
+                // 統合などで既に新しい名前がチップ枠を持っている場合は合算する
+                if (activeChips.ContainsKey(resolvedName))
+                    activeChips[resolvedName] += chipValue;
+                else
+                    activeChips[resolvedName] = chipValue;
+                await LocalStorage.SetItemAsync("ActiveSessionChips", activeChips);
+            }
+            // 3. 既に記録された今セッションの局履歴（ActiveHistory）内の名前も更新
+            var activeHistory = await LocalStorage.GetItemAsync<List<GameResult>>("ActiveHistory");
+            if (activeHistory != null)
+            {
+                bool isModified = false;
+                foreach (var game in activeHistory)
+                    if (game.PlayerNames != null)
+                        for (int i = 0; i < game.PlayerNames.Count; i++)
+                            if (game.PlayerNames[i] == oldName)
+                            {
+                                game.PlayerNames[i] = resolvedName;
+                                isModified = true;
+                            }
+                if (isModified)
+                    await LocalStorage.SetItemAsync("ActiveHistory", activeHistory);
+            }
+        }
+        catch { /* ローカルストレージ未初期化時などのエラーは無視 */ }
+    }
+
     private int GetGameCount(string playerId) => GetGameCountSafe(allGames, playerId);
 
     private int GetGameCountSafe(List<SavedGameRecord> games, string playerId)
@@ -236,6 +288,8 @@
             Snackbar.Add("その名前は既に存在します", Severity.Warning);
             return;
         }
+        // ▼ データベースを更新する前に、入力欄の名前を置き換える
+        await SyncActiveSessionNames(player.Name, editName);
         player.Name = editName;
         await DatabaseService.UpdatePlayerAsync(player);
         _ = StatsCache.InitializeAsync(forceReload: true);
@@ -279,8 +333,11 @@
             "🚨 名前の統合",
             (MarkupString)$"【{sourceName}】のすべての履歴とチップは<br />【{targetName}】の中でこれからも生き続けます。<br /><br />※この操作は取り消せません。実行しますか？",
             yesText: "統合を実行", cancelText: "キャンセル");
+            
         if (result == true)
         {
+            // ▼ データベースを統合する前に、入力欄の「吸収される名前」を「吸収先」に置き換える
+            await SyncActiveSessionNames(sourceName, targetName);
             await DatabaseService.MergePlayersAsync(mergeSourceId, mergeTargetId);
             _ = StatsCache.InitializeAsync(forceReload: true);
             Snackbar.Add("名前を統合しました！", Severity.Success);
