@@ -42,18 +42,18 @@
         text-align: center !important;
     }
 
-    /* 【修正】最優先でスクロールバーを非表示にするため !important を追加 */
+    /* 最優先でスクロールバーを非表示にするため !important を追加 */
     .sync-chip-scroll {
         -ms-overflow-style: none !important; /* IE, Edge用 */
         scrollbar-width: none !important;    /* Firefox用 */
     }
 
-    /* 【修正】最優先でスクロールバーを非表示にするため !important を追加 */
+    /* 最優先でスクロールバーを非表示にするため !important を追加 */
     .sync-chip-scroll::-webkit-scrollbar {
         display: none !important; /* Chrome, Safari用 */
     }
 
-    /* 【重要・追加】内側コンテナのスクロールを殺し、外側のJavaScript監視用divにスクロールを一任する */
+    /* 内側コンテナのスクロールを殺し、外側のJavaScript監視用divにスクロールを一任する */
     .sync-table-scroll .mud-table-container {
         overflow-x: visible !important;
     }
@@ -90,21 +90,24 @@
             flex: 0 0 calc(50% - 4px);
             min-width: 0;
         }
-
-        /* スマホ版: 高さを抑えて無駄な上下余白を減らす */
-        .responsive-chart-wrapper {
-            height: 140px;
-        }
     }
 
     @@media (min-width: 960px) {
         .custom-legend-item {
             width: 100%;
         }
+    }
 
-        /* PC版: ゆとりのある高さを確保 */
-        .responsive-chart-wrapper {
-            height: 310px;
+    /* グラフと凡例の親要素をFlexコンテナにして高さを揃える */
+    .chart-flex-container {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    @@media (min-width: 960px) {
+        .chart-flex-container {
+            flex-direction: row;
+            align-items: stretch; /* グラフと凡例の高さを揃える */
         }
     }
 
@@ -123,16 +126,18 @@
     @* --- グラフ表示 --- *@
     <div id="chart-wrapper" class="@(DisplayMode == 7 ? "" : "hide-element")">
         <div class="pa-2 pa-md-4 mud-background-gray rounded-lg" style="background-color: rgba(255,255,255,0.02);">
-            <div class="d-flex flex-column flex-md-row gap-3">
-                <div style="flex-grow: 1; min-width: 0; width: 100%; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; padding-bottom: 32px;">
+            <div class="chart-flex-container gap-3">
+                <div style="flex-grow: 1; min-width: 0; width: 100%; overflow-x: auto; overflow-y: hidden; touch-action: pan-x;">
                     @{
                         int minWidthPx = 300;
+                        // 凡例の数から大まかな必要な高さを算出 (PC版の最低限の高さ確保用)
+                        int estimatedHeight = Math.Max(200, _finalStats.Count * 45); 
                     }
-                    <div class="responsive-chart-wrapper" style="min-width: max(100%, @(minWidthPx)px);">
+                    <div class="responsive-chart-wrapper" style="min-width: max(100%, @(minWidthPx)px); height: 100%; min-height: @(estimatedHeight)px;">
                         <MudChart ChartType="ChartType.Line" ChartSeries="@_chartSeries" XAxisLabels="@_xAxisLabels" Width="100%" Height="100%" ChartOptions="@_chartOptions" />
                     </div>
                 </div>
-                <div class="d-flex flex-row flex-wrap flex-md-column gap-2" style="min-width: 140px; align-content: flex-start;">
+                <div class="d-flex flex-row flex-wrap flex-md-column gap-2" style="min-width: 140px; align-content: flex-start; flex-shrink: 0;">
                     <div style="width: 100%;">
                         <MudText Typo="Typo.caption" Class="mud-text-secondary ml-1">最終pt</MudText>
                     </div>
@@ -312,21 +317,38 @@
     private LineChartOptions _chartOptions = new();
     private List<PlayerFinalStat> _finalStats = new();
 
-    private readonly string[] _chartColors = {
-        "#FF6B6B", // 赤
-        "#4DABF7", // 青
-        "#51CF66", // 緑
-        "#FCC419", // 黄
-        "#FF922B", // 橙
-        "#845EF7", // 紫
-        "#F06595"  // 桃
-    };
-
     private class PlayerFinalStat
     {
         public string Name { get; set; } = "";
         public double TotalPt { get; set; }
         public string Color { get; set; } = "";
+    }
+
+    // 黄金角を用いて色が被りにくいように自動生成
+    private string GenerateColor(int index)
+    {
+        // 137.508度は黄金角。これを使うと色が被りにくい
+        double hue = (index * 137.508) % 360.0;
+        // 彩度75%, 明度60%程度に固定し、見やすく目に優しいパステル調ベースにする
+        return HslToHex(hue, 0.75, 0.60);
+    }
+
+    private string HslToHex(double h, double s, double l)
+    {
+        double c = (1.0 - Math.Abs(2.0 * l - 1.0)) * s;
+        double x = c * (1.0 - Math.Abs((h / 60.0) % 2.0 - 1.0));
+        double m = l - c / 2.0;
+        double r = 0, g = 0, b = 0;
+        if (h >= 0 && h < 60) { r = c; g = x; b = 0; }
+        else if (h >= 60 && h < 120) { r = x; g = c; b = 0; }
+        else if (h >= 120 && h < 180) { r = 0; g = c; b = x; }
+        else if (h >= 180 && h < 240) { r = 0; g = x; b = c; }
+        else if (h >= 240 && h < 300) { r = x; g = 0; b = c; }
+        else if (h >= 300 && h < 360) { r = c; g = 0; b = x; }
+        int rInt = (int)Math.Round((r + m) * 255);
+        int gInt = (int)Math.Round((g + m) * 255);
+        int bInt = (int)Math.Round((b + m) * 255);
+        return $"#{rInt:X2}{gInt:X2}{bInt:X2}";
     }
 
     protected override void OnParametersSet()
@@ -342,16 +364,16 @@
     {
         if (DisplayMode != 7)
             await JSRuntime.InvokeVoidAsync("syncScroll", ChipScrollId, TableScrollId);
-        await JSRuntime.InvokeVoidAsync("syncContainerHeight");
     }
 
     private void PrepareChartData()
     {
         _chartSeries = new List<ChartSeries<double>>();
         _finalStats = new List<PlayerFinalStat>();
+        var chartPalette = Enumerable.Range(0, ActiveParticipantCount).Select(i => GenerateColor(i)).ToArray();
         var newOptions = new LineChartOptions
         {
-            ChartPalette = _chartColors,
+            ChartPalette = chartPalette,
             MaxNumYAxisTicks = 20
         };
         int gameCount = History.Count;
@@ -374,7 +396,7 @@
             double localMin = data.Min();
             if (localMax > maxPt) maxPt = localMax;
             if (localMin < minPt) minPt = localMin;
-            string color = _chartColors[i % _chartColors.Length];
+            string color = chartPalette[i];
             _chartSeries.Add(new ChartSeries<double> { Name = pName, Data = data });
             _finalStats.Add(new PlayerFinalStat { Name = pName, TotalPt = cumulative, Color = color });
         }

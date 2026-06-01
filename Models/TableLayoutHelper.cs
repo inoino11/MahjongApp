@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 
-namespace MahjongApp.Models // ※プロジェクトの構成に合わせて適宜変更してください
+namespace MahjongApp.Models 
 {
     public static class TableLayoutHelper
     {
