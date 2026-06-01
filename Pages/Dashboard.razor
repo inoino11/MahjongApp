@@ -94,15 +94,14 @@
             </MudButton>
         </div>
     </div>
-        @* 選択された人数に応じてコンテンツを切り替え *@
-        @if (_selectedPlayerCount == 4)
-        {
-            @RenderTabContent("四麻", stats4, matchupStats4, 4, _rank4Layout, _matchupLayout4)
-        }
-        else
-        {
-            @RenderTabContent("三麻", stats3, matchupStats3, 3, _rank3Layout, _matchupLayout3)
-        }
+    @* 選択された人数に応じてコンテンツを切り替え *@
+    @if (_selectedPlayerCount == 4)
+    {
+        @RenderTabContent("四麻", stats4, matchupStats4, 4, _rank4Layout, _matchupLayout4)
+    }
+    else
+    {
+        @RenderTabContent("三麻", stats3, matchupStats3, 3, _rank3Layout, _matchupLayout3)
     }
 </MudContainer>
 

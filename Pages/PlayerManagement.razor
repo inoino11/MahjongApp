@@ -32,6 +32,15 @@
         else
         {
             <MudTable Items="@players" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="background: transparent;" Class="player-table">
+                <NoRecordsContent>
+                    <div class="d-flex flex-column align-center justify-center py-12">
+                        <MudIcon Icon="@Icons.Material.Filled.PersonOff" Size="Size.Large" Style="color: #666; margin-bottom: 16px; transform: scale(1.5);" />
+                        <MudText Typo="Typo.body1" Style="color: #aaaaaa; font-weight: bold; letter-spacing: 1px;">名簿データがありません</MudText>
+                        <MudText Typo="Typo.body2" Style="color: #888888; margin-top: 12px; line-height: 1.6;">
+                            素点集計画面で対局結果を保存すると、<br />ここにプレイヤーが登録されます。
+                        </MudText>
+                    </div>
+                </NoRecordsContent>
                 <RowTemplate Context="player">
                     <MudTd Style="padding: 12px 12px !important; border-bottom: 1px solid var(--mud-palette-divider);">
                         @if (editTargetId == player.Id)
@@ -77,7 +86,6 @@
                                         <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error" OnClick="@(() => ConfirmDelete(player))">削除</MudMenuItem>
                                     </MudMenu>
                                 </div>
-
                                 @* 2行目: 収支データ・対局数・登録日 *@
                                 <div class="d-flex justify-space-between align-end mt-1">
                                     <div class="d-flex flex-column gap-1">
@@ -96,7 +104,7 @@
                                             @GetGameCount(player.Id) 局
                                         </span>
                                         <span style="font-size: 0.7rem; color: #777777;">
-                                            登録: @player.CreatedAt.ToString("yyyy/MM/dd")
+                                            登録日: @player.CreatedAt.ToString("yyyy/MM/dd")
                                         </span>
                                     </div>
                                 </div>
