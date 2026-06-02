@@ -555,14 +555,27 @@
         if (valList == null || originalIdx >= valList.Count)
             return baseStyle + "color: #9e9e9e; font-weight: normal; text-align: center;";
         double val = valList[originalIdx];
+        string style = baseStyle;
         // 2. 特殊ルール(沈み・焼き鳥など)で変動が0の場合（ハイフン表示になるためCenterに揃える）
         if (DisplayMode >= 3 && val == 0)
             return baseStyle + "color: #9e9e9e; font-weight: normal; text-align: center;";
-        // 通常の数値表示
-        bool isPositive = (DisplayMode == 0) ? res.Points[originalIdx] >= 0 : val >= 0;
-        string style = baseStyle + $"color:{(isPositive ? "#ff0000" : "#1976d2")}; ";
+        // 文字色の設定
+        if (DisplayMode == 0)
+        {
+            // 素点: 既存ルールのまま (持ち点に対してプラスなら赤、マイナスなら青)
+            bool isPositive = res.Points[originalIdx] >= 0;
+            style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
+        }
+        else
+        {
+            // 素点以外: 正は赤色、負は青色、±0は標準テキスト色（黒）
+            if (val > 0) style += "color: #ff0000; ";
+            else if (val < 0) style += "color: #1976d2; ";
+            else style += "color: var(--mud-palette-text-primary); ";
+        }
+        // トップとラスの太字判定
         if (valList.Distinct().Count() > 1 && (val == valList.Max() || val == valList.Min()))
-            style += "font-weight:bold;";
+            style += "font-weight: bold; ";
         return style;
     }
 
@@ -615,10 +628,23 @@
         if (History.Count == 0 && chip == 0) return style;
         var allValues = Enumerable.Range(0, ActiveParticipantCount).Select(i => GetTotalNumericValue(i)).ToList();
         double val = allValues[idx];
-        if (DisplayMode >= 3 && val == 0) return style + "color: #9e9e9e; font-weight: normal; ";
-        if (allValues.Distinct().Count() > 1 && (val == allValues.Max() || val == allValues.Min())) style += "font-weight: bold; ";
-        bool isPositive = DisplayMode == 0 ? GetTotalNumericValue(idx, 1) >= 0 : val >= 0;
-        style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
+        // 文字色の設定
+        if (DisplayMode == 0)
+        {
+            // 素点: 既存ルールのまま
+            bool isPositive = GetTotalNumericValue(idx, 1) >= 0;
+            style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
+        }
+        else
+        {
+            // 素点以外: 正は赤色、負は青色、±0は標準テキスト色（黒）
+            if (val > 0) style += "color: #ff0000; ";
+            else if (val < 0) style += "color: #1976d2; ";
+            else style += "color: var(--mud-palette-text-primary); ";
+        }
+        // トップとラスの太字判定
+        if (allValues.Distinct().Count() > 1 && (val == allValues.Max() || val == allValues.Min()))
+            style += "font-weight: bold; ";
         return style;
     }
 
