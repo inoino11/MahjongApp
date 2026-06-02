@@ -1,0 +1,191 @@
+@using MahjongApp.Models
+@using System.Collections.Generic
+
+<div style="position: absolute; left: -9999px; top: 0;">
+    <div id="share-target" style="width: @(800 + Math.Max(0, TablePlayers.Count - 4) * 150)px; padding: 40px; background-color: #1a1a27; color: white; border-radius: 12px; font-family: 'Kaisei Decol', sans-serif;">
+        <h2 style="text-align: center; margin-bottom: 20px; font-weight: bold; border-bottom: 2px solid #444; padding-bottom: 10px;">
+            🀄 対局結果 🀄
+        </h2>
+        
+        @* ルール・レート情報の表示 *@
+        <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; font-size: 0.95rem;">
+            <div><strong>ルール名:</strong> @(string.IsNullOrWhiteSpace(Rules.Name) ? "未設定" : Rules.Name)</div>
+            <div><strong>形式:</strong> @(Rules.PlayerCount)人麻雀</div>
+            <div><strong>設定:</strong> @(Rules.StartingPoints)持ち / @(Rules.ReturnPoints)返し</div>
+            <div><strong>ウマ:</strong> @(Rules.IsCustomUma ? Rules.GetUmaDisplayText(true) : $"{Rules.Uma1} - {Rules.Uma2}")</div>
+            <div><strong>レート:</strong> @(Rules.Rate)円/1k</div>
+            @if (Rules.ChipRate > 0)
+            {
+                <div><strong>チップ:</strong> @(Rules.ChipRate)円/枚</div>
+            }
+        </div>
+        
+        @* 成績テーブル *@
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center; font-variant-numeric: tabular-nums;">
+            <thead>
+                <tr style="background-color: rgba(255,255,255,0.1); border-bottom: 2px solid #555;">
+                    <th style="padding: 12px; width: 80px; font-size: 0.9rem;">局</th>
+                    @for (int i = 0; i < TablePlayers.Count; i++)
+                    {
+                        <th style="padding: 12px; font-size: 1.1rem;">@(string.IsNullOrWhiteSpace(TablePlayers[i]) ? " " : TablePlayers[i])</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @for (int row = 0; row < ActiveHistory.Count; row++)
+                {
+                    var game = ActiveHistory[row];
+                    <tr style="border-bottom: 1px solid #333;">
+                        <td style="padding: 10px; color: #aaa; font-size: 0.85rem; white-space: nowrap;">@(row + 1)局目</td>
+                        @for (int i = 0; i < TablePlayers.Count; i++)
+                        {
+                            <td style="padding: 10px; font-size: 1.1rem; white-space: nowrap;">
+                                <span style="@GetSharePointStyle(game, TablePlayers[i])">@GetSharePointValue(game, TablePlayers[i])</span>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                @* ポイント合計行 *@
+                <tr style="background-color: rgba(46, 125, 50, 0.1); border-bottom: 2px solid #555;">
+                    <td style="padding: 15px 10px; font-size: 0.9rem; color: #ddd; font-weight: bold; white-space: nowrap;">
+                        Pt 合計
+                    </td>
+                    @for (int i = 0; i < TablePlayers.Count; i++)
+                    {
+                        <td style="padding: 15px 10px; font-size: 1.2rem; white-space: nowrap;">
+                            <span style="@GetShareTotalPointStyle(TablePlayers[i])">@GetShareTotalPointValue(TablePlayers[i])</span>
+                        </td>
+                    }
+                </tr>
+                @* チップ行 *@
+                @if (Rules.ChipRate > 0)
+                {
+                    <tr style="background-color: rgba(46, 125, 50, 0.1); border-bottom: 2px solid #555;">
+                        <td style="padding: 15px 10px; font-size: 0.9rem; color: #ddd; font-weight: bold; white-space: nowrap;">
+                            チップ
+                        </td>
+                        @for (int i = 0; i < TablePlayers.Count; i++)
+                        {
+                            int chip = ActiveSessionChips.TryGetValue(TablePlayers[i], out var v) ? v : 0;
+                            <td style="padding: 15px 10px; font-size: 1.2rem; white-space: nowrap;">
+                                <span style="display: inline-block; width: 4.5rem; text-align: right; @(chip > 0 ? "color: #ff6b6b;" : (chip < 0 ? "color: #4dabf7;" : "color: #9e9e9e;"))">
+                                    @(chip > 0 ? $"+{chip}" : chip.ToString())枚
+                                </span>
+                            </td>
+                        }
+                    </tr>
+                }
+                @* 円合計行 *@
+                <tr style="background-color: rgba(255, 255, 255, 0.06); font-weight: bold;">
+                    <td style="padding: 15px 10px; font-size: 0.9rem; color: #eeeeee; white-space: nowrap;">
+                        円 合計
+                    </td>
+                    @for (int i = 0; i < TablePlayers.Count; i++)
+                    {
+                        <td style="padding: 15px 10px; font-size: 1.4rem; white-space: nowrap;">
+                            <span style="@GetShareTotalYenStyle(TablePlayers[i])">@GetShareTotalYenValue(TablePlayers[i])</span>
+                        </td>
+                    }
+                </tr>
+            </tfoot>
+        </table>
+        
+        <div style="display: flex; justify-content: flex-end; font-size: 0.9rem; color: #888;">
+            <span>@DateTime.Now.ToString("yyyy/MM/dd HH:mm") - 麻雀集計ツール</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public RuleSet Rules { get; set; } = new();
+    [Parameter] public List<string> TablePlayers { get; set; } = new();
+    [Parameter] public List<GameResult> ActiveHistory { get; set; } = new();
+    [Parameter] public Dictionary<string, int> ActiveSessionChips { get; set; } = new();
+
+    private string FormatPlus(double val, string fmt = "F1") => val > 0 ? $"+{val.ToString(fmt)}" : val.ToString(fmt);
+
+    private string BuildShareStyle(double val, IEnumerable<double> allVals, string width)
+    {
+        string style = $"display: inline-block; width: {width}; text-align: right; font-variant-numeric: tabular-nums; ";
+        style += val >= 0 ? "color: #ff6b6b; " : "color: #4dabf7; ";
+        var dist = allVals.Distinct().ToList();
+        if (dist.Count > 1 && (val == dist.Max() || val == dist.Min())) style += "font-weight: bold; ";
+        return style;
+    }
+
+    private string GetSharePointValue(GameResult res, string name)
+    {
+        int idx = res.PlayerNames.IndexOf(name);
+        if (idx == -1 || idx >= res.RawScores.Count || res.RawScores[idx] == null) return "-";
+        return FormatPlus(res.Points[idx]);
+    }
+
+    private string GetSharePointStyle(GameResult res, string name)
+    {
+        int idx = res.PlayerNames.IndexOf(name);
+        if (idx == -1 || idx >= res.RawScores.Count || res.RawScores[idx] == null)
+            return "display: inline-block; width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: #9e9e9e;";
+        double pt = (idx < res.Points.Count) ? res.Points[idx] : 0;
+        return BuildShareStyle(pt, res.Points, "4.5rem");
+    }
+
+    private string GetShareTotalPointValue(string name)
+    {
+        if (ActiveHistory.Count == 0) return "0.0";
+        double sum = 0;
+        foreach (var h in ActiveHistory)
+        {
+            int idx = h.PlayerNames.IndexOf(name);
+            if (idx != -1 && h.Points.Count > idx) sum += h.Points[idx];
+        }
+        return FormatPlus(sum);
+    }
+
+    private string GetShareTotalPointStyle(string name)
+    {
+        if (ActiveHistory.Count == 0) return "display: inline-block; width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
+        var allTotalPts = TablePlayers.Select(p =>
+            ActiveHistory.Sum(h =>
+            {
+                int idx = h.PlayerNames.IndexOf(p);
+                return (idx != -1 && h.Points.Count > idx) ? h.Points[idx] : 0;
+            })
+        ).ToList();
+        int pIdx = TablePlayers.IndexOf(name);
+        if (pIdx == -1) return "display: inline-block; width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
+        return BuildShareStyle(allTotalPts[pIdx], allTotalPts, "4.5rem");
+    }
+
+    private string GetShareTotalYenValue(string name)
+    {
+        int chips = ActiveSessionChips.TryGetValue(name, out var c) ? c : 0;
+        if (ActiveHistory.Count == 0 && chips == 0) return "0円";
+        double totalYen = 0;
+        foreach (var h in ActiveHistory)
+        {
+            int idx = h.PlayerNames.IndexOf(name);
+            if (idx != -1 && h.Yen.Count > idx) totalYen += h.Yen[idx];
+        }
+        totalYen += (chips * Rules.ChipRate);
+        return $"{FormatPlus(totalYen, "N0")}円";
+    }
+
+    private string GetShareTotalYenStyle(string name)
+    {
+        int chips = ActiveSessionChips.TryGetValue(name, out var c) ? c : 0;
+        if (ActiveHistory.Count == 0 && chips == 0) return "display: inline-block; width: 6.0rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
+        var allTotalYen = TablePlayers.Select(p => {
+            double yen = ActiveHistory.Sum(h => {
+                int idx = h.PlayerNames.IndexOf(p);
+                return (idx != -1 && h.Yen.Count > idx) ? h.Yen[idx] : 0;
+            });
+            int chipCount = ActiveSessionChips.TryGetValue(p, out var v) ? v : 0;
+            return yen + (chipCount * Rules.ChipRate);
+        }).ToList();
+        int pIdx = TablePlayers.IndexOf(name);
+        if (pIdx == -1) return "display: inline-block; width: 6.0rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
+        return BuildShareStyle(allTotalYen[pIdx], allTotalYen, "6.0rem");
+    }
+}

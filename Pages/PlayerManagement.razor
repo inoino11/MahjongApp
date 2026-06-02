@@ -140,20 +140,17 @@
     {
         isLoading = true;
         StateHasChanged();
-
         var dbData = await DatabaseService.GetAllDataAsync();
         if (dbData != null)
         {
-            rawMasterPlayers = dbData.Players;
-            allGames = dbData.Games;
-            allSessions = dbData.Sessions;
-
-            players = dbData.Players
-                            .Where(p => p.Id != "deleted")
-                            .OrderByDescending(p => GetGameCountSafe(dbData.Games, p.Id))
+            rawMasterPlayers = dbData.Players ?? new List<PlayerProfile>();
+            allGames = dbData.Games ?? new List<SavedGameRecord>();
+            allSessions = dbData.Sessions ?? new List<SavedSessionRecord>();
+            players = rawMasterPlayers
+                            .Where(p => p != null && p.Id != "deleted")
+                            .OrderByDescending(p => GetGameCountSafe(allGames, p.Id))
                             .ToList();
         }
-
         isLoading = false;
         StateHasChanged();
     }
@@ -213,10 +210,14 @@
 
     private int GetGameCountSafe(List<SavedGameRecord> games, string playerId)
     {
+        if (games == null) return 0;
         return games.Count(g =>
         {
-            int idx = g.PlayerIds.IndexOf(playerId);
-            return idx >= 0 && idx < g.RawScores.Count && g.RawScores[idx].HasValue;
+            if (g == null) return false;
+            var pIds = g.PlayerIds ?? new List<string?>();
+            var rScores = g.RawScores ?? new List<int?>();
+            int idx = pIds.IndexOf(playerId);
+            return idx >= 0 && idx < rScores.Count && rScores[idx].HasValue;
         });
     }
 

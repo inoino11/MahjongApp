@@ -142,14 +142,18 @@
         var dbData = await DatabaseService.GetAllDataAsync();
         if (dbData != null)
         {
-            allPlayers = dbData.Players;
-            playerMap = dbData.Players.ToDictionary(p => p.Id, p => p.Name);
-            sessionGroups = dbData.Sessions
+            var safePlayers = dbData.Players ?? new List<PlayerProfile>();
+            var safeSessions = dbData.Sessions ?? new List<SavedSessionRecord>();
+            var safeGames = dbData.Games ?? new List<SavedGameRecord>();
+            allPlayers = safePlayers.Where(p => p != null).ToList();
+            playerMap = allPlayers.ToDictionary(p => p.Id, p => p.Name);
+            sessionGroups = safeSessions
+                .Where(s => s != null)
                 .OrderByDescending(s => s.Date)
                 .Select(s => new SessionGroup
                 {
                     Session = AggregateSessionDuplicates(s),
-                    Games = dbData.Games.Where(g => g.SessionId == s.SessionId).OrderBy(g => g.Timestamp).ToList(),
+                    Games = safeGames.Where(g => g != null && g.SessionId == s.SessionId).OrderBy(g => g.Timestamp).ToList(),
                     ShowDetails = false
                 })
                 .ToList();
@@ -163,19 +167,19 @@
     {
         var distinctIds = new List<string>();
         var distinctChips = new List<int>();
-        for (int i = 0; i < session.ParticipantPlayerIds.Count; i++)
+        var pIds = session.ParticipantPlayerIds ?? new List<string>();
+        var sChips = session.SettledChips ?? new List<int>();
+        for (int i = 0; i < pIds.Count; i++)
         {
-            var id = session.ParticipantPlayerIds[i];
-            var chip = session.SettledChips != null && session.SettledChips.Count > i ? session.SettledChips[i] : 0;
+            var id = pIds[i];
+            var chip = sChips.Count > i ? sChips[i] : 0;
             int existingIdx = id == null ? -1 : distinctIds.IndexOf(id);
             if (existingIdx != -1)
             {
-                // すでに枠が存在する場合はチップを合算する
                 distinctChips[existingIdx] += chip;
             }
             else
             {
-                // 初めてのIDなら枠を追加する
                 distinctIds.Add(id ?? "");
                 distinctChips.Add(chip);
             }

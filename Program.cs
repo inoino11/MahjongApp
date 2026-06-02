@@ -25,5 +25,7 @@ builder.Services.AddMudServices(config =>
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<MahjongApp.Services.DatabaseService>();
 builder.Services.AddScoped<MahjongApp.Services.StatsCacheService>();
+builder.Services.AddScoped<MahjongApp.Services.SessionStateService>();
+builder.Services.AddScoped<MahjongApp.Services.MahjongCalculatorService>();
 
 await builder.Build().RunAsync();

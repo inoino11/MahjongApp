@@ -7,6 +7,8 @@
 @inject MahjongApp.Services.DatabaseService DatabaseService
 @inject MahjongApp.Services.StatsCacheService StatsCache
 @inject IJSRuntime JS
+@inject MahjongApp.Services.SessionStateService SessionState
+@inject MahjongApp.Services.MahjongCalculatorService Calculator
 
 @* 素点入力欄のスタイル *@
 <style>
@@ -64,80 +66,6 @@
         margin-top: 0 !important;
     }
 
-    /* オリジナルテンキーの固定コンテナ */
-    .custom-keypad-container {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background-color: #1a261a;
-        /* 雀卓のカード背景に近いシックな黒緑 */
-        border-top: 2px solid #2e7d32;
-        z-index: 1000;
-        transform: translateY(100%);
-        transition: transform 0.2s ease-out;
-        padding: 8px 12px 24px 12px;
-        /* スマホの下部バーを考慮した余白 */
-        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.6);
-        box-sizing: border-box;
-    }
-
-    /* テンキーが開いている時の状態 */
-    .custom-keypad-container.open {
-        transform: translateY(0);
-    }
-
-    .keypad-table {
-        width: 100%;
-        max-width: 480px;
-        margin: 0 auto;
-        border-collapse: separate;
-        border-spacing: 6px;
-        table-layout: fixed;
-    }
-
-    .keypad-btn {
-        width: 100%;
-        height: 48px;
-        font-size: 1.2rem;
-        font-weight: bold;
-        border-radius: 8px;
-        background-color: rgba(255, 255, 255, 0.06);
-        color: #e0e0e0;
-        border: none;
-        outline: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        touch-action: manipulation;
-        white-space: nowrap;
-    }
-
-    .keypad-btn:active {
-        background-color: rgba(255, 255, 255, 0.18);
-    }
-
-    /* 演算子ボタン（＋、ー、閉じる） */
-    .keypad-btn.op-key {
-        background-color: #2e7d32;
-        color: white;
-    }
-
-    .keypad-btn.op-key:active {
-        background-color: #1b5e20;
-    }
-
-    /* アクションボタン（⌫、C） */
-    .keypad-btn.action-key {
-        background-color: #b71c1c;
-        color: white;
-    }
-
-    .keypad-btn.action-key:active {
-        background-color: #7f0000;
-    }
-
     /* スコア入力欄がテンキー選択中の時のハイライト */
     .score-input-active {
         border: 1px solid #81c784 !important;
@@ -149,34 +77,6 @@
     .score-input-auto-filling input {
         opacity: 0.4 !important;
         transition: opacity 0.15s ease;
-    }
-
-    /* アプローチ2: 点数がピッタリ合致した時に出現する「 記録」ボタンのスタイル */
-    .keypad-btn.record-key {
-        background-color: #ff9800 !important;
-        /* 目立つアクセントオレンジ */
-        color: white !important;
-        font-weight: bold;
-        animation: keypad-pulse-border 1.5s infinite;
-    }
-
-    .keypad-btn.record-key:active {
-        background-color: #e65100 !important;
-    }
-
-    /* 記録ボタンをフワフワと発光させてアピールするアニメーション */
-    @@keyframes keypad-pulse-border {
-        0% {
-            box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7);
-        }
-
-        70% {
-            box-shadow: 0 0 0 6px rgba(255, 152, 0, 0);
-        }
-
-        100% {
-            box-shadow: 0 0 0 0 rgba(255, 152, 0, 0);
-        }
     }
 
     /* テンキーが開いている時だけ、画面の一番下にテンキー分の大きな余白を作る */
@@ -265,27 +165,6 @@
     <MudPaper id="score-input-section" Class="pa-2 pa-sm-4 mb-6" Elevation="2">
         <div class="mb-3 px-1">
             <MudText Style="font-weight: bold;" Class="mb-1">素点入力</MudText>
-
-            @* ▼ デバッグ用：登録プレイヤー名簿のリアルタイム表示エリア ▼ *@
-            @* <div style="background-color: rgba(255, 255, 0, 0.05); border: 1px dashed #ffc107; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-size: 0.85rem;">
-                <div style="color: #ffc107; font-weight: bold; margin-bottom: 4px;">🛠 デバッグ: 登録済みプレイヤー名簿</div>
-                <div>現在のマスター件数: <strong>@playerMaster.Count</strong> 件</div>
-                @if (playerMaster.Count == 0)
-                {
-                    <div style="color: #aaa; font-style: italic;">（登録されているプレイヤーはまだありません。一度セッションを保存すると登録されます）</div>
-                }
-                else
-                {
-                    <ul style="margin: 4px 0 0 0; padding-left: 20px; color: #e0e0e0;">
-                        @foreach (var p in playerMaster)
-                        {
-                            <li>名前: <strong style="color: #4caf50;">@p.Name</strong> (ID: @p.Id, チップ累計: @p.CumulativeChips 枚)</li>
-                        }
-                    </ul>
-                }
-            </div> *@
-            @* ▲ デバッグ用エリア ここまで ▲ *@
-
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="width: 100%; overflow: hidden;">
                 <div class="d-flex align-center">
                     <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="AddParticipant" Disabled="@(activeParticipantCount >= MaxParticipants)" Style="min-width: 0; padding-left: 4px; padding-right: 4px;">
@@ -357,143 +236,11 @@
             </MudButton>
         </div>
     </MudPaper>
-
-    <div style="position: absolute; left: -9999px; top: 0;">
-        <div id="share-target" style="width: @(800 + Math.Max(0, TablePlayers.Count - 4) * 150)px; padding: 40px; background-color: #1a1a27; color: white; border-radius: 12px; font-family: 'Kaisei Decol', sans-serif;">
-            <h2 style="text-align: center; margin-bottom: 20px; font-weight: bold; border-bottom: 2px solid #444; padding-bottom: 10px;">
-                🀄 対局結果 🀄
-            </h2>
-            @* ルール・レート情報の表示 *@
-            <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; font-size: 0.95rem;">
-                <div><strong>ルール名:</strong> @(string.IsNullOrWhiteSpace(rules.Name) ? "未設定" : rules.Name)</div>
-                <div><strong>形式:</strong> @(rules.PlayerCount)人麻雀</div>
-                <div><strong>設定:</strong> @(rules.StartingPoints)持ち / @(rules.ReturnPoints)返し</div>
-                <div><strong>ウマ:</strong> @(rules.IsCustomUma ? rules.GetUmaDisplayText(true) : $"{rules.Uma1} - {rules.Uma2}")</div>
-                <div><strong>レート:</strong> @(rules.Rate)円/1k</div>
-                @if (rules.ChipRate > 0)
-                {
-                    <div><strong>チップ:</strong> @(rules.ChipRate)円/枚</div>
-                }
-            </div>
-            @* 成績テーブル *@
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center; font-variant-numeric: tabular-nums;">
-                <thead>
-                    <tr style="background-color: rgba(255,255,255,0.1); border-bottom: 2px solid #555;">
-                        <th style="padding: 12px; width: 80px; font-size: 0.9rem;">局</th>
-                        @for (int i = 0; i < TablePlayers.Count; i++)
-                        {
-                            <th style="padding: 12px; font-size: 1.1rem;">@(string.IsNullOrWhiteSpace(TablePlayers[i]) ? " " : TablePlayers[i])</th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                    @* 各局のポイント (+/-) 固定表示 *@
-                    @for (int row = 0; row < ActiveHistory.Count; row++)
-                    {
-                        var game = ActiveHistory[row];
-                        <tr style="border-bottom: 1px solid #333;">
-                            <td style="padding: 10px; color: #aaa; font-size: 0.85rem; white-space: nowrap;">@(row + 1)局目</td>
-                            @for (int i = 0; i < TablePlayers.Count; i++)
-                            {
-                                @* 各局のフォントサイズ: 1.1rem *@
-                                <td style="padding: 10px; font-size: 1.1rem; white-space: nowrap;">
-                                    <span style="@GetSharePointStyle(game, TablePlayers[i])">@GetSharePointValue(game, TablePlayers[i])</span>
-                                </td>
-                            }
-                        </tr>
-                    }
-                </tbody>
-                <tfoot>
-                    @* ポイント合計行 *@
-                    <tr style="background-color: rgba(46, 125, 50, 0.1); border-bottom: 2px solid #555;">
-                        <td style="padding: 15px 10px; font-size: 0.9rem; color: #ddd; font-weight: bold; white-space: nowrap;">
-                            Pt 合計
-                        </td>
-                        @for (int i = 0; i < TablePlayers.Count; i++)
-                        {
-                            @* Pt合計のフォントサイズ: 1.2rem *@
-                            <td style="padding: 15px 10px; font-size: 1.2rem; white-space: nowrap;">
-                                <span style="@GetShareTotalPointStyle(TablePlayers[i])">@GetShareTotalPointValue(TablePlayers[i])</span>
-                            </td>
-                        }
-                    </tr>
-                    @* チップ行 (チップあり設定の場合のみ表示) *@
-                    @if (rules.ChipRate > 0)
-                    {
-                        <tr style="background-color: rgba(46, 125, 50, 0.1); border-bottom: 2px solid #555;">
-                            <td style="padding: 15px 10px; font-size: 0.9rem; color: #ddd; font-weight: bold; white-space: nowrap;">
-                                チップ
-                            </td>
-                            @for (int i = 0; i < TablePlayers.Count; i++)
-                            {
-                                int chip = ActiveSessionChips.TryGetValue(TablePlayers[i], out var v) ? v : 0;
-                                @* チップのフォントサイズ: 1.2rem (Pt合計と同等) *@
-                                <td style="padding: 15px 10px; font-size: 1.2rem; white-space: nowrap;">
-                                    <span style="display: inline-block; width: 4.5rem; text-align: right; @(chip > 0 ? "color: #ff6b6b;" : (chip < 0 ? "color: #4dabf7;" : "color: #9e9e9e;"))">
-                                        @(chip > 0 ? $"+{chip}" : chip.ToString())枚
-                                    </span>
-                                </td>
-                            }
-                        </tr>
-                    }
-                    @* 円合計行 *@
-                    <tr style="background-color: rgba(255, 255, 255, 0.06); font-weight: bold;">
-                        <td style="padding: 15px 10px; font-size: 0.9rem; color: #eeeeee; white-space: nowrap;">
-                            円 合計
-                        </td>
-                        @for (int i = 0; i < TablePlayers.Count; i++)
-                        {
-                            @* 円合計のフォントサイズ: 1.4rem *@
-                            <td style="padding: 15px 10px; font-size: 1.4rem; white-space: nowrap;">
-                                <span style="@GetShareTotalYenStyle(TablePlayers[i], i)">@GetShareTotalYenValue(TablePlayers[i], i)</span>
-                            </td>
-                        }
-                    </tr>
-                </tfoot>
-            </table>
-            @* フッター情報 *@
-            <div style="display: flex; justify-content: flex-end; font-size: 0.9rem; color: #888;">
-                <span>@DateTime.Now.ToString("yyyy/MM/dd HH:mm") - 麻雀集計ツール</span>
-            </div>
-        </div>
-    </div>
+    @* 隠しシェア画像生成コンポーネント *@
+    <ShareTarget Rules="rules" TablePlayers="TablePlayers" ActiveHistory="ActiveHistory" ActiveSessionChips="ActiveSessionChips" />
 </MudContainer>
-<div class="@($"custom-keypad-container {(activeScoreInputIndex.HasValue ? "open" : "")}")" @onclick:stopPropagation="true">
-    <table class="keypad-table">
-        <tr>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("1")'>1</button></td>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("2")'>2</button></td>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("3")'>3</button></td>
-            <td><button type="button" class="keypad-btn action-key" @onclick='() => OnKeypadPress("⌫")'>⌫</button></td>
-        </tr>
-        <tr>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("4")'>4</button></td>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("5")'>5</button></td>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("6")'>6</button></td>
-            <td><button type="button" class="keypad-btn op-key" @onclick='() => OnKeypadPress("+")'>＋</button></td>
-        </tr>
-        <tr>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("7")'>7</button></td>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("8")'>8</button></td>
-            <td><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("9")'>9</button></td>
-            <td><button type="button" class="keypad-btn op-key" @onclick='() => OnKeypadPress("-")'>ー</button></td>
-        </tr>
-        <tr>
-            <td><button type="button" class="keypad-btn action-key" @onclick='() => OnKeypadPress("C")'>C</button></td>
-            <td colspan="2"><button type="button" class="keypad-btn" @onclick='() => OnKeypadPress("0")'>0</button></td>
-            <td>
-                @if (IsTotalCorrect)
-                {
-                    <button type="button" class="keypad-btn record-key" @onclick='() => OnKeypadPress("記録")'>記録</button>
-                }
-                else
-                {
-                    <button type="button" class="keypad-btn op-key" @onclick='() => OnKeypadPress("閉じる")'>閉じる</button>
-                }
-            </td>
-        </tr>
-    </table>
-</div>
+@* テンキー *@
+<ScoreKeypad IsOpen="activeScoreInputIndex.HasValue" IsTotalCorrect="IsTotalCorrect" OnKeyPress="OnKeypadPress" />
 
 @code {
     // 画面の入力状態を管理するための内部クラス
@@ -502,18 +249,21 @@
         public string? Id { get; set; } // 登録済みの場合はID、新規手入力の場合はnull
         public string Name { get; set; } = string.Empty;
     }
-    private RuleSet rules = new();
+    private RuleSet rules => SessionState.Rules;
     private List<RuleSet> rulePresets = new();
     private const int MaxParticipants = 7;
-    private int activeParticipantCount = 4;
-    private List<PlayerInputState> currentPlayers = Enumerable.Range(0, MaxParticipants)
-        .Select(_ => new PlayerInputState()).ToList();
+    private int activeParticipantCount
+    {
+        get => SessionState.ActiveParticipantCount;
+        set => _ = SessionState.SaveActiveParticipantCountAsync(value); // 簡易書き換え用
+    }
+    private List<PlayerInputState> currentPlayers = Enumerable.Range(0, 7).Select(_ => new PlayerInputState()).ToList();
     private List<PlayerProfile> playerMaster = new();
     private List<int?> currentScores => scoreInputBuffers.Select(val => EvaluateScoreExpression(val)).ToList();
     private bool isFinalizing = false;
     private List<int?> previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
-    private List<GameResult> ActiveHistory = new();
-    private Dictionary<string, int> ActiveSessionChips = new();
+    private List<GameResult> ActiveHistory => SessionState.ActiveHistory;
+    private Dictionary<string, int> ActiveSessionChips => SessionState.ActiveSessionChips;
     private int displayMode = 1;
     private bool isSettingsExpanded = true;
     private bool IsTotalCorrect
@@ -525,8 +275,8 @@
             return activeScores.Sum(x => x ?? 0) == (rules.StartingPoints * rules.PlayerCount) / 100;
         }
     }
-    private List<bool> currentYaki = new() { false, false, false, false };
-    private List<bool> currentTobiBonus = new() { false, false, false, false };
+    private List<bool> currentYaki = new(new bool[MaxParticipants]);
+    private List<bool> currentTobiBonus = new(new bool[MaxParticipants]);
     private List<bool> currentSitOuts = new(new bool[MaxParticipants]);
     private const string YakiIcon = "<g transform=\"matrix(0.025, 0, 0, 0.025, 0, 24)\"><path d=\"M843-60 670-234l-85 85q-23 23-56.5 23T472-149l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23 23-56.5 23T246-375l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23-23-23-56.5t23-56.5l28-28L60-844l56-56 102 102 28-28q23-23 57-23t57 23l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l-85 84 172 173-56 57ZM529-205l227-226-57-57-227 227 57 56Zm-57-170 114-113-57-56-113 113 56 56Zm-170-56 227-227-57-56-226 226 56 57Zm-56-170 114-113-57-57-113 113 56 57Zm368 255ZM501-460ZM388-573ZM275-686Z\"/></g>";
     private int? armedDeleteIndex = null;
@@ -534,40 +284,41 @@
     private bool isSharing = false;
     private string FormatPlus(double val, string fmt = "F1") => val > 0 ? $"+{val.ToString(fmt)}" : val.ToString(fmt);
     private int? activeScoreInputIndex = null;
-    private string[] scoreInputBuffers = Enumerable.Repeat(string.Empty, MaxParticipants).ToArray();
+    private string[] scoreInputBuffers
+    {
+        get => SessionState.ScoreInputBuffers;
+        set => _ = SessionState.SaveScoreBuffersAsync(value);
+    }
 
     @* ローカルストレージからのデータ復元と初期化 *@
     protected override async Task OnInitializedAsync()
     {
-        var savedRules = await LocalStorage.GetItemAsync<RuleSet>(StorageKeys.Rules);
-        if (savedRules != null) rules = savedRules;
+        // 1. すべての状態の復元をサービスに委譲
+        await SessionState.InitializeStateAsync();
+        // 2. データベース（名簿マスター）の読み込み
         try
         {
             var dbData = await DatabaseService.GetAllDataAsync();
-            if (dbData != null && dbData.Players != null) playerMaster = dbData.Players;
+            if (dbData?.Players != null) playerMaster = dbData.Players;
         }
         catch
         {
             // 初回起動時などでDBが存在しない場合は空のまま
         }
-        var savedPlayers = await LocalStorage.GetItemAsync<List<string>>(StorageKeys.CurrentPlayers);
-        if (savedPlayers != null)
+        // 3. 画面表示用のプレイヤー名・IDマッピング（サービスからIndex側の一時変数へ）
+        for (int i = 0; i < 7; i++)
         {
-            for (int i = 0; i < savedPlayers.Count && i < MaxParticipants; i++)
+            string savedName = SessionState.CurrentPlayerNames[i];
+            currentPlayers[i].Name = savedName;
+            if (!string.IsNullOrEmpty(savedName))
             {
-                currentPlayers[i].Name = savedPlayers[i];
-                var matched = playerMaster.FirstOrDefault(p => p.Name == savedPlayers[i]);
+                var matched = playerMaster.FirstOrDefault(p => p.Name == savedName);
                 if (matched != null) currentPlayers[i].Id = matched.Id;
             }
         }
-        var savedActiveCount = await LocalStorage.GetItemAsync<int?>(StorageKeys.ActiveParticipantCount);
-        activeParticipantCount = savedActiveCount ?? rules.PlayerCount;
+        // 4. ルールプリセットの初期化（初回のみ）
         var savedPresets = await LocalStorage.GetItemAsync<List<RuleSet>>(StorageKeys.RulePresets);
-        if (savedPresets != null && savedPresets.Count > 0)
-        {
-            rulePresets = savedPresets;
-        }
-        else
+        if (savedPresets == null || savedPresets.Count == 0)
         {
             // 初回起動時のデフォルトプリセット
             rulePresets = new List<RuleSet>
@@ -605,53 +356,12 @@
             };
             await LocalStorage.SetItemAsync(StorageKeys.RulePresets, rulePresets);
         }
-        var savedHistory = await LocalStorage.GetItemAsync<List<GameResult>>("ActiveHistory");
-        if (savedHistory != null) ActiveHistory = savedHistory;
-        try
+        else
         {
-            // まずは Dictionary として読み込みを試みる
-            var savedChipsDict = await LocalStorage.GetItemAsync<Dictionary<string, int>>("ActiveSessionChips");
-            if (savedChipsDict != null)
-            {
-                ActiveSessionChips = savedChipsDict;
-            }
-            else
-            {
-                // 過去の互換性のために古い List<int> 形式の救済
-                var savedChipsList = await LocalStorage.GetItemAsync<List<int>>("ActiveSessionChips");
-                if (savedChipsList != null)
-                {
-                    ActiveSessionChips = new Dictionary<string, int>();
-                    for (int i = 0; i < savedChipsList.Count && i < currentPlayers.Count; i++)
-                    {
-                        var name = currentPlayers[i].Name;
-                        if (!string.IsNullOrWhiteSpace(name))
-                        {
-                            ActiveSessionChips[name] = savedChipsList[i];
-                        }
-                    }
-                }
-                else
-                {
-                    ActiveSessionChips = new Dictionary<string, int>();
-                }
-            }
-        }
-        catch
-        {
-            ActiveSessionChips = new Dictionary<string, int>();
+            rulePresets = savedPresets;
         }
         ResetInputForms();
-        var backupBuffers = await LocalStorage.GetItemAsync<string[]>("backup_score_buffers");
-        if (backupBuffers != null && backupBuffers.Length == MaxParticipants)
-        {
-            // 空ではない入力が1つでもあれば復元を採用する
-            if (backupBuffers.Any(b => !string.IsNullOrEmpty(b)))
-            {
-                scoreInputBuffers = backupBuffers;
-                EvaluateAutoFill(); // 自動計算枠などを再評価
-            }
-        }
+        EvaluateAutoFill(); // 自動計算枠などを再評価
     }
 
     // 初回の描画（データバインド済みの状態）が完了した瞬間に、ローディング画面をフェードアウトさせる
@@ -798,22 +508,13 @@
             Snackbar.Add("名前「削除済み」は使用できません", Severity.Warning);
             currentPlayers[index].Name = string.Empty;
             currentPlayers[index].Id = null;
-            var clearedNameList = currentPlayers.Select(p => p.Name).ToList();
-            await LocalStorage.SetItemAsync(StorageKeys.CurrentPlayers, clearedNameList);
+            await SessionState.UpdatePlayerNameAsync(index, string.Empty);
             return;
         }
         currentPlayers[index].Name = value;
         var matchedPlayer = playerMaster.FirstOrDefault(p => p.Name == value);
-        if (matchedPlayer != null)
-        {
-            currentPlayers[index].Id = matchedPlayer.Id;
-        }
-        else
-        {
-            currentPlayers[index].Id = null;
-        }
-        var nameList = currentPlayers.Select(p => p.Name).ToList();
-        await LocalStorage.SetItemAsync(StorageKeys.CurrentPlayers, nameList);
+        currentPlayers[index].Id = matchedPlayer?.Id;
+        await SessionState.UpdatePlayerNameAsync(index, value);
     }
 
     @* チップ数を保存 *@
@@ -822,11 +523,7 @@
         if (index >= 0 && index < TablePlayers.Count)
         {
             var name = TablePlayers[index];
-            if (!string.IsNullOrWhiteSpace(name))
-            {
-                ActiveSessionChips[name] = value;
-                await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
-            }
+            if (!string.IsNullOrWhiteSpace(name)) await SessionState.UpdateChipValueAsync(name, value);
         }
     }
 
@@ -839,15 +536,13 @@
         if (result is not null && !result.Canceled && result.Data is RuleSet preset)
         {
             bool isPlayerCountChanged = rules.PlayerCount != preset.PlayerCount;
-            rules = preset.DeepClone();
-            await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
+            await SessionState.SaveRulesAsync(preset.DeepClone());
             Snackbar.Add($"「{preset.Name}」を読み込みました", Severity.Success);
             if (isPlayerCountChanged)
             {
-                activeParticipantCount = rules.PlayerCount;
-                await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
+                await SessionState.SaveActiveParticipantCountAsync(rules.PlayerCount);
                 ResetInputForms();
-                await LocalStorage.RemoveItemAsync("backup_score_buffers");
+                await SessionState.ClearScoreBuffersAsync();
             }
             ValidateDisplayMode();
             StateHasChanged();
@@ -871,11 +566,8 @@
                     yesText: "上書き",
                     cancelText: "キャンセル",
                     noText: "両方残す");
-                if (result == null)
-                {
-                    return;
-                }
-                else if (result == true)
+                if (result == null) return;
+                if (result == true)
                 {
                     rulePresets.Remove(existingPreset);
                 }
@@ -900,7 +592,7 @@
         var newPreset = rules.DeepClone();
         rulePresets.Add(newPreset);
         await LocalStorage.SetItemAsync(StorageKeys.RulePresets, rulePresets);
-        await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
+        await SessionState.SaveRulesAsync(rules);
         Snackbar.Add($"設定「{rules.Name}」を保存しました", Severity.Success);
         StateHasChanged();
     }
@@ -922,14 +614,12 @@
         if (result is not null && !result.Canceled && result.Data is RuleSet newRules)
         {
             bool isPlayerCountChanged = rules.PlayerCount != newRules.PlayerCount;
-            rules = newRules;
-            await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
+            await SessionState.SaveRulesAsync(newRules);
             if (isPlayerCountChanged)
             {
-                activeParticipantCount = rules.PlayerCount;
-                await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
+                await SessionState.SaveActiveParticipantCountAsync(rules.PlayerCount);
                 ResetInputForms();
-                await LocalStorage.RemoveItemAsync("backup_score_buffers");
+                await SessionState.ClearScoreBuffersAsync();
             }
             ValidateDisplayMode();
             StateHasChanged();
@@ -941,7 +631,7 @@
     private async Task DisableCustomUma()
     {
         rules.IsCustomUma = false;
-        await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
+        await SessionState.SaveRulesAsync(rules);
         Snackbar.Add("順位ウマの個別設定を解除しました", Severity.Info);
         StateHasChanged();
     }
@@ -949,34 +639,29 @@
     @* 各局の結果を保存 *@
     private async Task CalculateAndRecordGame()
     {
-        // 抜け番ではないプレイヤーのインデックスを抽出
         int pCount = rules.PlayerCount;
         var activeIndices = Enumerable.Range(0, activeParticipantCount).Where(i => !currentSitOuts[i]).ToList();
         if (activeIndices.Count != pCount) return;
-        // 計算用の抽出配列
         var activeScores = activeIndices.Select(i => (currentScores[i] ?? 0) * 100).ToList();
         var activePlayers = activeIndices.Select(i => currentPlayers[i].Name).ToList();
         var activeYaki = activeIndices.Select(i => currentYaki[i]).ToList();
         var activeTobiBonus = activeIndices.Select(i => currentTobiBonus[i]).ToList();
-        // 名無しチェック
+        // 1. バリデーションチェック (UI・データ検証)
         if (activePlayers.Any(string.IsNullOrWhiteSpace))
         {
             Snackbar.Add("対局者の名前を入力してください", Severity.Error);
             return;
         }
-        // 同名チェック
         if (activePlayers.Distinct().Count() != activePlayers.Count)
         {
             Snackbar.Add("対局者の中に同じ名前があります", Severity.Error);
             return;
         }
-        // 削除済みチェック
         if (activePlayers.Any(name => name == "削除済み"))
         {
             Snackbar.Add("名前「削除済み」は使用できません", Severity.Error);
             return;
         }
-        // 簡易入力ミスチェック
         if (rules.IsTobiEnabled)
         {
             bool hasTobi = activeScores.Any(s => rules.TobiJustIsTobi ? s <= rules.TobiPoint : s < rules.TobiPoint);
@@ -984,274 +669,21 @@
             if (hasTobi != hasTobiBonus)
             {
                 string msg = hasTobi
-                ? "トビが発生していますが\nボーナス獲得者（🚀）が選択されていません"
-                : "トビが発生していないのに\nボーナス獲得者（🚀）が選択されています";
+                    ? "トビが発生していますが\nボーナス獲得者（🚀）が選択されていません"
+                    : "トビが発生していないのに\nボーナス獲得者（🚀）が選択されています";
                 Snackbar.Add(msg, Severity.Error);
                 return;
             }
         }
-        // オカ・順位ウマのベースポイント算出
-        double[] baseUmaOka = new double[pCount];
-        double oka = (rules.ReturnPoints - rules.StartingPoints) * pCount / 1000.0;
-        baseUmaOka[0] += oka; // 1位にオカを加算
-        double[] umaArray = GetCustomUmaArray();
-        for (int rank = 0; rank < pCount; rank++)
-            baseUmaOka[rank] += umaArray[rank];
-        // 各個人の素点と端数処理
-        double[] points = new double[pCount];
-        double totalPts = 0;
-        for (int i = 0; i < pCount; i++)
-        {
-            double rawPt = (activeScores[i] - rules.ReturnPoints) / 1000.0;
-            points[i] = ApplyRounding(rawPt, rules.Rounding);
-            totalPts += points[i];
-        }
-        int fractionsToAdjust = (int)Math.Round(-(totalPts + oka) * 10);
-        // 同着グループの分析と「席順入力ダイアログ」の要否判定
-        var groupedScores = activeScores.Select((score, index) => new { score, index })
-        .GroupBy(x => x.score)
-        .OrderByDescending(g => g.Key)
-        .ToList();
-        bool needsTieBreaker = false;
-        if (groupedScores.Any(g => g.Count() > 1))
-        {
-            if (rules.TieBreaker == TieBreakerRule.Kamicha)
-            {
-                needsTieBreaker = true;
-            }
-            else
-            {
-                int currentRank = 0;
-                foreach (var group in groupedScores)
-                {
-                    int count = group.Count();
-                    if (count > 1)
-                    {
-                        if (fractionsToAdjust > currentRank && fractionsToAdjust < currentRank + count) needsTieBreaker = true;
-
-                        double sumUmaOka = 0;
-                        for (int i = 0; i < count; i++) sumUmaOka += baseUmaOka[currentRank + i];
-                        double splitBase = Math.Floor(sumUmaOka / count * 10) / 10.0;
-                        double remainder = Math.Round(sumUmaOka - (splitBase * count), 1);
-                        if (remainder > 0) needsTieBreaker = true;
-                    }
-                    currentRank += count;
-                }
-                if (!needsTieBreaker)
-                {
-                    int topCount = groupedScores.First().Count();
-                    if (topCount > 1)
-                    {
-                        if (rules.IsSinkEnabled && rules.SinkUmaDistribution == PenaltyDistribution.WinnerTakeAll)
-                        {
-                            int borderPoint = rules.IsSinkBaseCustom ? rules.SinkUmaBasePoint : rules.StartingPoints;
-                            int shizumiCount = activeScores.Count(s => rules.SinkJustIsUki ? s < borderPoint : s <= borderPoint);
-                            if (shizumiCount > 0 && shizumiCount < pCount && (shizumiCount * rules.SinkUmaPenalty * 10) % topCount != 0)
-                                needsTieBreaker = true;
-                        }
-                        if (!needsTieBreaker && rules.IsYakiEnabled && rules.YakiDistribution == PenaltyDistribution.WinnerTakeAll)
-                        {
-                            int yakiCount = activeYaki.Count(y => y);
-                            if (yakiCount > 0 && yakiCount < pCount && (yakiCount * rules.YakiPenalty * 10) % topCount != 0)
-                                needsTieBreaker = true;
-                        }
-                    }
-                }
-            }
-        }
-        // 席順入力ダイアログ
+        // 2. タイブレーカー（ダイアログ）の要否確認
+        bool needsTieBreaker = Calculator.CheckIfTieBreakerNeeded(rules, activeScores, activeYaki);
         Dictionary<int, int>? priority = needsTieBreaker
-        ? await OpenTieBreakerIfNeeded(activeScores, activePlayers)
-        : Enumerable.Range(0, pCount).ToDictionary(i => i, i => i);
-        if (priority == null) return;
-        var rankedIndices = activeScores.Select((score, index) => new { score, index })
-        .OrderByDescending(x => x.score)
-        .ThenBy(x => priority[x.index])
-        .Select(x => x.index)
-        .ToList();
-        int currentR = 0;
-        while (currentR < pCount)
-        {
-            int score = activeScores[rankedIndices[currentR]];
-            int tieCount = 1;
-            for (int i = currentR + 1; i < pCount; i++)
-            {
-                if (activeScores[rankedIndices[i]] == score) tieCount++;
-                else break;
-            }
-            if (rules.TieBreaker == TieBreakerRule.Split && tieCount > 1)
-            {
-                double sumUmaOka = 0;
-                for (int i = 0; i < tieCount; i++) sumUmaOka += baseUmaOka[currentR + i];
-                double splitBase = Math.Floor(sumUmaOka / tieCount * 10) / 10.0;
-                double remainder = Math.Round(sumUmaOka - (splitBase * tieCount), 1);
-                int remainderUnits = (int)Math.Round(remainder * 10);
-                for (int i = 0; i < tieCount; i++)
-                {
-                    double addPt = splitBase + (i < remainderUnits ? 0.1 : 0);
-                    points[rankedIndices[currentR + i]] += addPt;
-                }
-            }
-            else
-            {
-                for (int i = 0; i < tieCount; i++) points[rankedIndices[currentR + i]] += baseUmaOka[currentR + i];
-            }
-            currentR += tieCount;
-        }
-        AdjustFractions(points, rankedIndices);
-        // 沈みウマ
-        double[] preSinkPts = points.ToArray();
-        if (rules.IsSinkEnabled)
-        {
-            int borderPoint = rules.IsSinkBaseCustom ? rules.SinkUmaBasePoint : rules.StartingPoints;
-            var ukiIndices = new List<int>();
-            var shizumiIndices = new List<int>();
-            for (int i = 0; i < pCount; i++)
-            {
-                bool isUki = rules.SinkJustIsUki ? activeScores[i] >= borderPoint : activeScores[i] > borderPoint;
-                if (isUki) ukiIndices.Add(i); else shizumiIndices.Add(i);
-            }
-            if (shizumiIndices.Count > 0 && ukiIndices.Count > 0)
-            {
-                int totalPenalty = shizumiIndices.Count * rules.SinkUmaPenalty;
-                foreach (var i in shizumiIndices) points[i] -= rules.SinkUmaPenalty;
-                if (rules.SinkUmaDistribution == PenaltyDistribution.WinnerTakeAll)
-                {
-                    int topScore = activeScores[rankedIndices[0]];
-                    int topCount = 1;
-                    for (int i = 1; i < pCount; i++)
-                    {
-                        if (activeScores[rankedIndices[i]] == topScore) topCount++;
-                        else break;
-                    }
-                    if (rules.TieBreaker == TieBreakerRule.Split && topCount > 1)
-                    {
-                        double splitBase = Math.Floor((double)totalPenalty / topCount * 10) / 10.0;
-                        double remainder = Math.Round(totalPenalty - (splitBase * topCount), 1);
-                        int remainderUnits = (int)Math.Round(remainder * 10);
-                        for (int i = 0; i < topCount; i++) points[rankedIndices[i]] += splitBase + (i < remainderUnits ? 0.1 : 0);
-                        AdjustFractions(points, rankedIndices);
-                    }
-                    else points[rankedIndices[0]] += totalPenalty;
-                }
-                else
-                {
-                    double splitBase = Math.Floor((double)totalPenalty / ukiIndices.Count * 10) / 10.0;
-                    double remainder = Math.Round(totalPenalty - (splitBase * ukiIndices.Count), 1);
-                    int remainderUnits = (int)Math.Round(remainder * 10);
-                    var orderedUki = rankedIndices.Where(idx => ukiIndices.Contains(idx)).ToList();
-                    for (int j = 0; j < orderedUki.Count; j++) points[orderedUki[j]] += splitBase + (j < remainderUnits ? 0.1 : 0);
-                }
-            }
-        }
-        var currentSinkPts = points.Select((p, i) => Math.Round(p - preSinkPts[i], 1)).ToList();
-        // 焼き鳥
-        double[] preYakiPts = points.ToArray();
-        if (rules.IsYakiEnabled)
-        {
-            var yakiIndices = new List<int>();
-            var safeIndices = new List<int>();
-            for (int i = 0; i < pCount; i++)
-            {
-                if (activeYaki[i]) yakiIndices.Add(i); else safeIndices.Add(i);
-            }
-            if (yakiIndices.Count > 0 && yakiIndices.Count < pCount)
-            {
-                int totalPenalty = yakiIndices.Count * rules.YakiPenalty;
-                foreach (var i in yakiIndices) points[i] -= rules.YakiPenalty;
-                if (rules.YakiDistribution == PenaltyDistribution.WinnerTakeAll)
-                {
-                    int topScore = activeScores[rankedIndices[0]];
-                    int topCount = 1;
-                    for (int i = 1; i < pCount; i++)
-                    {
-                        if (activeScores[rankedIndices[i]] == topScore) topCount++;
-                        else break;
-                    }
-                    if (rules.TieBreaker == TieBreakerRule.Split && topCount > 1)
-                    {
-                        double splitBase = Math.Floor((double)totalPenalty / topCount * 10) / 10.0;
-                        double remainder = Math.Round(totalPenalty - (splitBase * topCount), 1);
-                        int remainderUnits = (int)Math.Round(remainder * 10);
-                        for (int i = 0; i < topCount; i++) points[rankedIndices[i]] += splitBase + (i < remainderUnits ? 0.1 : 0);
-                        AdjustFractions(points, rankedIndices);
-                    }
-                    else points[rankedIndices[0]] += totalPenalty;
-                }
-                else
-                {
-                    double splitBase = Math.Floor((double)totalPenalty / safeIndices.Count * 10) / 10.0;
-                    double remainder = Math.Round(totalPenalty - (splitBase * safeIndices.Count), 1);
-                    int remainderUnits = (int)Math.Round(remainder * 10);
-                    var orderedSafe = rankedIndices.Where(idx => safeIndices.Contains(idx)).ToList();
-                    for (int j = 0; j < orderedSafe.Count; j++) points[orderedSafe[j]] += splitBase + (j < remainderUnits ? 0.1 : 0);
-                }
-            }
-        }
-        var yakiPts = points.Select((p, i) => Math.Round(p - preYakiPts[i], 1)).ToList();
-        // トビ
-        double[] preTobiPts = points.ToArray();
-        if (rules.IsTobiEnabled)
-        {
-            var tobiIndices = new List<int>();
-            var bonusIndices = new List<int>();
-            for (int i = 0; i < pCount; i++)
-            {
-                if (rules.TobiJustIsTobi ? activeScores[i] <= rules.TobiPoint : activeScores[i] < rules.TobiPoint) tobiIndices.Add(i);
-                if (activeTobiBonus[i]) bonusIndices.Add(i);
-            }
-            if (tobiIndices.Count > 0 && bonusIndices.Count > 0)
-            {
-                int totalPenalty = tobiIndices.Count * rules.TobiPenalty;
-                foreach (var i in tobiIndices) points[i] -= rules.TobiPenalty;
-
-                double splitBase = Math.Floor((double)totalPenalty / bonusIndices.Count * 10) / 10.0;
-                double remainder = Math.Round(totalPenalty - (splitBase * bonusIndices.Count), 1);
-                int remainderUnits = (int)Math.Round(remainder * 10);
-                var orderedBonus = rankedIndices.Where(idx => bonusIndices.Contains(idx)).ToList();
-                for (int j = 0; j < orderedBonus.Count; j++) points[orderedBonus[j]] += splitBase + (j < remainderUnits ? 0.1 : 0);
-            }
-        }
-        var tobiPts = points.Select((p, i) => Math.Round(p - preTobiPts[i], 1)).ToList();
-        // コールド
-        double[] preColdPts = points.ToArray();
-        if (rules.IsColdEnabled)
-        {
-            var coldIndices = new List<int>();
-            var nonColdIndices = new List<int>();
-            for (int i = 0; i < pCount; i++)
-            {
-                if (rules.ColdJustIsCold ? activeScores[i] >= rules.ColdPoint : activeScores[i] > rules.ColdPoint) coldIndices.Add(i);
-                else nonColdIndices.Add(i);
-            }
-            if (coldIndices.Count > 0 && nonColdIndices.Count > 0)
-            {
-                int bonusPerColdPlayer = nonColdIndices.Count * rules.ColdBonus;
-                int penaltyPerNonColdPlayer = coldIndices.Count * rules.ColdBonus;
-                foreach (var i in coldIndices) points[i] += bonusPerColdPlayer;
-                foreach (var i in nonColdIndices) points[i] -= penaltyPerNonColdPlayer;
-            }
-        }
-        var currentColdPts = points.Select((p, i) => Math.Round(p - preColdPts[i], 1)).ToList();
-        // 円算出
-        double[] exactYen = new double[pCount];
-        int[] baseYen = new int[pCount];
-        double[] fractions = new double[pCount];
-        int totalBaseYen = 0;
-        for (int i = 0; i < pCount; i++)
-        {
-            exactYen[i] = points[i] * rules.Rate;
-            baseYen[i] = (int)Math.Floor(exactYen[i]);
-            fractions[i] = exactYen[i] - baseYen[i];
-            totalBaseYen += baseYen[i];
-        }
-        int shortage = 0 - totalBaseYen;
-        var yenDistributionOrder = Enumerable.Range(0, pCount)
-        .OrderByDescending(i => fractions[i])
-        .ThenBy(i => rankedIndices.IndexOf(i))
-        .ToList();
-        for (int i = 0; i < shortage; i++) baseYen[yenDistributionOrder[i]] += 1;
-        // 結果を「元の参加枠インデックス」へマッピングして保存
+            ? await OpenTieBreakerIfNeeded(activeScores, activePlayers)
+            : Enumerable.Range(0, pCount).ToDictionary(i => i, i => i);
+        if (priority == null) return; // ダイアログがキャンセルされた場合は中断
+        // 3. 計算サービスを呼び出して、クリーンに計算結果を取得
+        var calcResult = Calculator.Calculate(rules, activeScores, activeYaki, activeTobiBonus, priority);
+        // 4. 計算結果を元の全参加枠インデックスに正しくマッピング
         List<int?> finalRawScores = Enumerable.Repeat((int?)null, activeParticipantCount).ToList();
         List<double> finalPoints = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
         List<double> finalSinkPts = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
@@ -1264,15 +696,16 @@
         {
             int originalIdx = activeIndices[i];
             finalRawScores[originalIdx] = currentScores[originalIdx];
-            finalPoints[originalIdx] = points[i];
-            finalSinkPts[originalIdx] = currentSinkPts[i];
-            finalYakiPts[originalIdx] = yakiPts[i];
-            finalTobiPts[originalIdx] = tobiPts[i];
-            finalColdPts[originalIdx] = currentColdPts[i];
-            finalYen[originalIdx] = baseYen[i];
-            finalTobiPlayers[originalIdx] = rules.TobiJustIsTobi ? activeScores[i] <= rules.TobiPoint : activeScores[i] < rules.TobiPoint;
+            finalPoints[originalIdx] = calcResult.Points[i];
+            finalSinkPts[originalIdx] = calcResult.SinkPoints[i];
+            finalYakiPts[originalIdx] = calcResult.YakiPoints[i];
+            finalTobiPts[originalIdx] = calcResult.TobiPoints[i];
+            finalColdPts[originalIdx] = calcResult.ColdPoints[i];
+            finalYen[originalIdx] = calcResult.Yen[i];
+            finalTobiPlayers[originalIdx] = calcResult.TobiPlayers[i];
         }
-        ActiveHistory.Add(new GameResult
+        // 5. データの構築と保存
+        var newGameResult = new GameResult
         {
             Timestamp = DateTime.Now,
             PlayerNames = currentPlayers.Take(activeParticipantCount).Select(p => p.Name).ToList(),
@@ -1286,14 +719,11 @@
             TobiPoints = finalTobiPts,
             ColdPoints = finalColdPts,
             Yen = finalYen
-        });
-        // ローカルストレージに保存
-        await LocalStorage.SetItemAsync("ActiveHistory", ActiveHistory);
-        await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
+        };
+        await SessionState.AddGameResultAsync(newGameResult);
         ResetInputForms();
         armedDeleteIndex = null;
-        await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
-        await LocalStorage.RemoveItemAsync("backup_score_buffers");
+        await SessionState.ClearScoreBuffersAsync();
     }
 
     @* 全スコアリセット *@
@@ -1305,10 +735,7 @@
             yesText: "リセットする", cancelText: "キャンセル");
         if (result == true)
         {
-            ActiveHistory.Clear();
-            ActiveSessionChips.Clear();
-            await LocalStorage.SetItemAsync("ActiveHistory", ActiveHistory);
-            await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
+            await SessionState.ClearSessionAsync();
             Snackbar.Add("記録をリセットしました", Severity.Info);
             StateHasChanged();
         }
@@ -1319,9 +746,8 @@
     {
         if (armedDeleteTarget == item)
         {
-            ActiveHistory.Remove(item);
+            await SessionState.RemoveGameResultAsync(item);
             armedDeleteTarget = null;
-            await LocalStorage.SetItemAsync("ActiveHistory", ActiveHistory);
         }
         else
         {
@@ -1345,24 +771,19 @@
         if (ActiveHistory.Count == 0) return;
         var lastGame = ActiveHistory.Last();
         int requiredCount = lastGame.RawScores.Count;
-        while (activeParticipantCount < requiredCount && activeParticipantCount < MaxParticipants)
-        {
-            activeParticipantCount++;
-            await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
-        }
+        if (activeParticipantCount < requiredCount && activeParticipantCount < MaxParticipants)
+            await SessionState.SaveActiveParticipantCountAsync(Math.Min(requiredCount, MaxParticipants));
         for (int i = 0; i < activeParticipantCount; i++)
-        {
             if (i < lastGame.RawScores.Count)
             {
                 scoreInputBuffers[i] = lastGame.RawScores[i]?.ToString() ?? string.Empty;
                 if (lastGame.YakiPlayers != null && i < lastGame.YakiPlayers.Count) currentYaki[i] = lastGame.YakiPlayers[i];
                 if (lastGame.TobiBonusRecipients != null && i < lastGame.TobiBonusRecipients.Count) currentTobiBonus[i] = lastGame.TobiBonusRecipients[i];
             }
-        }
         autoFilledIndex = null;
         EvaluateAutoFill();
         StateHasChanged();
-        await LocalStorage.SetItemAsync("backup_score_buffers", scoreInputBuffers);
+        await SessionState.SaveScoreBuffersAsync(scoreInputBuffers);
     }
 
     // 表に表示する対局者リストを動的に構築するプロパティ
@@ -1452,31 +873,6 @@
         return priority;
     }
 
-    @* ポイントの端数調整 *@
-    private void AdjustFractions(double[] points, List<int> orderedIndices)
-    {
-        double diff = Math.Round(0 - points.Sum(), 1);
-        if (Math.Abs(diff) < 0.05) return;
-        int steps = (int)Math.Round(Math.Abs(diff) * 10);
-        double adjustment = diff > 0 ? 0.1 : -0.1;
-        var targetIndices = diff > 0 ? orderedIndices : Enumerable.Reverse(orderedIndices).ToList();
-        for (int i = 0; i < steps; i++)
-        {
-            int targetIndex = targetIndices[i % targetIndices.Count];
-            points[targetIndex] = Math.Round(points[targetIndex] + adjustment, 1);
-        }
-    }
-
-    @* 設定に応じた端数丸め *@
-    private double ApplyRounding(double value, RoundingRule rule) => rule switch
-    {
-        RoundingRule.ShishaGonyu => Math.Round(value, 1, MidpointRounding.AwayFromZero),
-        RoundingRule.RoundDown => Math.Floor(value * 10) / 10.0,
-        RoundingRule.RoundUp => Math.Ceiling(value * 10) / 10.0,
-        RoundingRule.GoshaRokunyu => Math.Floor((value * 10) + 0.4) / 10.0,
-        _ => value
-    };
-
     @* コンポーネントからのチップ変更イベントを受け取るヘルパー *@
     private async Task HandleChipChangedCallback((int Index, int Value) args)
     {
@@ -1489,92 +885,6 @@
                 await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
             }
         }
-    }
-
-    @* シェア画像専用ヘルパーメソッド *@
-    private string BuildShareStyle(double val, IEnumerable<double> allVals, string width)
-    {
-        string style = $"display: inline-block; width: {width}; text-align: right; font-variant-numeric: tabular-nums; ";
-        style += val >= 0 ? "color: #ff6b6b; " : "color: #4dabf7; ";
-        var dist = allVals.Distinct().ToList();
-        if (dist.Count > 1 && (val == dist.Max() || val == dist.Min())) style += "font-weight: bold; ";
-        return style;
-    }
-
-    private string GetSharePointValue(GameResult res, string name)
-    {
-        int idx = res.PlayerNames.IndexOf(name);
-        if (idx == -1 || idx >= res.RawScores.Count || res.RawScores[idx] == null) return "-";
-        return FormatPlus(res.Points[idx]);
-    }
-
-    private string GetSharePointStyle(GameResult res, string name)
-    {
-        int idx = res.PlayerNames.IndexOf(name);
-        if (idx == -1 || idx >= res.RawScores.Count || res.RawScores[idx] == null)
-            return "display: inline-block; width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: #9e9e9e;";
-        double pt = (idx < res.Points.Count) ? res.Points[idx] : 0;
-        return BuildShareStyle(pt, res.Points, "4.5rem");
-    }
-
-    private string GetShareTotalPointValue(string name)
-    {
-        if (ActiveHistory.Count == 0) return "0.0";
-        double sum = 0;
-        foreach (var h in ActiveHistory)
-        {
-            int idx = h.PlayerNames.IndexOf(name);
-            if (idx != -1 && h.Points.Count > idx) sum += h.Points[idx];
-        }
-        return FormatPlus(sum);
-    }
-
-    private string GetShareTotalPointStyle(string name)
-    {
-        if (ActiveHistory.Count == 0) return "display: inline-block; width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
-        var tablePlayers = TablePlayers;
-        var allTotalPts = tablePlayers.Select(p =>
-            ActiveHistory.Sum(h =>
-            {
-                int idx = h.PlayerNames.IndexOf(p);
-                return (idx != -1 && h.Points.Count > idx) ? h.Points[idx] : 0;
-            })
-        ).ToList();
-        int pIdx = tablePlayers.IndexOf(name);
-        if (pIdx == -1) return "display: inline-block; width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
-        return BuildShareStyle(allTotalPts[pIdx], allTotalPts, "4.5rem");
-    }
-
-    private string GetShareTotalYenValue(string name, int tableIdx)
-    {
-        int chips = ActiveSessionChips.TryGetValue(name, out var c) ? c : 0;
-        if (ActiveHistory.Count == 0 && chips == 0) return "0円";
-        double totalYen = 0;
-        foreach (var h in ActiveHistory)
-        {
-            int idx = h.PlayerNames.IndexOf(name);
-            if (idx != -1 && h.Yen.Count > idx) totalYen += h.Yen[idx];
-        }
-        totalYen += (chips * rules.ChipRate);
-        return $"{FormatPlus(totalYen, "N0")}円";
-    }
-
-    private string GetShareTotalYenStyle(string name, int tableIdx)
-    {
-        int chips = ActiveSessionChips.TryGetValue(name, out var c) ? c : 0;
-        if (ActiveHistory.Count == 0 && chips == 0) return "display: inline-block; width: 6.0rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
-        var tablePlayers = TablePlayers;
-        var allTotalYen = tablePlayers.Select((p, tIdx) => {
-            double yen = ActiveHistory.Sum(h => {
-                int idx = h.PlayerNames.IndexOf(p);
-                return (idx != -1 && h.Yen.Count > idx) ? h.Yen[idx] : 0;
-            });
-            int chipCount = ActiveSessionChips.TryGetValue(p, out var v) ? v : 0;
-            return yen + (chipCount * rules.ChipRate);
-        }).ToList();
-        int pIdx = tablePlayers.IndexOf(name);
-        if (pIdx == -1) return "display: inline-block; width: 6.0rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
-        return BuildShareStyle(allTotalYen[pIdx], allTotalYen, "6.0rem");
     }
 
     @* 結果共有用のURLを生成してクリップボードにコピー *@
@@ -1630,10 +940,8 @@
         if (activeParticipantCount < MaxParticipants)
         {
             int newIndex = activeParticipantCount;
-            if (autoFilledIndex.HasValue)
-                currentSitOuts[newIndex] = true;
-            activeParticipantCount++;
-            await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
+            if (autoFilledIndex.HasValue) currentSitOuts[newIndex] = true;
+            await SessionState.SaveActiveParticipantCountAsync(activeParticipantCount + 1);
             EvaluateAutoFill();
         }
     }
@@ -1643,15 +951,13 @@
     {
         if (activeParticipantCount > rules.PlayerCount)
         {
-            activeParticipantCount--;
-            scoreInputBuffers[activeParticipantCount] = string.Empty;
-            currentSitOuts[activeParticipantCount] = false;
-            currentYaki[activeParticipantCount] = false;
-            currentTobiBonus[activeParticipantCount] = false;
-            if (activeParticipantCount == rules.PlayerCount)
-            {
-                for (int i = 0; i < activeParticipantCount; i++)
-                {
+            int targetIndex = activeParticipantCount - 1;
+            scoreInputBuffers[targetIndex] = string.Empty;
+            currentSitOuts[targetIndex] = false;
+            currentYaki[targetIndex] = false;
+            currentTobiBonus[targetIndex] = false;
+            if (targetIndex == rules.PlayerCount)
+                for (int i = 0; i < targetIndex; i++)
                     if (currentSitOuts[i])
                     {
                         currentSitOuts[i] = false;
@@ -1662,9 +968,9 @@
                             previousScores[i] = null;
                         }
                     }
-                }
-            }
-            await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
+            // スコアバッファの変更を確定させ、カウントを減らして保存
+            await SessionState.SaveScoreBuffersAsync(scoreInputBuffers);
+            await SessionState.SaveActiveParticipantCountAsync(activeParticipantCount - 1);
             EvaluateAutoFill();
         }
     }
@@ -1747,7 +1053,7 @@
         isFinalizing = true;
         try
         {
-            int chipSum = ActiveSessionChips.Values.Sum();            
+            int chipSum = ActiveSessionChips.Values.Sum();
             bool isChipError = chipSum != 0;
             string msg = "対局結果とチップ枚数を通算成績に記録して<br />現在の入力フォームをリセットしますか？";
             if (isChipError) msg += "<br /><span style='color: #ff6b6b; font-weight: bold;'>⚠️チップの合計枚数が" + (chipSum > 0 ? "+" : "") + chipSum + "枚です。</span>";
@@ -1782,25 +1088,25 @@
                 if (existingPlayer != null) { nameToIdMap[name] = existingPlayer.Id; playersToUpdate.Add(new PlayerProfile { Id = existingPlayer.Id, Name = existingPlayer.Name, CumulativeChips = existingPlayer.CumulativeChips, CreatedAt = existingPlayer.CreatedAt }); }
                 else { var newId = Guid.NewGuid().ToString(); var newProfile = new PlayerProfile { Id = newId, Name = name, CumulativeChips = 0, CreatedAt = currentTimestamp }; playerMaster.Add(newProfile); playersToUpdate.Add(newProfile); nameToIdMap[name] = newId; }
             }
-            foreach (var game in ActiveHistory) 
-            { 
-                var savedRecord = new SavedGameRecord 
-                { 
-                    Id = Guid.NewGuid().ToString(), 
-                    SessionId = newSessionId, 
-                    RuleName = rules.Name, 
-                    PlayerCount = rules.PlayerCount, 
-                    Timestamp = game.Timestamp, 
-                    PlayerIds = game.PlayerNames.Select(name => !string.IsNullOrWhiteSpace(name) && nameToIdMap.ContainsKey(name) ? nameToIdMap[name] : null).ToList(), 
-                    RawScores = game.RawScores, 
-                    Points = game.Points, 
+            foreach (var game in ActiveHistory)
+            {
+                var savedRecord = new SavedGameRecord
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    SessionId = newSessionId,
+                    RuleName = rules.Name,
+                    PlayerCount = rules.PlayerCount,
+                    Timestamp = game.Timestamp,
+                    PlayerIds = game.PlayerNames.Select(name => !string.IsNullOrWhiteSpace(name) && nameToIdMap.ContainsKey(name) ? nameToIdMap[name] : null).ToList(),
+                    RawScores = game.RawScores,
+                    Points = game.Points,
                     Yen = game.Yen,
                     SinkPoints = game.SinkPoints != null ? new List<double>(game.SinkPoints) : new(),
                     YakiPoints = game.YakiPoints != null ? new List<double>(game.YakiPoints) : new(),
                     TobiPoints = game.TobiPoints != null ? new List<double>(game.TobiPoints) : new(),
                     ColdPoints = game.ColdPoints != null ? new List<double>(game.ColdPoints) : new()
                 };
-                gameRecordsToSave.Add(savedRecord); 
+                gameRecordsToSave.Add(savedRecord);
             }
             var sessionRecord = new SavedSessionRecord { SessionId = newSessionId, Date = currentTimestamp, Rate = rules.Rate, ChipRate = rules.ChipRate, ParticipantPlayerIds = new List<string>(), SettledChips = new List<int>() };
             for (int i = 0; i < TablePlayers.Count; i++)
@@ -1857,19 +1163,13 @@
     // テンキーのボタンが押された時のコアロジック
     private async Task OnKeypadPress(string key)
     {
-       if (!activeScoreInputIndex.HasValue) return;
-
+        if (!activeScoreInputIndex.HasValue) return;
         int idx = activeScoreInputIndex.Value;
-        if (key == "閉じる")
-        {
-            await CloseKeypad();
-            return;
-        }
+        if (key == "閉じる") { await CloseKeypad(); return; }
         if (key == "記録")
         {
             await CloseKeypad();
             await CalculateAndRecordGame();
-            await LocalStorage.RemoveItemAsync("backup_score_buffers");
             return;
         }
         if (key == "C")
@@ -1877,7 +1177,7 @@
             scoreInputBuffers[idx] = string.Empty;
             if (idx == autoFilledIndex) autoFilledIndex = null;
             EvaluateAutoFill();
-            await LocalStorage.SetItemAsync("backup_score_buffers", scoreInputBuffers);
+            await SessionState.SaveScoreBuffersAsync(scoreInputBuffers);
             return;
         }
         if (idx == autoFilledIndex)
@@ -1892,7 +1192,6 @@
         }
         else
         {
-            // 演算子（＋、ー）の入力時、末尾がすでに演算子の場合は上書きする
             if (key == "+" || key == "-")
                 if (scoreInputBuffers[idx].EndsWith("+") || scoreInputBuffers[idx].EndsWith("-"))
                     scoreInputBuffers[idx] = scoreInputBuffers[idx].Substring(0, scoreInputBuffers[idx].Length - 1);
@@ -1900,7 +1199,7 @@
             scoreInputBuffers[idx] = System.Text.RegularExpressions.Regex.Replace(scoreInputBuffers[idx], @"(^|[-+])0+(?=[0-9])", "$1");
         }
         EvaluateAutoFill();
-        await LocalStorage.SetItemAsync("backup_score_buffers", scoreInputBuffers);
+        await SessionState.SaveScoreBuffersAsync(scoreInputBuffers);
     }
 
     // 指定したインデックスの入力内容を計算・確定するヘルパーメソッド
@@ -1915,7 +1214,7 @@
         {
             scoreInputBuffers[idx] = string.Empty;
         }
-       EvaluateAutoFill();
-        await LocalStorage.SetItemAsync("backup_score_buffers", scoreInputBuffers);
+        EvaluateAutoFill();
+        await SessionState.SaveScoreBuffersAsync(scoreInputBuffers);
     }
 }

@@ -82,21 +82,44 @@
             : "現在のアプリ内のデータはすべて消去され、選択したファイルの内容で上書きされます。\n本当によろしいですか？";
         bool? result = await DialogService.ShowMessageBoxAsync(
             title, message, yesText: "はい、実行します", cancelText: "キャンセル");
+            
         if (result != true) return;
-
         try
         {
             using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
             using var reader = new System.IO.StreamReader(stream);
             var json = await reader.ReadToEndAsync();
+            // DBへ流し込む前に、C#側でJSONスキーマの妥当性を事前検証する
+            try
+            {
+                var options = new System.Text.Json.JsonSerializerOptions 
+                { 
+                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase 
+                };
+                // AllDbData型にパースできるかテスト
+                var testParse = System.Text.Json.JsonSerializer.Deserialize<MahjongApp.Services.AllDbData>(json, options);
+                
+                if (testParse == null || (testParse.Players == null && testParse.Games == null))
+                {
+                    Snackbar.Add("ファイル形式が正しくありません。麻雀集計ツールのバックアップデータを選択してください。", Severity.Error);
+                    return;
+                }
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                // JSONとしてそもそも解析不能なファイル（テキストファイルや画像など）が来た場合
+                Snackbar.Add("ファイルの解析に失敗しました。無効なファイルです。", Severity.Error);
+                return;
+            }
+            // 検証を通過した場合のみインポートを実行
             await DatabaseService.ImportDataAsync(json, isMerge);
-            _ = StatsCache.InitializeAsync(forceReload: true);
+            _ = StatsCache.InitializeAsync(forceReload: true); // キャッシュの再構築
             string successMsg = isMerge ? "データを統合しました！" : "データを復元しました！";
             Snackbar.Add(successMsg, Severity.Success);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            Snackbar.Add("ファイルの読み込みに失敗しました", Severity.Error);
+            Snackbar.Add($"ファイルの読み込み処理中にエラーが発生しました:\n{ex.Message}", Severity.Error);
         }
     }
 

@@ -86,176 +86,24 @@
             </MudButton>
         </div>
     </div>
-    @* 選択された人数に応じてコンテンツを切り替え *@
     @if (_selectedPlayerCount == 4)
     {
-        @RenderTabContent("四麻", stats4, matchupStats4, 4, _rank4Layout, _matchupLayout4)
+        <DashboardTabContent Title="四麻" PlayerCount="4" Stats="stats4" MatchupList="matchupStats4"
+                             RankLayout="_rank4Layout" MatchupLayout="_matchupLayout4"
+                             SelectedHeroId="@selectedHeroId" AvailablePlayers="availablePlayers"
+                             OnHeroSelected="OnHeroSelected" />
     }
     else
     {
-        @RenderTabContent("三麻", stats3, matchupStats3, 3, _rank3Layout, _matchupLayout3)
+        <DashboardTabContent Title="三麻" PlayerCount="3" Stats="stats3" MatchupList="matchupStats3"
+                             RankLayout="_rank3Layout" MatchupLayout="_matchupLayout3"
+                             SelectedHeroId="@selectedHeroId" AvailablePlayers="availablePlayers"
+                             OnHeroSelected="OnHeroSelected" />
     }
 </MudContainer>
 
 @code {
     @inject MahjongApp.Services.StatsCacheService StatsCache
-
-    // --- ランキングテーブルを共通化するRenderFragment (HTML部分は変更なしのため省略せずに記載) ---
-    private RenderFragment RenderTabContent(string title, List<PlayerStats> stats, List<MatchupStat> matchupList, int playerCount, TableLayoutManager layout, TableLayoutManager matchupLayout) => __builder =>
-    {
-        <text>
-            @if (stats == null || stats.Count == 0)
-            {
-                <MudText Typo="Typo.body1" Align="Align.Center" Class="py-10">@(playerCount == 4 ? "四麻" : "三麻")のデータはまだありません。</MudText>
-            }
-            else
-            {
-                var top = stats.First();
-                @* --- トッププレイヤーメトリクス --- *@
-                <MudGrid Spacing="3" Class="mb-4">
-                    <MudItem xs="12" sm="6">
-                        <MudPaper Class="pa-3 d-flex flex-column align-center justify-center" Outlined="true" Style="height: 100%; width: 100%;">
-                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">@(playerCount == 4 ? "四麻" : "三麻")トップ (@top.Name)</MudText>
-                            <MudText Typo="Typo.h4" Style="@(top.TotalYen >= 0 ? "color: #ff6b6b; font-weight: bold;" : "color: #4dabf7; font-weight: bold;")">
-                                @(top.TotalYen > 0 ? "+" : "")@top.TotalYen.ToString("N0")<span style="font-size: 1rem;">円</span>
-                            </MudText>
-                            <div class="d-flex gap-3 mt-1" style="font-size: 0.75rem; color: var(--mud-palette-text-secondary);">
-                                <span>Pt: @(top.TotalGameYen > 0 ? "+" : "")@top.TotalGameYen.ToString("N0")円</span>
-                                <span>チップ: @(top.TotalChipYen > 0 ? "+" : "")@top.TotalChipYen.ToString("N0")円</span>
-                            </div>
-                        </MudPaper>
-                    </MudItem>
-                    <MudItem xs="12" sm="6">
-                        <MudPaper Class="pa-3 d-flex flex-column align-center justify-center" Outlined="true" Style="height: 100%; width: 100%;">
-                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">平均順位</MudText>
-                            <MudText Typo="Typo.h4" Style="font-weight: bold;">@top.AverageRank.ToString("F2")<span style="font-size: 1rem; color: var(--mud-palette-text-secondary);"> 位</span></MudText>
-                        </MudPaper>
-                    </MudItem>
-                </MudGrid>
-                @* --- ランキングテーブル --- *@
-                <MudPaper Class="pa-4 mt-2" Outlined="true">
-                    <MudText Typo="Typo.h6" Class="d-flex align-center gap-2 mb-4">
-                        <MudIcon Icon="@Icons.Material.Filled.Leaderboard" />
-                        @(title) ランキング
-                    </MudText>
-                    <MudTable T="PlayerStats" Items="@stats" Class="sticky-table-col ranking-table" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="background: transparent;">
-                        <HeaderContent>
-                            @for (int i = 0; i < RankHeaders.Length; i++)
-                            {
-                                var colIndex = i;
-                                var headerText = RankHeaders[colIndex];
-                                var colorStyle = (colIndex == 2 || colIndex == 3) ? "color:#4caf50;" : "";
-                                <MudTh Style="@(layout.GetTdStyle(colIndex))">
-                                    <MudText Typo="Typo.caption" Align="Align.Center" Style="@($"font-weight: bold; white-space: nowrap; {colorStyle}")">
-                                        @headerText
-                                    </MudText>
-                                </MudTh>
-                            }
-                        </HeaderContent>
-                        <RowTemplate Context="stat">
-                            <MudTd Style="@(layout.GetTdStyle(0))"><span style="font-weight: bold;">@GetShortName(stat.Name)</span></MudTd>
-                            <MudTd Style="@(layout.GetTdStyle(1))">
-                                <div style="@(layout.GetDataStyle(1))">@stat.TotalGames 局</div>
-                            </MudTd>
-                            <MudTd Style="@(layout.GetTdStyle(2, "background-color: rgba(76, 175, 80, 0.05);"))">
-                                <div style="@(layout.GetDataStyle(2, stat.TotalPoint >= 0 ? "color:#ff6b6b; font-weight:bold;" : "color:#4dabf7; font-weight:bold;"))">
-                                    @(stat.TotalPoint > 0 ? "+" : "")@stat.TotalPoint.ToString("F1")
-                                </div>
-                            </MudTd>
-                            <MudTd Style="@(layout.GetTdStyle(3, "background-color: rgba(76, 175, 80, 0.05);"))">
-                                <div style="@(layout.GetDataStyle(3, stat.TotalYen >= 0 ? "color:#ff6b6b; font-weight:bold;" : "color:#4dabf7; font-weight:bold;"))">
-                                    @(stat.TotalYen > 0 ? "+" : "")@stat.TotalYen.ToString("N0")円
-                                </div>
-                            </MudTd>
-                            <MudTd Style="@(layout.GetTdStyle(4))">
-                                <div style="@(layout.GetDataStyle(4, "color:#aaa; font-size:0.85rem;"))">@(stat.TotalGameYen > 0 ? "+" : "")@stat.TotalGameYen.ToString("N0")円</div>
-                            </MudTd>
-                            <MudTd Style="@(layout.GetTdStyle(5))">
-                                <div style="@(layout.GetDataStyle(5, "color:#aaa; font-size:0.85rem;"))">@(stat.TotalChipYen > 0 ? "+" : "")@stat.TotalChipYen.ToString("N0")円</div>
-                            </MudTd>
-                            <MudTd Style="@(layout.GetTdStyle(6))">
-                                <div style="@(layout.GetDataStyle(6))">@stat.AverageRank.ToString("F2")</div>
-                            </MudTd>
-                            <MudTd Style="@(layout.GetTdStyle(7))">
-                                <div style="@(layout.GetDataStyle(7))">@stat.FirstPlaceRate.ToString("F1")%</div>
-                            </MudTd>
-                            <MudTd Style="@(layout.GetTdStyle(8))">
-                                <div style="@(layout.GetDataStyle(8))">@stat.AvoidLastPlaceRate(playerCount).ToString("F1")%</div>
-                            </MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                </MudPaper>
-                @* --- 相性分析エリア --- *@
-                <MudPaper Class="pa-4 mt-6" Outlined="true">
-                    <MudText Typo="Typo.h6" Class="d-flex align-center gap-2 mb-4">
-                        <MudIcon Icon="@Icons.Material.Filled.Handshake" />
-                        @(title) 相性分析
-                    </MudText>
-                    <div class="mb-4" style="max-width: 150px;">
-                        <MudSelect T="string" Label="分析対象者" Value="@selectedHeroId" ValueChanged="OnHeroSelected" Class="align-center-select">
-                            @foreach (var player in availablePlayers)
-                            {
-                                <MudSelectItem Value="@player.Id">@player.Name</MudSelectItem>
-                            }
-                        </MudSelect>
-                    </div>
-                    @if (!stats.Any(s => s.Id == selectedHeroId))
-                    {
-                        <MudText Color="Color.Secondary" Class="mt-2 pa-4" Style="background-color: rgba(255,255,255,0.01); border-radius: 4px; text-align: center;">
-                            対象者の対局履歴がありません。
-                        </MudText>
-                    }
-                    else if (matchupList.Count > 0)
-                    {
-                        <MudTable T="MatchupStat" Items="@matchupList" Class="sticky-table-col matchup-table" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="background: transparent;">
-                            <HeaderContent>
-                                @for (int i = 0; i < MatchupHeaders.Length; i++)
-                                {
-                                    var colIndex = i;
-                                    var headerText = MatchupHeaders[colIndex];
-                                    var colorStyle = (colIndex == 2 || colIndex == 3) ? "color:#4caf50;" : "";
-                                    <MudTh Style="@(matchupLayout.GetTdStyle(colIndex))">
-                                        <MudText Typo="Typo.caption" Align="Align.Center" Style="@($"font-weight: bold; white-space: nowrap; {colorStyle}")">
-                                            @headerText
-                                        </MudText>
-                                    </MudTh>
-                                }
-                            </HeaderContent>
-                            <RowTemplate Context="mStat">
-                                <MudTd Style="@(matchupLayout.GetTdStyle(0))"><span style="font-weight: bold;">@GetShortName(mStat.OpponentName)</span></MudTd>
-                                <MudTd Style="@(matchupLayout.GetTdStyle(1))">
-                                    <div style="@(matchupLayout.GetDataStyle(1))">@mStat.GamesTogether 局</div>
-                                </MudTd>
-                                <MudTd Style="@(matchupLayout.GetTdStyle(2, mStat.HeroNetPoint >= 0 ? "background-color: rgba(76, 175, 80, 0.05);" : "background-color: rgba(244, 67, 54, 0.05);"))">
-                                    <div style="@(matchupLayout.GetDataStyle(2, mStat.HeroNetPoint >= 0 ? "color:#ff6b6b; font-weight:bold;" : "color:#4dabf7; font-weight:bold;"))">
-                                        @(mStat.HeroNetPoint > 0 ? "+" : "")@mStat.HeroNetPoint.ToString("F1")
-                                    </div>
-                                </MudTd>
-                                <MudTd Style="@(matchupLayout.GetTdStyle(3, mStat.HeroNetYen >= 0 ? "background-color: rgba(76, 175, 80, 0.05);" : "background-color: rgba(244, 67, 54, 0.05);"))">
-                                    <div style="@(matchupLayout.GetDataStyle(3, mStat.HeroNetYen >= 0 ? "color:#ff6b6b; font-weight:bold;" : "color:#4dabf7; font-weight:bold;"))">
-                                        @(mStat.HeroNetYen > 0 ? "+" : "")@mStat.HeroNetYen.ToString("N0")円
-                                    </div>
-                                </MudTd>
-                                <MudTd Style="@(matchupLayout.GetTdStyle(4))">
-                                    <div style="@(matchupLayout.GetDataStyle(4))">@mStat.HeroWins 勝 - @mStat.HeroLosses 負</div>
-                                </MudTd>
-                                <MudTd Style="@(matchupLayout.GetTdStyle(5))">
-                                    <div style="@(matchupLayout.GetDataStyle(5))">@mStat.DirectWinRate.ToString("F1")%</div>
-                                </MudTd>
-                            </RowTemplate>
-                        </MudTable>
-                    }
-                    else
-                    {
-                        <MudText Color="Color.Secondary" Class="mt-2">同卓データがありません。</MudText>
-                    }
-                </MudPaper>
-            }
-        </text>
-    };
-
-    private static readonly string[] RankHeaders = { "名前", "対局数", "総合Pt", "総合収支", "(Pt収支)", "(チップ収支)", "平均順位", "トップ率", "ラス回避率" };
-    private static readonly string[] MatchupHeaders = { "相手", "同卓数", "Pt差", "収支差", "直接対決", "先着率" };
 
     private bool isLoading = true;
     private int _selectedPlayerCount = 4;
@@ -303,7 +151,6 @@
 
     private void CalculateMatchups()
     {
-        // 相性計算はキャッシュサービスに委譲
         matchupStats4 = string.IsNullOrEmpty(selectedHeroId) ? new() : StatsCache.CalculateMatchups(selectedHeroId, 4);
         matchupStats3 = string.IsNullOrEmpty(selectedHeroId) ? new() : StatsCache.CalculateMatchups(selectedHeroId, 3);
     }
@@ -315,7 +162,6 @@
         _rank3Layout = new TableLayoutManager(9);
         _matchupLayout4 = new TableLayoutManager(6);
         _matchupLayout3 = new TableLayoutManager(6);
-
         foreach (var stat in stats4)
         {
             _rank4Layout.UpdateDataWidth(0, GetShortName(stat.Name));
@@ -328,7 +174,6 @@
             _rank4Layout.UpdateDataWidth(7, stat.FirstPlaceRate.ToString("F1") + "%");
             _rank4Layout.UpdateDataWidth(8, stat.AvoidLastPlaceRate(4).ToString("F1") + "%");
         }
-
         foreach (var stat in stats3)
         {
             _rank3Layout.UpdateDataWidth(0, GetShortName(stat.Name));
@@ -341,7 +186,6 @@
             _rank3Layout.UpdateDataWidth(7, stat.FirstPlaceRate.ToString("F1") + "%");
             _rank3Layout.UpdateDataWidth(8, stat.AvoidLastPlaceRate(3).ToString("F1") + "%");
         }
-
         foreach (var stat in matchupStats4)
         {
             _matchupLayout4.UpdateDataWidth(0, GetShortName(stat.OpponentName));
@@ -351,7 +195,6 @@
             _matchupLayout4.UpdateDataWidth(4, stat.HeroWins + " 勝 - " + stat.HeroLosses + " 負");
             _matchupLayout4.UpdateDataWidth(5, stat.DirectWinRate.ToString("F1") + "%");
         }
-
         foreach (var stat in matchupStats3)
         {
             _matchupLayout3.UpdateDataWidth(0, GetShortName(stat.OpponentName));
@@ -361,17 +204,17 @@
             _matchupLayout3.UpdateDataWidth(4, stat.HeroWins + " 勝 - " + stat.HeroLosses + " 負");
             _matchupLayout3.UpdateDataWidth(5, stat.DirectWinRate.ToString("F1") + "%");
         }
-
-        for (int i = 0; i < RankHeaders.Length; i++)
+        var rankHeaders = DashboardTabContent.RankHeaders;
+        var matchupHeaders = DashboardTabContent.MatchupHeaders;
+        for (int i = 0; i < rankHeaders.Length; i++)
         {
-            _rank4Layout.UpdateHeaderWidth(i, RankHeaders[i]);
-            _rank3Layout.UpdateHeaderWidth(i, RankHeaders[i]);
+            _rank4Layout.UpdateHeaderWidth(i, rankHeaders[i]);
+            _rank3Layout.UpdateHeaderWidth(i, rankHeaders[i]);
         }
-
-        for (int i = 0; i < MatchupHeaders.Length; i++)
+        for (int i = 0; i < matchupHeaders.Length; i++)
         {
-            _matchupLayout4.UpdateHeaderWidth(i, MatchupHeaders[i]);
-            _matchupLayout3.UpdateHeaderWidth(i, MatchupHeaders[i]);
+            _matchupLayout4.UpdateHeaderWidth(i, matchupHeaders[i]);
+            _matchupLayout3.UpdateHeaderWidth(i, matchupHeaders[i]);
         }
     }
 

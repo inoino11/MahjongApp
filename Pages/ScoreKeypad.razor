@@ -1,0 +1,114 @@
+<style>
+    /* オリジナルテンキーの固定コンテナ */
+    .custom-keypad-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: #1a261a;
+        border-top: 2px solid #2e7d32;
+        z-index: 1000;
+        transform: translateY(100%);
+        transition: transform 0.2s ease-out;
+        padding: 8px 12px 24px 12px;
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.6);
+        box-sizing: border-box;
+    }
+
+    .custom-keypad-container.open {
+        transform: translateY(0);
+    }
+
+    .keypad-table {
+        width: 100%;
+        max-width: 480px;
+        margin: 0 auto;
+        border-collapse: separate;
+        border-spacing: 6px;
+        table-layout: fixed;
+    }
+
+    .keypad-btn {
+        width: 100%;
+        height: 48px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.06);
+        color: #e0e0e0;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+        white-space: nowrap;
+    }
+
+    .keypad-btn:active {
+        background-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .keypad-btn.op-key { background-color: #2e7d32; color: white; }
+    .keypad-btn.op-key:active { background-color: #1b5e20; }
+    .keypad-btn.action-key { background-color: #b71c1c; color: white; }
+    .keypad-btn.action-key:active { background-color: #7f0000; }
+
+    .keypad-btn.record-key {
+        background-color: #ff9800 !important;
+        color: white !important;
+        font-weight: bold;
+        animation: keypad-pulse-border 1.5s infinite;
+    }
+    .keypad-btn.record-key:active { background-color: #e65100 !important; }
+
+    @@keyframes keypad-pulse-border {
+        0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
+        70% { box-shadow: 0 0 0 6px rgba(255, 152, 0, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+    }
+</style>
+
+<div class="@($"custom-keypad-container {(IsOpen ? "open" : "")}")" @onclick:stopPropagation="true">
+    <table class="keypad-table">
+        <tr>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeyPress.InvokeAsync("1")'>1</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeyPress.InvokeAsync("2")'>2</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeyPress.InvokeAsync("3")'>3</button></td>
+            <td><button type="button" class="keypad-btn action-key" @onclick='() => OnKeyPress.InvokeAsync("⌫")'>⌫</button></td>
+        </tr>
+        <tr>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeyPress.InvokeAsync("4")'>4</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeyPress.InvokeAsync("5")'>5</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeyPress.InvokeAsync("6")'>6</button></td>
+            <td><button type="button" class="keypad-btn op-key" @onclick='() => OnKeyPress.InvokeAsync("+")'>＋</button></td>
+        </tr>
+        <tr>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeyPress.InvokeAsync("7")'>7</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeyPress.InvokeAsync("8")'>8</button></td>
+            <td><button type="button" class="keypad-btn" @onclick='() => OnKeyPress.InvokeAsync("9")'>9</button></td>
+            <td><button type="button" class="keypad-btn op-key" @onclick='() => OnKeyPress.InvokeAsync("-")'>ー</button></td>
+        </tr>
+        <tr>
+            <td><button type="button" class="keypad-btn action-key" @onclick='() => OnKeyPress.InvokeAsync("C")'>C</button></td>
+            <td colspan="2"><button type="button" class="keypad-btn" @onclick='() => OnKeyPress.InvokeAsync("0")'>0</button></td>
+            <td>
+                @if (IsTotalCorrect)
+                {
+                    <button type="button" class="keypad-btn record-key" @onclick='() => OnKeyPress.InvokeAsync("記録")'>記録</button>
+                }
+                else
+                {
+                    <button type="button" class="keypad-btn op-key" @onclick='() => OnKeyPress.InvokeAsync("閉じる")'>閉じる</button>
+                }
+            </td>
+        </tr>
+    </table>
+</div>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public bool IsTotalCorrect { get; set; }
+    [Parameter] public EventCallback<string> OnKeyPress { get; set; }
+}

@@ -191,7 +191,12 @@ public class PlayerStats
     public int[] RankCounts { get; set; } = new int[4];
     public double AverageRank => TotalGames == 0 ? 0 : RankCounts.Select((count, index) => count * (index + 1)).Sum() / (double)TotalGames;
     public double FirstPlaceRate => TotalGames == 0 ? 0 : (double)RankCounts[0] / TotalGames * 100;
-    public double AvoidLastPlaceRate(int playerCount) => TotalGames == 0 ? 0 : (1.0 - (double)RankCounts[playerCount - 1] / TotalGames) * 100;
+    public double AvoidLastPlaceRate(int playerCount)
+    {
+        if (TotalGames == 0) return 0;
+        int safeIndex = Math.Max(0, Math.Min(playerCount - 1, RankCounts.Length - 1));
+        return (1.0 - (double)RankCounts[safeIndex] / TotalGames) * 100;
+    }
 }
 
 public class MatchupStat
