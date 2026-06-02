@@ -160,6 +160,10 @@ public class SavedGameRecord
     public List<int?> RawScores { get; set; } = new();          // 素点リスト
     public List<double> Points { get; set; } = new();           // ポイントリスト
     public List<int> Yen { get; set; } = new();                 // 円リスト
+    public List<double> SinkPoints { get; set; } = new();       // 沈み
+    public List<double> YakiPoints { get; set; } = new();       // 焼き鳥
+    public List<double> TobiPoints { get; set; } = new();       // トビ
+    public List<double> ColdPoints { get; set; } = new();       // コールド
     public DateTime Timestamp { get; set; } = DateTime.Now;     // 登録日時
 }
 

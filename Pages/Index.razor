@@ -838,9 +838,17 @@
         var result = await dialog.Result;
         if (result is not null && !result.Canceled && result.Data is RuleSet preset)
         {
+            bool isPlayerCountChanged = rules.PlayerCount != preset.PlayerCount;
             rules = preset.DeepClone();
             await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
             Snackbar.Add($"「{preset.Name}」を読み込みました", Severity.Success);
+            if (isPlayerCountChanged)
+            {
+                activeParticipantCount = rules.PlayerCount;
+                await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
+                ResetInputForms();
+                await LocalStorage.RemoveItemAsync("backup_score_buffers");
+            }
             ValidateDisplayMode();
             StateHasChanged();
         }
@@ -913,8 +921,16 @@
         var result = await dialog.Result;
         if (result is not null && !result.Canceled && result.Data is RuleSet newRules)
         {
+            bool isPlayerCountChanged = rules.PlayerCount != newRules.PlayerCount;
             rules = newRules;
             await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
+            if (isPlayerCountChanged)
+            {
+                activeParticipantCount = rules.PlayerCount;
+                await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
+                ResetInputForms();
+                await LocalStorage.RemoveItemAsync("backup_score_buffers");
+            }
             ValidateDisplayMode();
             StateHasChanged();
         }
@@ -1601,6 +1617,7 @@
         // 人数変更時にもカスタムウマ側にデータを同期させる
         SyncNormalToCustomUma();
         ResetInputForms();
+        await LocalStorage.RemoveItemAsync("backup_score_buffers");
         await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
         await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
         ValidateDisplayMode();
@@ -1765,7 +1782,26 @@
                 if (existingPlayer != null) { nameToIdMap[name] = existingPlayer.Id; playersToUpdate.Add(new PlayerProfile { Id = existingPlayer.Id, Name = existingPlayer.Name, CumulativeChips = existingPlayer.CumulativeChips, CreatedAt = existingPlayer.CreatedAt }); }
                 else { var newId = Guid.NewGuid().ToString(); var newProfile = new PlayerProfile { Id = newId, Name = name, CumulativeChips = 0, CreatedAt = currentTimestamp }; playerMaster.Add(newProfile); playersToUpdate.Add(newProfile); nameToIdMap[name] = newId; }
             }
-            foreach (var game in ActiveHistory) { var savedRecord = new SavedGameRecord { Id = Guid.NewGuid().ToString(), SessionId = newSessionId, RuleName = rules.Name, PlayerCount = rules.PlayerCount, Timestamp = game.Timestamp, PlayerIds = game.PlayerNames.Select(name => !string.IsNullOrWhiteSpace(name) && nameToIdMap.ContainsKey(name) ? nameToIdMap[name] : null).ToList(), RawScores = game.RawScores, Points = game.Points, Yen = game.Yen }; gameRecordsToSave.Add(savedRecord); }
+            foreach (var game in ActiveHistory) 
+            { 
+                var savedRecord = new SavedGameRecord 
+                { 
+                    Id = Guid.NewGuid().ToString(), 
+                    SessionId = newSessionId, 
+                    RuleName = rules.Name, 
+                    PlayerCount = rules.PlayerCount, 
+                    Timestamp = game.Timestamp, 
+                    PlayerIds = game.PlayerNames.Select(name => !string.IsNullOrWhiteSpace(name) && nameToIdMap.ContainsKey(name) ? nameToIdMap[name] : null).ToList(), 
+                    RawScores = game.RawScores, 
+                    Points = game.Points, 
+                    Yen = game.Yen,
+                    SinkPoints = game.SinkPoints != null ? new List<double>(game.SinkPoints) : new(),
+                    YakiPoints = game.YakiPoints != null ? new List<double>(game.YakiPoints) : new(),
+                    TobiPoints = game.TobiPoints != null ? new List<double>(game.TobiPoints) : new(),
+                    ColdPoints = game.ColdPoints != null ? new List<double>(game.ColdPoints) : new()
+                };
+                gameRecordsToSave.Add(savedRecord); 
+            }
             var sessionRecord = new SavedSessionRecord { SessionId = newSessionId, Date = currentTimestamp, Rate = rules.Rate, ChipRate = rules.ChipRate, ParticipantPlayerIds = new List<string>(), SettledChips = new List<int>() };
             for (int i = 0; i < TablePlayers.Count; i++)
             {

@@ -44,13 +44,16 @@
 
     /* 最優先でスクロールバーを非表示にするため !important を追加 */
     .sync-chip-scroll {
-        -ms-overflow-style: none !important; /* IE, Edge用 */
-        scrollbar-width: none !important;    /* Firefox用 */
+        -ms-overflow-style: none !important;
+        /* IE, Edge用 */
+        scrollbar-width: none !important;
+        /* Firefox用 */
     }
 
     /* 最優先でスクロールバーを非表示にするため !important を追加 */
     .sync-chip-scroll::-webkit-scrollbar {
-        display: none !important; /* Chrome, Safari用 */
+        display: none !important;
+        /* Chrome, Safari用 */
     }
 
     /* 内側コンテナのスクロールを殺し、外側のJavaScript監視用divにスクロールを一任する */
@@ -66,8 +69,18 @@
     /* 実測・同期用の新設CSS */
     #result-container {
         width: 100%;
-        position: relative;
-        transition: min-height 0.2s ease;
+        display: grid;
+        grid-template-areas: "content";
+        align-items: start;
+    }
+
+    /* グラフと表の共通設定。フェードアニメーションを追加 */
+    #chart-wrapper,
+    #table-wrapper {
+        grid-area: content;
+        width: 100%;
+        transition: opacity 0.5s ease-in-out;
+        opacity: 1;
     }
 
     .hide-element {
@@ -75,6 +88,7 @@
         top: 0;
         left: 0;
         width: 100%;
+        opacity: 0 !important;
         visibility: hidden;
         pointer-events: none;
         z-index: -1;
@@ -103,11 +117,12 @@
         display: flex;
         flex-direction: column;
     }
-    
+
     @@media (min-width: 960px) {
         .chart-flex-container {
             flex-direction: row;
-            align-items: stretch; /* グラフと凡例の高さを揃える */
+            align-items: stretch;
+            /* グラフと凡例の高さを揃える */
         }
     }
 
@@ -131,7 +146,7 @@
                     @{
                         int minWidthPx = 300;
                         // 凡例の数から大まかな必要な高さを算出 (PC版の最低限の高さ確保用)
-                        int estimatedHeight = Math.Max(200, _finalStats.Count * 45); 
+                        int estimatedHeight = Math.Max(200, _finalStats.Count * 45);
                     }
                     <div class="responsive-chart-wrapper" style="min-width: max(100%, @(minWidthPx)px); height: 100%; min-height: @(estimatedHeight)px;">
                         <MudChart ChartType="ChartType.Line" ChartSeries="@_chartSeries" XAxisLabels="@_xAxisLabels" Width="100%" Height="100%" ChartOptions="@_chartOptions" />
@@ -490,16 +505,18 @@
     private string GetDisplayValue(GameResult res, int idx, int? overrideMode = null)
     {
         int mode = overrideMode ?? DisplayMode;
-        if (idx >= res.RawScores.Count || res.RawScores[idx] == null) return "-";
+        string playerName = Players.ElementAtOrDefault(idx) ?? "";
+        int originalIdx = res.PlayerNames?.IndexOf(playerName) ?? -1;
+        if (originalIdx == -1 || originalIdx >= res.RawScores.Count || res.RawScores[originalIdx] == null) return "-";
         return mode switch
         {
-            0 => (res.RawScores[idx] * 100)?.ToString("N0") ?? "-",
-            1 => FormatPlus(res.Points[idx]),
-            2 => $"{FormatPlus(res.Yen[idx], "N0")}円",
-            3 => FormatExtra(res.SinkPoints, idx, "📈", "📉"),
-            4 => FormatExtra(res.YakiPoints, idx, "🍴", "🍗"),
-            5 => FormatExtra(res.TobiPoints, idx, "🚀", "💥"),
-            6 => FormatExtra(res.ColdPoints, idx, "👑", "🏳️"),
+            0 => (res.RawScores[originalIdx] * 100)?.ToString("N0") ?? "-",
+            1 => FormatPlus(res.Points[originalIdx]),
+            2 => $"{FormatPlus(res.Yen[originalIdx], "N0")}円",
+            3 => FormatExtra(res.SinkPoints, originalIdx, "📈", "📉"),
+            4 => FormatExtra(res.YakiPoints, originalIdx, "🍴", "🍗"),
+            5 => FormatExtra(res.TobiPoints, originalIdx, "🚀", "💥"),
+            6 => FormatExtra(res.ColdPoints, originalIdx, "👑", "🏳️"),
             _ => ""
         };
         string FormatExtra(List<double>? list, int i, string posIcon, string negIcon)
@@ -517,8 +534,11 @@
         double modeWidth = (DisplayMode >= 0 && DisplayMode <= 6 && idx < _modeWidths.GetLength(1)) ? _modeWidths[DisplayMode, idx] : 2.0;
         string boxWidth = $"{modeWidth}ch";
         string baseStyle = $"display:inline-block; width:{boxWidth}; text-align:right; font-variant-numeric:tabular-nums; font-size:0.8rem; letter-spacing:-0.5px; ";
-        // 1. 過去の三麻データ等でその列のデータ自体がない場合、または明示的な抜け番(null)の場合
-        if (idx >= res.RawScores.Count || res.RawScores[idx] == null)
+        // ヘッダーからプレイヤー名を取得し、その局(res)でのインデックスを探す
+        string playerName = Players.ElementAtOrDefault(idx) ?? "";
+        int originalIdx = res.PlayerNames?.IndexOf(playerName) ?? -1;
+        // 1. 該当プレイヤーがいない場合、または明示的な抜け番(null)の場合
+        if (originalIdx == -1 || originalIdx >= res.RawScores.Count || res.RawScores[originalIdx] == null)
             return baseStyle + "color: #9e9e9e; font-weight: normal; text-align: center;";
         var valList = DisplayMode switch
         {
@@ -532,14 +552,14 @@
             _ => new List<double>()
         };
         // 万が一データリストが短かった場合（フォールバック）
-        if (valList == null || idx >= valList.Count)
+        if (valList == null || originalIdx >= valList.Count)
             return baseStyle + "color: #9e9e9e; font-weight: normal; text-align: center;";
-        double val = valList[idx];
+        double val = valList[originalIdx];
         // 2. 特殊ルール(沈み・焼き鳥など)で変動が0の場合（ハイフン表示になるためCenterに揃える）
         if (DisplayMode >= 3 && val == 0)
             return baseStyle + "color: #9e9e9e; font-weight: normal; text-align: center;";
         // 通常の数値表示
-        bool isPositive = (DisplayMode == 0) ? res.Points[idx] >= 0 : val >= 0;
+        bool isPositive = (DisplayMode == 0) ? res.Points[originalIdx] >= 0 : val >= 0;
         string style = baseStyle + $"color:{(isPositive ? "#ff0000" : "#1976d2")}; ";
         if (valList.Distinct().Count() > 1 && (val == valList.Max() || val == valList.Min()))
             style += "font-weight:bold;";
@@ -551,17 +571,23 @@
         int mode = overrideMode ?? DisplayMode;
         int chip = SessionChips.Count > idx ? SessionChips[idx] : 0;
         if (History.Count == 0 && chip == 0) return 0;
+        string playerName = Players.ElementAtOrDefault(idx) ?? "";
+        double? GetVal<T>(System.Collections.Generic.IList<T>? list, System.Collections.Generic.List<string>? names) =>
+            (names?.IndexOf(playerName) is int oIdx && oIdx != -1 && list != null && oIdx < list.Count && list[oIdx] is not null)
+            ? Convert.ToDouble(list[oIdx]) : null;
         return mode switch
         {
-            0 => History.Any(h => h.RawScores.Count > idx && h.RawScores[idx].HasValue)
-                ? History.Where(h => h.RawScores.Count > idx && h.RawScores[idx].HasValue).Average(h => h.RawScores[idx]!.Value) * 100
-                : 0,
-            1 => History.Sum(h => h.Points.Count > idx ? h.Points[idx] : 0),
-            2 => History.Sum(h => h.Yen.Count > idx ? h.Yen[idx] : 0) + (chip * Rules.ChipRate),
-            3 => History.Sum(h => h.SinkPoints?.Count > idx ? h.SinkPoints[idx] : 0),
-            4 => History.Sum(h => h.YakiPoints?.Count > idx ? h.YakiPoints[idx] : 0),
-            5 => History.Sum(h => h.TobiPoints?.Count > idx ? h.TobiPoints[idx] : 0),
-            6 => History.Sum(h => h.ColdPoints?.Count > idx ? h.ColdPoints[idx] : 0),
+            0 => History.Select(h => GetVal(h.RawScores, h.PlayerNames))
+                        .Where(v => v.HasValue)
+                        .Select(v => v!.Value)
+                        .ToList() is var raws && raws.Count > 0
+                        ? raws.Average() * 100 : 0,
+            1 => History.Sum(h => GetVal(h.Points, h.PlayerNames) ?? 0),
+            2 => History.Sum(h => GetVal(h.Yen, h.PlayerNames) ?? 0) + (chip * Rules.ChipRate),
+            3 => History.Sum(h => GetVal(h.SinkPoints, h.PlayerNames) ?? 0),
+            4 => History.Sum(h => GetVal(h.YakiPoints, h.PlayerNames) ?? 0),
+            5 => History.Sum(h => GetVal(h.TobiPoints, h.PlayerNames) ?? 0),
+            6 => History.Sum(h => GetVal(h.ColdPoints, h.PlayerNames) ?? 0),
             _ => 0
         };
     }
@@ -591,7 +617,7 @@
         double val = allValues[idx];
         if (DisplayMode >= 3 && val == 0) return style + "color: #9e9e9e; font-weight: normal; ";
         if (allValues.Distinct().Count() > 1 && (val == allValues.Max() || val == allValues.Min())) style += "font-weight: bold; ";
-        bool isPositive = DisplayMode == 0 ? History.Sum(h => h.Points.Count > idx ? h.Points[idx] : 0) >= 0 : val >= 0;
+        bool isPositive = DisplayMode == 0 ? GetTotalNumericValue(idx, 1) >= 0 : val >= 0;
         style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
         return style;
     }
