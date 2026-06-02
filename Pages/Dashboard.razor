@@ -5,8 +5,8 @@
 
 <style>
     .align-center-select .mud-input-slot {
-        padding-top: 13px !important;
-        padding-bottom: 5px !important;
+        text-align: center !important;
+        padding-left: 8px !important;
     }
 
     .sticky-table-col {
@@ -78,18 +78,10 @@
     </MudText>
     <div class="d-flex justify-center mb-6 px-4">
         <div class="d-flex" style="width: 100%; max-width: 400px; background-color: var(--mud-palette-background-grey); border-radius: 8px; padding: 4px;">
-            <MudButton Variant="@(_selectedPlayerCount == 4 ? Variant.Filled : Variant.Text)" 
-                       Color="@(_selectedPlayerCount == 4 ? Color.Primary : Color.Default)"
-                       DisableElevation="true"
-                       OnClick="() => _selectedPlayerCount = 4" 
-                       Style="@($"width: 50%; font-weight: bold; border-radius: 6px;")">
+            <MudButton Variant="@(_selectedPlayerCount == 4 ? Variant.Filled : Variant.Text)" Color="@(_selectedPlayerCount == 4 ? Color.Primary : Color.Default)" DisableElevation="true" OnClick="() => _selectedPlayerCount = 4" Style="@($"width: 50%; font-weight: bold; border-radius: 6px;")">
                 四人麻雀
             </MudButton>
-            <MudButton Variant="@(_selectedPlayerCount == 3 ? Variant.Filled : Variant.Text)" 
-                       Color="@(_selectedPlayerCount == 3 ? Color.Primary : Color.Default)"
-                       DisableElevation="true"
-                       OnClick="() => _selectedPlayerCount = 3" 
-                       Style="@($"width: 50%; font-weight: bold; border-radius: 6px;")">
+            <MudButton Variant="@(_selectedPlayerCount == 3 ? Variant.Filled : Variant.Text)" Color="@(_selectedPlayerCount == 3 ? Color.Primary : Color.Default)" DisableElevation="true" OnClick="() => _selectedPlayerCount = 3" Style="@($"width: 50%; font-weight: bold; border-radius: 6px;")">
                 三人麻雀
             </MudButton>
         </div>
