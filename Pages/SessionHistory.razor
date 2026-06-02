@@ -139,27 +139,50 @@
     {
         isLoading = true;
         StateHasChanged();
-
         var dbData = await DatabaseService.GetAllDataAsync();
         if (dbData != null)
         {
             allPlayers = dbData.Players;
             playerMap = dbData.Players.ToDictionary(p => p.Id, p => p.Name);
-
-            // 対局を日付の降順（新しい順）で並べ、紐づく対局データをグループ化
             sessionGroups = dbData.Sessions
                 .OrderByDescending(s => s.Date)
                 .Select(s => new SessionGroup
                 {
-                    Session = s,
+                    Session = AggregateSessionDuplicates(s),
                     Games = dbData.Games.Where(g => g.SessionId == s.SessionId).OrderBy(g => g.Timestamp).ToList(),
                     ShowDetails = false
                 })
                 .ToList();
         }
-
         isLoading = false;
         StateHasChanged();
+    }
+
+    // セッション内の重複した参加枠を1つにまとめる
+    private SavedSessionRecord AggregateSessionDuplicates(SavedSessionRecord session)
+    {
+        var distinctIds = new List<string>();
+        var distinctChips = new List<int>();
+        for (int i = 0; i < session.ParticipantPlayerIds.Count; i++)
+        {
+            var id = session.ParticipantPlayerIds[i];
+            var chip = session.SettledChips != null && session.SettledChips.Count > i ? session.SettledChips[i] : 0;
+            int existingIdx = id == null ? -1 : distinctIds.IndexOf(id);
+            if (existingIdx != -1)
+            {
+                // すでに枠が存在する場合はチップを合算する
+                distinctChips[existingIdx] += chip;
+            }
+            else
+            {
+                // 初めてのIDなら枠を追加する
+                distinctIds.Add(id ?? "");
+                distinctChips.Add(chip);
+            }
+        }
+        session.ParticipantPlayerIds = distinctIds;
+        session.SettledChips = distinctChips;
+        return session;
     }
 
     // ごみ箱ボタンのクリックハンドラー
@@ -218,20 +241,72 @@
     // データベース用の型(SavedGameRecord)を、UI表示用の型(GameResult)に変換する
     private List<GameResult> ConvertToGameResults(List<SavedGameRecord> savedGames)
     {
-        return savedGames.Select(g => new GameResult
+        var results = new List<GameResult>();
+        foreach (var g in savedGames)
         {
-            Timestamp = g.Timestamp,
-            PlayerNames = g.PlayerIds != null
-                ? g.PlayerIds.Select(id => string.IsNullOrEmpty(id) ? "" : GetPlayerName(id)).ToList()
-                : new List<string>(),
-            RawScores = g.RawScores != null ? new List<int?>(g.RawScores) : new(),
-            Points = g.Points != null ? new List<double>(g.Points) : new(),
-            Yen = g.Yen != null ? new List<int>(g.Yen) : new(),
-            SinkPoints = g.SinkPoints != null ? new List<double>(g.SinkPoints) : new(),
-            YakiPoints = g.YakiPoints != null ? new List<double>(g.YakiPoints) : new(),
-            TobiPoints = g.TobiPoints != null ? new List<double>(g.TobiPoints) : new(),
-            ColdPoints = g.ColdPoints != null ? new List<double>(g.ColdPoints) : new()
-        }).ToList();
+            var pNames = new List<string>();
+            var rScores = new List<int?>();
+            var pts = new List<double>();
+            var yen = new List<int>();
+            var sPts = new List<double>();
+            var yPts = new List<double>();
+            var tPts = new List<double>();
+            var cPts = new List<double>();
+            var playerIdsSource = g.PlayerIds ?? new List<string?>();
+            var rawSource = g.RawScores ?? new List<int?>();
+            var ptsSource = g.Points ?? new List<double>();
+            var yenSource = g.Yen ?? new List<int>();
+            var sPtsSource = g.SinkPoints ?? new List<double>();
+            var yPtsSource = g.YakiPoints ?? new List<double>();
+            var tPtsSource = g.TobiPoints ?? new List<double>();
+            var cPtsSource = g.ColdPoints ?? new List<double>();
+            for (int i = 0; i < playerIdsSource.Count; i++)
+            {
+                string id = playerIdsSource[i] ?? "";
+                string name = string.IsNullOrEmpty(id) ? "" : GetPlayerName(id);
+                int existingIdx = pNames.IndexOf(name);
+                int? currentRaw = rawSource.Count > i ? rawSource[i] : null;
+                if (existingIdx != -1 && !string.IsNullOrEmpty(name))
+                {
+                    // 重複枠の場合: 先に見つけた枠が「抜け番(null)」で、今回が「有効な点数」なら上書きする
+                    if (!rScores[existingIdx].HasValue && currentRaw.HasValue)
+                    {
+                        rScores[existingIdx] = currentRaw;
+                        if (ptsSource.Count > i) pts[existingIdx] = ptsSource[i];
+                        if (yenSource.Count > i) yen[existingIdx] = yenSource[i];
+                        if (sPtsSource.Count > i) sPts[existingIdx] = sPtsSource[i];
+                        if (yPtsSource.Count > i) yPts[existingIdx] = yPtsSource[i];
+                        if (tPtsSource.Count > i) tPts[existingIdx] = tPtsSource[i];
+                        if (cPtsSource.Count > i) cPts[existingIdx] = cPtsSource[i];
+                    }
+                }
+                else
+                {
+                    // 新規枠として追加する
+                    pNames.Add(name ?? "");
+                    rScores.Add(currentRaw);
+                    pts.Add(ptsSource.Count > i ? ptsSource[i] : 0);
+                    yen.Add(yenSource.Count > i ? yenSource[i] : 0);
+                    sPts.Add(sPtsSource.Count > i ? sPtsSource[i] : 0);
+                    yPts.Add(yPtsSource.Count > i ? yPtsSource[i] : 0);
+                    tPts.Add(tPtsSource.Count > i ? tPtsSource[i] : 0);
+                    cPts.Add(cPtsSource.Count > i ? cPtsSource[i] : 0);
+                }
+            }
+            results.Add(new GameResult
+            {
+                Timestamp = g.Timestamp,
+                PlayerNames = pNames,
+                RawScores = rScores,
+                Points = pts,
+                Yen = yen,
+                SinkPoints = sPts,
+                YakiPoints = yPts,
+                TobiPoints = tPts,
+                ColdPoints = cPts
+            });
+        }
+        return results;
     }
 
     // ResultTableのヘッダーに表示するための「名前のリスト」を生成する
