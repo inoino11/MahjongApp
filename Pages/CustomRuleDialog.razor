@@ -28,7 +28,7 @@
     </TitleContent>
     <DialogContent>
         <MudTabs DisableRipple="true" Class="compact-tabs" @bind-ActivePanelIndex="activeTabIndex" Centered="true" Elevation="1" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4" Style="min-height: 450px;">
-            
+
             @* ==========================================
                タブ1: ウマ・端数処理
                ========================================== *@
@@ -38,8 +38,7 @@
                         <div style="width: fit-content;">
                             <MudSwitch @bind-Value="EditingRules.IsCustomUma" Color="Color.Primary" Label="順位ウマの完全個別設定" />
                         </div>
-                        @if (EditingRules.IsCustomUma)
-                        {
+                        <MudCollapse Expanded="EditingRules.IsCustomUma">
                             <MudPaper Class="pa-3 mt-2" Outlined="true" Style="@(!IsUmaValid ? "border-color: red;" : "")">
                                 <MudGrid Spacing="1">
                                     @if (EditingRules.PlayerCount == 4)
@@ -77,9 +76,8 @@
                                     </MudText>
                                 }
                             </MudPaper>
-                        }
+                        </MudCollapse>
                     </MudItem>
-
                     <MudItem xs="12" sm="6" Class="mt-4">
                         <MudSelect T="TieBreakerRule" Label="同点の処理" @bind-Value="EditingRules.TieBreaker" Margin="Margin.Dense" Variant="Variant.Outlined">
                             <MudSelectItem Value="TieBreakerRule.Kamicha">上家取り</MudSelectItem>
@@ -111,12 +109,13 @@
                         <div style="width: fit-content;">
                             <MudSwitch @bind-Value="EditingRules.IsSinkEnabled" Color="Color.Primary" Label="沈みウマ" />
                         </div>
-                        @if (EditingRules.IsSinkEnabled)
-                        {
+                        <MudCollapse Expanded="EditingRules.IsSinkEnabled">
                             <MudPaper Class="pa-3 mt-2" Outlined="true">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">
-                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
-                                    基準点数に満たない対局者にペナルティを課します
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Class="mr-1 flex-shrink-0" Style="font-size: 14px; margin-top: 2px;" />
+                                    <span style="line-height: 1.4;">
+                                        基準点数に満たない対局者に<br />ペナルティを課します
+                                    </span>
                                 </MudText>
                                 <MudGrid Spacing="2" AlignItems="AlignItems.Center">
                                     <MudItem xs="12" sm="6">
@@ -148,17 +147,17 @@
                                     </MudItem>
                                 </MudGrid>
                             </MudPaper>
-                        }
+                        </MudCollapse>
                     </MudItem>
-
                     <MudItem xs="12" Class="mt-4">
                         <MudSwitch @bind-Value="EditingRules.IsYakiEnabled" Color="Color.Primary" Label="焼き鳥" />
-                        @if (EditingRules.IsYakiEnabled)
-                        {
+                        <MudCollapse Expanded="EditingRules.IsYakiEnabled">
                             <MudPaper Class="pa-3 mt-2" Outlined="true">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">
-                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
-                                    🍗にチェックが入った対局者にペナルティを課します
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Class="mr-1 flex-shrink-0" Style="font-size: 14px; margin-top: 2px;" />
+                                    <span style="line-height: 1.4;">
+                                        🍗にチェックが入った対局者に<br />ペナルティを課します
+                                    </span>
                                 </MudText>
                                 <MudGrid Spacing="2">
                                     <MudItem xs="12" sm="6">
@@ -172,7 +171,7 @@
                                     </MudItem>
                                 </MudGrid>
                             </MudPaper>
-                        }
+                        </MudCollapse>
                     </MudItem>
                 </MudGrid>
             </MudTabPanel>
@@ -186,12 +185,13 @@
                         <div style="width: fit-content;">
                             <MudSwitch @bind-Value="EditingRules.IsTobiEnabled" Color="Color.Primary" Label="トビ賞" />
                         </div>
-                        @if (EditingRules.IsTobiEnabled)
-                        {
+                        <MudCollapse Expanded="EditingRules.IsTobiEnabled">
                             <MudPaper Class="pa-3 mt-2" Outlined="true">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">
-                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
-                                    🚀にチェックが入った対局者にトビボーナスを分配します
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Class="mr-1 flex-shrink-0" Style="font-size: 14px; margin-top: 2px;" />
+                                    <span style="line-height: 1.4;">
+                                        🚀にチェックが入った対局者に<br />トビボーナスを分配します
+                                    </span>
                                 </MudText>
                                 <MudGrid Spacing="2">
                                     <MudItem xs="12" sm="4">
@@ -208,17 +208,17 @@
                                     </MudItem>
                                 </MudGrid>
                             </MudPaper>
-                        }
+                        </MudCollapse>
                     </MudItem>
-
                     <MudItem xs="12" Class="mt-4">
                         <MudSwitch @bind-Value="EditingRules.IsColdEnabled" Color="Color.Primary" Label="コールド賞" />
-                        @if (EditingRules.IsColdEnabled)
-                        {
+                        <MudCollapse Expanded="EditingRules.IsColdEnabled">
                             <MudPaper Class="pa-3 mt-2" Outlined="true">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">
-                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
-                                    コールド達成時にボーナスを他家全員から徴収します
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Class="mr-1 flex-shrink-0" Style="font-size: 14px; margin-top: 2px;" />
+                                    <span style="line-height: 1.4;">
+                                        コールド達成時にボーナスを<br />他家全員から徴収します
+                                    </span>
                                 </MudText>
                                 <MudGrid Spacing="2">
                                     <MudItem xs="12" sm="4">
@@ -235,11 +235,10 @@
                                     </MudItem>
                                 </MudGrid>
                             </MudPaper>
-                        }
+                        </MudCollapse>
                     </MudItem>
                 </MudGrid>
             </MudTabPanel>
-
         </MudTabs>
     </DialogContent>
     <DialogActions>
@@ -351,7 +350,7 @@
         EditingRules.CustomUma3_1 = EditingRules.Uma1 + EditingRules.Uma2;
         EditingRules.CustomUma3_2 = -EditingRules.Uma1;
         EditingRules.CustomUma3_3 = -EditingRules.Uma2;
-        
+
         Submit();
     }
 }
