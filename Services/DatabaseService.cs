@@ -62,7 +62,7 @@ public class DatabaseService
         await _jsRuntime.InvokeVoidAsync("mahjongDb.clearAllData");
     }
 
-    public async Task ExportDataAsync()
+    public async Task<string> ExportDataAsync()
     {
         var data = await GetAllDataAsync();
         var options = new System.Text.Json.JsonSerializerOptions
@@ -71,7 +71,7 @@ public class DatabaseService
         };
         var json = System.Text.Json.JsonSerializer.Serialize(data, options);
         var filename = $"MahjongBackup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
-        await _jsRuntime.InvokeVoidAsync("mahjongDb.downloadFile", filename, "application/json", json);
+        return await _jsRuntime.InvokeAsync<string>("shareOrDownloadFile", filename, "application/json", json);
     }
 
     public async Task ImportDataAsync(string json, bool isMerge = false)

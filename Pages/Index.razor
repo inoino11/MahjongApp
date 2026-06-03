@@ -120,7 +120,7 @@
                 <MudCardContent Class="pa-2 pa-sm-3 pt-1 mt-2">
                     <MudGrid Spacing="2">
                         <MudItem xs="6" sm="8">
-                            <MudTextField Label="ルール名" @bind-Value="rules.Name" Margin="Margin.Dense" onfocus="this.select();" Class="px-2" />
+                            <MudTextField Label="ルール名" @bind-Value="rules.Name" Margin="Margin.Dense" onfocus="this.select();" Class="px-2" @onfocusin="CloseKeypad" />
                         </MudItem>
                         <MudItem xs="6" sm="4">
                             <MudSelect T="int" Label="対局人数" Value="rules.PlayerCount" ValueChanged="OnPlayerCountChanged" Margin="Margin.Dense" Class="px-2">
@@ -129,16 +129,16 @@
                             </MudSelect>
                         </MudItem>
                         <MudItem xs="6" sm="4">
-                            <MudNumericField T="int" Label="持ち点" Value="rules.StartingPoints" ValueChanged="OnStartingPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" Class="px-2" />
+                            <MudNumericField T="int" Label="持ち点" Value="rules.StartingPoints" ValueChanged="OnStartingPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="CloseKeypad" />
                         </MudItem>
                         <MudItem xs="6" sm="4">
-                            <MudNumericField T="int" Label="返し点" Value="rules.ReturnPoints" ValueChanged="OnReturnPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" Class="px-2" />
+                            <MudNumericField T="int" Label="返し点" Value="rules.ReturnPoints" ValueChanged="OnReturnPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="CloseKeypad" />
                         </MudItem>
                         <MudItem xs="6" sm="4">
-                            <MudNumericField Label="レート(円/1k)" @bind-Value="rules.Rate" Step="10" Min="0" Margin="Margin.Dense" Class="px-2" />
+                            <MudNumericField Label="レート(円/1k)" @bind-Value="rules.Rate" Step="10" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="CloseKeypad" />
                         </MudItem>
                         <MudItem xs="6" sm="4">
-                            <MudNumericField Label="チップ(円/枚)" @bind-Value="rules.ChipRate" Step="50" Min="0" Margin="Margin.Dense" Class="px-2" />
+                            <MudNumericField Label="チップ(円/枚)" @bind-Value="rules.ChipRate" Step="50" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="CloseKeypad" />
                         </MudItem>
                         @if (rules.IsCustomUma)
                         {
@@ -149,10 +149,10 @@
                         else
                         {
                             <MudItem xs="6" sm="4">
-                                <MudNumericField T="int" Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←2)" : "順位ウマ(2←3)")" Value="rules.Uma1" ValueChanged="@((int v) => { rules.Uma1 = v; SyncNormalToCustomUma(); })" Step="5" Min="0" Margin="Margin.Dense" Class="px-2" />
+                                <MudNumericField T="int" Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←2)" : "順位ウマ(2←3)")" Value="rules.Uma1" ValueChanged="@((int v) => { rules.Uma1 = v; SyncNormalToCustomUma(); })" Step="5" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="CloseKeypad" />
                             </MudItem>
                             <MudItem xs="6" sm="4">
-                                <MudNumericField T="int" Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←3)" : "順位ウマ(1←4)")" Value="rules.Uma2" ValueChanged="@((int v) => { rules.Uma2 = v; SyncNormalToCustomUma(); })" Step="5" Min="0" Margin="Margin.Dense" Class="px-2" />
+                                <MudNumericField T="int" Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←3)" : "順位ウマ(1←4)")" Value="rules.Uma2" ValueChanged="@((int v) => { rules.Uma2 = v; SyncNormalToCustomUma(); })" Step="5" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="CloseKeypad" />
                             </MudItem>
                         }
                     </MudGrid>
@@ -187,7 +187,7 @@
                 <MudItem xs="12" sm="6">
                     <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center justify-space-between px-2 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
                         @* 左ブロック: 名前入力 *@
-                        <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" SearchFunc="@SearchRegisteredPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" ShowOnFocus="true" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input balanced-center-select" Style="font-weight: bold; font-size: 0.95rem; width: 9.5em;" Disabled="isSitOut" onfocus="this.select();" />
+                        <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" SearchFunc="@SearchRegisteredPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" ShowOnFocus="true" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input balanced-center-select" Style="font-weight: bold; font-size: 0.95rem; width: 9.5em;" Disabled="isSitOut" onfocus="this.select();" @onfocusin="CloseKeypad" />
                         <div class="d-flex align-center justify-center flex-grow-1">
                             @* 抜け番 *@
                             @if (activeParticipantCount > rules.PlayerCount)

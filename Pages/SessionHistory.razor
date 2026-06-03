@@ -43,14 +43,11 @@
     {
         <MudTable Items="@sessionGroups" Class="session-table" Hover="true" Dense="true" Elevation="1" Breakpoint="Breakpoint.None">
             <RowTemplate Context="group">
-                <MudTd Style="padding: 10px 12px; border-bottom: 1px solid var(--mud-palette-divider);">
-                    <div class="d-flex align-center justify-space-between w-100" style="margin-bottom: 6px;">
-                        <div class="d-flex align-center" style="gap: 4px;">
-                            <MudIconButton Icon="@(group.ShowDetails ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" OnClick="@(() => group.ShowDetails = !group.ShowDetails)" Size="Size.Small" Style="padding: 4px;" />
-                            <span style="font-size: 0.95rem; font-weight: bold; letter-spacing: 0.5px;">
-                                @group.Session.Date.ToString("yyyy/MM/dd HH:mm")
-                            </span>
-                        </div>
+                <MudTd Style="@($"padding: 10px 12px {(group.ShowDetails ? "0px" : "10px")} 12px; border-bottom: {(group.ShowDetails ? "none" : "1px solid var(--mud-palette-divider)")}; transition: padding-bottom 0.2s ease;")">
+                    <div class="d-flex align-center justify-space-between w-100" style="margin-bottom: 2px; padding-left: 36px;">
+                        <span style="font-size: 0.95rem; font-weight: bold; letter-spacing: 0.5px;">
+                            @group.Session.Date.ToString("yyyy/MM/dd HH:mm")
+                        </span>
                         <div class="d-flex align-center" style="gap: 8px;">
                             <span style="font-size: 0.8rem; color: #9e9e9e; background-color: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; font-weight: bold;">
                                 @group.Games.Count 局
@@ -61,56 +58,63 @@
                             </span>
                         </div>
                     </div>
-                    <div style="text-align: left; padding-left: 32px; font-size: 0.85rem; color: #aaaaaa; white-space: normal; word-break: break-all; line-height: 1.4;">
-                        @GetPlayerNames(group.Session.ParticipantPlayerIds)
+                    <div class="d-flex align-center w-100" style="text-align: left; font-size: 0.85rem; color: #aaaaaa; white-space: normal; word-break: break-all; line-height: 1.4;">
+                        <MudIconButton Icon="@(group.ShowDetails ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" 
+                                       OnClick="@(() => group.ShowDetails = !group.ShowDetails)" 
+                                       Size="Size.Small" 
+                                       Style="padding: 4px; margin-right: 4px;" />
+                        <div>
+                            @GetPlayerNames(group.Session.ParticipantPlayerIds)
+                        </div>
                     </div>
                 </MudTd>
             </RowTemplate>
             <ChildRowContent Context="group">
-                @if (group.ShowDetails)
-                {
-                    <MudTr>
-                        <MudTd Colspan="1" Class="pa-4" Style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <MudCard Elevation="0" Style="background-color: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);">
-                                <MudCardContent>
-                                    <MudText Typo="Typo.subtitle2" Class="mb-2" Color="Color.Secondary">◆ 対局一覧</MudText>
-                                    @if (group.Games.Count > 0)
-                                    {
-                                        <div class="child-table-wrapper mb-4">
-                                            <ResultTable History="@ConvertToGameResults(group.Games)" Players="@GetSessionPlayerNames(group)" ActiveParticipantCount="@group.Session.ParticipantPlayerIds.Count" IsReadOnly="true" />
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <MudText Typo="Typo.body2" Class="mb-4">ここには対局記録がありません。</MudText>
-                                    }
-                                    @if (group.Session.SettledChips != null && group.Session.SettledChips.Count > 0 && group.Session.SettledChips.Any(c => c != 0))
-                                    {
-                                        <MudText Typo="Typo.subtitle2" Class="mt-2 mb-2" Color="Color.Secondary">◆ チップ精算 (レート: @group.Session.ChipRate 円)</MudText>
-                                        <div class="d-flex flex-wrap gap-2">
-                                            @for (int i = 0; i < group.Session.ParticipantPlayerIds.Count; i++)
-                                            {
-                                                var pId = group.Session.ParticipantPlayerIds[i];
-                                                if (string.IsNullOrEmpty(pId)) continue;
-                                                var pName = GetPlayerName(pId);
-                                                var chips = group.Session.SettledChips.Count > i ? group.Session.SettledChips[i] : 0;
-                                                var chipYen = chips * group.Session.ChipRate;
-                                                var color = chips >= 0 ? "#ff6b6b" : "#4dabf7";
-                                                var sign = chips > 0 ? "+" : "";
-                                                if (chips != 0)
+                <MudTr>
+                    <td colspan="1" style="padding: 0; border: none;">
+                        <MudCollapse Expanded="group.ShowDetails">
+                            <div class="px-4 pb-4 pt-1" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <MudCard Elevation="0" Style="background-color: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);">
+                                    <MudCardContent>
+                                        <MudText Typo="Typo.subtitle2" Class="mb-2" Color="Color.Secondary">◆ 対局一覧</MudText>
+                                        @if (group.Games.Count > 0)
+                                        {
+                                            <div class="child-table-wrapper mb-4">
+                                                <ResultTable History="@ConvertToGameResults(group.Games)" Players="@GetSessionPlayerNames(group)" ActiveParticipantCount="@group.Session.ParticipantPlayerIds.Count" IsReadOnly="true" />
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <MudText Typo="Typo.body2" Class="mb-4">ここには対局記録がありません。</MudText>
+                                        }
+                                        @if (group.Session.SettledChips != null && group.Session.SettledChips.Count > 0 && group.Session.SettledChips.Any(c => c != 0))
+                                        {
+                                            <MudText Typo="Typo.subtitle2" Class="mt-2 mb-2" Color="Color.Secondary">◆ チップ精算 (レート: @group.Session.ChipRate 円)</MudText>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                @for (int i = 0; i < group.Session.ParticipantPlayerIds.Count; i++)
                                                 {
-                                                    <span style="font-size: 0.85rem; padding: 2px 6px; background-color: rgba(255,255,255,0.05); border-radius: 4px;">
-                                                        @pName: <span style="color: @color; font-weight: bold;">@sign@chips 枚 (@sign@chipYen.ToString("N0")円)</span>
-                                                    </span>
+                                                    var pId = group.Session.ParticipantPlayerIds[i];
+                                                    if (string.IsNullOrEmpty(pId)) continue;
+                                                    var pName = GetPlayerName(pId);
+                                                    var chips = group.Session.SettledChips.Count > i ? group.Session.SettledChips[i] : 0;
+                                                    var chipYen = chips * group.Session.ChipRate;
+                                                    var color = chips >= 0 ? "#ff6b6b" : "#4dabf7";
+                                                    var sign = chips > 0 ? "+" : "";
+                                                    if (chips != 0)
+                                                    {
+                                                        <span style="font-size: 0.85rem; padding: 2px 6px; background-color: rgba(255,255,255,0.05); border-radius: 4px;">
+                                                            @pName: <span style="color: @color; font-weight: bold;">@sign@chips 枚 (@sign@chipYen.ToString("N0")円)</span>
+                                                        </span>
+                                                    }
                                                 }
-                                            }
-                                        </div>
-                                    }
-                                </MudCardContent>
-                            </MudCard>
-                        </MudTd>
-                    </MudTr>
-                }
+                                            </div>
+                                        }
+                                    </MudCardContent>
+                                </MudCard>
+                            </div>
+                        </MudCollapse>
+                    </td>
+                </MudTr>
             </ChildRowContent>
         </MudTable>
     }

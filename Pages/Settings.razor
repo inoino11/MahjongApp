@@ -47,7 +47,8 @@
         <MudText Typo="Typo.h6" Color="Color.Error" Class="mb-2">⚠️データの初期化</MudText>
         <MudText Typo="Typo.body2" Class="mb-4">
             すべての対局者名簿と対局履歴を<br />
-            完全に消去します。
+            完全に消去します。<br />
+            事前のバックアップをお勧めします。
         </MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="ConfirmWipeAllData">
             全データを初期化する
@@ -62,8 +63,15 @@
     {
         try
         {
-            await DatabaseService.ExportDataAsync();
-            Snackbar.Add("バックアップファイルをダウンロードしました", Severity.Success);
+            string result = await DatabaseService.ExportDataAsync();
+            if (result == "SHARED")
+            {
+                Snackbar.Add("バックアップファイルをシェアしました", Severity.Success);
+            }
+            else if (result == "DOWNLOADED")
+            {
+                Snackbar.Add("バックアップファイルをダウンロードしました", Severity.Info);
+            }
         }
         catch (Exception ex)
         {
@@ -82,7 +90,7 @@
             : "現在のアプリ内のデータはすべて消去され、選択したファイルの内容で上書きされます。\n本当によろしいですか？";
         bool? result = await DialogService.ShowMessageBoxAsync(
             title, message, yesText: "はい、実行します", cancelText: "キャンセル");
-            
+
         if (result != true) return;
         try
         {
@@ -92,13 +100,13 @@
             // DBへ流し込む前に、C#側でJSONスキーマの妥当性を事前検証する
             try
             {
-                var options = new System.Text.Json.JsonSerializerOptions 
-                { 
-                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase 
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
                 };
                 // AllDbData型にパースできるかテスト
                 var testParse = System.Text.Json.JsonSerializer.Deserialize<MahjongApp.Services.AllDbData>(json, options);
-                
+
                 if (testParse == null || (testParse.Players == null && testParse.Games == null))
                 {
                     Snackbar.Add("ファイル形式が正しくありません。麻雀集計ツールのバックアップデータを選択してください。", Severity.Error);
@@ -127,13 +135,15 @@
     private async Task ConfirmWipeAllData()
     {
         bool? result1 = await DialogService.ShowMessageBoxAsync(
-            "全データの初期化", "すべての対局者名簿と対局履歴を完全に消去します。よろしいですか？",
+            "全データの初期化",
+            (MarkupString)"すべての対局者名簿と対局履歴を完全に消去します。<br />よろしいですか？",
             yesText: "はい、消去します", cancelText: "キャンセル");
         if (result1 == true)
         {
             bool? result2 = await DialogService.ShowMessageBoxAsync(
-                "最終確認", "本当にすべてのデータを消去しますか？（※絶対に取り消せません）",
-                yesText: "完全に消去する", cancelText: "キャンセル");
+                "最終確認",
+                (MarkupString)"本当にすべてのデータを消去しますか？",
+                yesText: "はい、消去します", cancelText: "キャンセル");
             if (result2 == true)
             {
                 await DatabaseService.ClearAllDataAsync();
