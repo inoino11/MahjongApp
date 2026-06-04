@@ -154,7 +154,7 @@ public class SessionStateService
     }
 
     /// <summary>
-    /// 記録の完全リセット、またはセッション保存終了時に卓をきれいに片付けます
+    /// 記録の完全リセット
     /// </summary>
     public async Task ClearSessionAsync()
     {

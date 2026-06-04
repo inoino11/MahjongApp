@@ -1,40 +1,3 @@
-@* 1. 表示モード切替ボタン ＆ リセットボタン *@
-<MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4 gap-2">
-    <div class="d-flex flex-wrap gap-2">
-        <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
-            <MudButton Variant="@(DisplayMode == 0 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(0)">素点</MudButton>
-            <MudButton Variant="@(DisplayMode == 1 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(1)">+/−</MudButton>
-            <MudButton Variant="@(DisplayMode == 2 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(2)">円</MudButton>
-            <MudButton Variant="@(DisplayMode == 7 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(7)">グラフ</MudButton>
-        </MudStack>
-        @if (Rules?.IsSinkEnabled == true || Rules?.IsYakiEnabled == true || Rules?.IsTobiEnabled == true || Rules?.IsColdEnabled == true ||
-             HasAnySinkPoints || HasAnyYakiPoints || HasAnyTobiPoints || HasAnyColdPoints)
-        {
-            <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
-                @if (Rules?.IsSinkEnabled == true || HasAnySinkPoints)
-                {
-                    <MudButton Variant="@(DisplayMode == 3 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Warning" Size="Size.Small" OnClick="() => SetDisplayMode(3)">沈み</MudButton>
-                }
-                @if (Rules?.IsYakiEnabled == true || HasAnyYakiPoints)
-                {
-                    <MudButton Variant="@(DisplayMode == 4 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Warning" Size="Size.Small" OnClick="() => SetDisplayMode(4)">焼き鳥</MudButton>
-                }
-                @if (Rules?.IsTobiEnabled == true || HasAnyTobiPoints)
-                {
-                    <MudButton Variant="@(DisplayMode == 5 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Info" Size="Size.Small" OnClick="() => SetDisplayMode(5)">トビ</MudButton>
-                }
-                @if (Rules?.IsColdEnabled == true || HasAnyColdPoints)
-                {
-                    <MudButton Variant="@(DisplayMode == 6 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Info" Size="Size.Small" OnClick="() => SetDisplayMode(6)">コールド</MudButton>
-                }
-            </MudStack>
-        }
-    </div>
-    @if (!IsReadOnly)
-    {
-        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="() => OnResetRequested.InvokeAsync()">記録リセット</MudButton>
-    }
-</MudStack>
 
 <style>
     /* チップ入力欄の文字を中央揃えにする */
@@ -137,6 +100,43 @@
     }
 </style>
 
+@* 1. 表示モード切替ボタン ＆ リセットボタン *@
+<MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4 gap-2">
+    <div class="d-flex flex-wrap gap-2">
+        <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+            <MudButton Variant="@(DisplayMode == 0 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(0)">素点</MudButton>
+            <MudButton Variant="@(DisplayMode == 1 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(1)">+/−</MudButton>
+            <MudButton Variant="@(DisplayMode == 2 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(2)">円</MudButton>
+            <MudButton Variant="@(DisplayMode == 7 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(7)">グラフ</MudButton>
+        </MudStack>
+        @if (Rules?.IsSinkEnabled == true || Rules?.IsYakiEnabled == true || Rules?.IsTobiEnabled == true || Rules?.IsColdEnabled == true ||
+             HasAnySinkPoints || HasAnyYakiPoints || HasAnyTobiPoints || HasAnyColdPoints)
+        {
+            <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                @if (Rules?.IsSinkEnabled == true || HasAnySinkPoints)
+                {
+                    <MudButton Variant="@(DisplayMode == 3 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Warning" Size="Size.Small" OnClick="() => SetDisplayMode(3)">沈み</MudButton>
+                }
+                @if (Rules?.IsYakiEnabled == true || HasAnyYakiPoints)
+                {
+                    <MudButton Variant="@(DisplayMode == 4 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Warning" Size="Size.Small" OnClick="() => SetDisplayMode(4)">焼き鳥</MudButton>
+                }
+                @if (Rules?.IsTobiEnabled == true || HasAnyTobiPoints)
+                {
+                    <MudButton Variant="@(DisplayMode == 5 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Info" Size="Size.Small" OnClick="() => SetDisplayMode(5)">トビ</MudButton>
+                }
+                @if (Rules?.IsColdEnabled == true || HasAnyColdPoints)
+                {
+                    <MudButton Variant="@(DisplayMode == 6 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Info" Size="Size.Small" OnClick="() => SetDisplayMode(6)">コールド</MudButton>
+                }
+            </MudStack>
+        }
+    </div>
+    @if (!IsReadOnly)
+    {
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="() => OnResetRequested.InvokeAsync()">記録リセット</MudButton>
+    }
+</MudStack>
 <div id="result-container">
     @* --- グラフ表示 --- *@
     <div id="chart-wrapper" class="@(DisplayMode == 7 ? "" : "hide-element")">
@@ -223,7 +223,6 @@
                 </MudCardContent>
             </MudCard>
         }
-
         @* テーブル *@
         <div id="@TableScrollId" class="sync-table-scroll" style="width: 100%; overflow-x: auto; --table-min-width: @GetTableMinWidth();">
             <MudTable Items="@History" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="width: 100%; table-layout: fixed;">
@@ -500,7 +499,10 @@
         }
     }
 
-    private string FormatPlus(double val, string fmt = "F1") => val > 0 ? $"+{val.ToString(fmt)}" : val.ToString(fmt);
+    private string FormatPlus(double val, string fmt = "F1")
+    {
+        return val > 0 ? $"+{val.ToString(fmt)}" : val.ToString(fmt);
+    }
 
     private string GetDisplayValue(GameResult res, int idx, int? overrideMode = null)
     {
@@ -568,7 +570,7 @@
         }
         else
         {
-            // 素点以外: 正は赤色、負は青色、±0は標準テキスト色（黒）
+            // 素点以外: 正は赤色、負は青色、0は標準テキスト色（黒）
             if (val > 0) style += "color: #ff0000; ";
             else if (val < 0) style += "color: #1976d2; ";
             else style += "color: var(--mud-palette-text-primary); ";
@@ -609,7 +611,6 @@
     {
         int mode = overrideMode ?? DisplayMode;
         int chip = SessionChips.Count > idx ? SessionChips[idx] : 0;
-        if (History.Count == 0 && chip == 0) return "0";
         double val = GetTotalNumericValue(idx, mode);
         if (mode == 0) return Math.Round(val).ToString("N0");
         if (mode == 2) return FormatPlus(val, "N0") + "円";
@@ -631,13 +632,21 @@
         // 文字色の設定
         if (DisplayMode == 0)
         {
-            // 素点: 既存ルールのまま
-            bool isPositive = GetTotalNumericValue(idx, 1) >= 0;
-            style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
+            if (History.Count == 0)
+            {
+                // 対局数0の場合は標準テキスト色
+                style += "color: var(--mud-palette-text-primary); ";
+            }
+            else
+            {
+                // 素点: 既存ルールのまま
+                bool isPositive = GetTotalNumericValue(idx, 1) >= 0;
+                style += isPositive ? "color: #ff0000; " : "color: #1976d2; ";
+            }
         }
         else
         {
-            // 素点以外: 正は赤色、負は青色、±0は標準テキスト色（黒）
+            // 素点以外: 正は赤色、負は青色、0は標準テキスト色（黒）
             if (val > 0) style += "color: #ff0000; ";
             else if (val < 0) style += "color: #1976d2; ";
             else style += "color: var(--mud-palette-text-primary); ";

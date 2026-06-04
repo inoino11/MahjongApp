@@ -2,6 +2,7 @@
 @using Microsoft.JSInterop
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
+@implements IDisposable
 
 <div style="display: flex; flex-direction: column; height: 100%;">
     <MudNavMenu>
@@ -11,34 +12,104 @@
         <MudNavLink Href="players" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.ManageAccounts">名簿管理</MudNavLink>
         <MudNavLink Href="settings" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">データ管理</MudNavLink>
     </MudNavMenu>
-    <div style="margin-top: auto; padding: 16px 8px; text-align: center; display: flex; justify-content: center;">
-        @* バージョン表示をボタン化（見切れ防止の調整版） *@
-        <MudButton Variant="Variant.Text" 
-                   OnClick="CheckForUpdateAsync" 
-                   Style="color: var(--mud-palette-text-disabled); font-family: monospace; text-transform: none; padding: 4px 8px; min-width: 0; font-size: 0.8rem;"
-                   Disabled="@isChecking">
-            @if (isChecking)
-            {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                <span style="white-space: nowrap;">確認中...</span>
-            }
-            else
-            {
-                <MudIcon Icon="@Icons.Material.Filled.Update" Size="Size.Small" Class="mr-1" />
-                <span style="white-space: nowrap;">@AppVersion</span>
-            }
-        </MudButton>
+    <div style="margin-top: auto;">
+        @* PWAインストールボタン *@
+        @if (canInstall)
+        {
+            <div class="px-4 mb-2">
+                <MudButton Variant="Variant.Outlined" 
+                           Color="Color.Info" 
+                           StartIcon="@Icons.Material.Filled.InstallMobile" 
+                           FullWidth="true"
+                           OnClick="InstallPwaAsync"
+                           Style="font-size: 0.8rem; padding: 4px 8px; border-radius: 8px;">
+                    アプリとして追加
+                </MudButton>
+            </div>
+        }
+        <div style="padding: 16px 8px; text-align: center; display: flex; justify-content: center;">
+            @* バージョン表示 *@
+            <MudButton Variant="Variant.Text" 
+                       OnClick="CheckForUpdateAsync" 
+                       Style="color: var(--mud-palette-text-disabled); font-family: monospace; text-transform: none; padding: 4px 8px; min-width: 0; font-size: 0.8rem;"
+                       Disabled="@isChecking">
+                @if (isChecking)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span style="white-space: nowrap;">確認中...</span>
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Update" Size="Size.Small" Class="mr-1" />
+                    <span style="white-space: nowrap;">@AppVersion</span>
+                }
+            </MudButton>
+        </div>
     </div>
 </div>
 
 @code {
     private string AppVersion { get; set; } = "v--.--.--";
     private bool isChecking = false;
+    private bool canInstall = false;
+    private DotNetObjectReference<NavMenu>? objRef;
     protected override void OnInitialized()
     {
         var assembly = Assembly.GetExecutingAssembly();
         var attr = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
         if (attr != null) AppVersion = attr.InformationalVersion;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            objRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("pwaInstall.init", objRef);
+        }
+    }
+
+    // JSから呼び出されるメソッド（インストール可能時）
+    [JSInvokable]
+    public void OnInstallAvailable()
+    {
+        canInstall = true;
+        StateHasChanged();
+    }
+
+    // JSから呼び出されるメソッド（インストール完了時）
+    [JSInvokable]
+    public void OnInstalled()
+    {
+        canInstall = false;
+        StateHasChanged();
+        Snackbar.Add("アプリがインストールされました", Severity.Success);
+    }
+
+    // インストールボタンが押された時の処理
+    private async Task InstallPwaAsync()
+    {
+        try
+        {
+            // JS側のプロンプト表示関数を呼び出す
+            var accepted = await JSRuntime.InvokeAsync<bool>("pwaInstall.prompt");
+            if (accepted)
+            {
+                // 承認されたらボタンを消す
+                canInstall = false;
+                StateHasChanged();
+            }
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("インストール中にエラーが発生しました", Severity.Error);
+        }
+    }
+
+    // メモリリーク防止のための破棄処理
+    public void Dispose()
+    {
+        objRef?.Dispose();
     }
 
     private async Task CheckForUpdateAsync()

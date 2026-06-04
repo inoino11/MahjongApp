@@ -536,6 +536,51 @@
             }
         };
     </script>
+    <script>
+        // PWAインストール制御用のグローバルオブジェクト
+        window.pwaInstall = {
+            deferredPrompt: null,
+            dotNetHelper: null,
+            // Blazorコンポーネントからの参照を受け取る
+            init: function (helper) {
+                this.dotNetHelper = helper;
+                // 既にイベントが発火して待機状態であれば、Blazor側に通知
+                if (this.deferredPrompt) {
+                    this.dotNetHelper.invokeMethodAsync('OnInstallAvailable');
+                }
+            },
+            // インストールプロンプトを表示
+            prompt: async function () {
+                if (!this.deferredPrompt) {
+                    return false;
+                }
+                // ダイアログを表示
+                this.deferredPrompt.prompt();
+                // ユーザーの選択結果（インストールしたか、キャンセルしたか）を待つ
+                const { outcome } = await this.deferredPrompt.userChoice;
+                this.deferredPrompt = null;
+                return outcome === 'accepted';
+            }
+        };
+        // ブラウザが「インストール可能」と判定した時に発火するイベント
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // デフォルトのミニインフォバー表示を防止
+            e.preventDefault();
+            // イベントを保存しておく（後でprompt()を呼ぶため）
+            window.pwaInstall.deferredPrompt = e;
+            // Blazor側へ「インストール可能になった」ことを通知
+            if (window.pwaInstall.dotNetHelper) {
+                window.pwaInstall.dotNetHelper.invokeMethodAsync('OnInstallAvailable');
+            }
+        });
+        // インストールが完了した時に発火するイベント
+        window.addEventListener('appinstalled', () => {
+            window.pwaInstall.deferredPrompt = null;
+            if (window.pwaInstall.dotNetHelper) {
+                window.pwaInstall.dotNetHelper.invokeMethodAsync('OnInstalled');
+            }
+        });
+    </script>
 </body>
 
 </html>
