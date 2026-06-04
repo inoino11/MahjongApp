@@ -13,38 +13,39 @@
         <MudNavLink Href="settings" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">データ管理</MudNavLink>
     </MudNavMenu>
     <div style="margin-top: auto;">
-        @* PWAインストールボタン *@
+        @* Android / PC 用インストールボタン *@
         @if (canInstall)
         {
             <div class="px-4 mb-2">
-                <MudButton Variant="Variant.Outlined" 
-                           Color="Color.Info" 
-                           StartIcon="@Icons.Material.Filled.InstallMobile" 
-                           FullWidth="true"
-                           OnClick="InstallPwaAsync"
-                           Style="font-size: 0.8rem; padding: 4px 8px; border-radius: 8px;">
+                <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.InstallMobile" FullWidth="true" OnClick="InstallPwaAsync" Style="font-size: 0.8rem; padding: 4px 8px; border-radius: 8px;">
                     アプリとして追加
                 </MudButton>
             </div>
         }
-        <div style="padding: 16px 8px; text-align: center; display: flex; justify-content: center;">
-            @* バージョン表示 *@
-            <MudButton Variant="Variant.Text" 
-                       OnClick="CheckForUpdateAsync" 
-                       Style="color: var(--mud-palette-text-disabled); font-family: monospace; text-transform: none; padding: 4px 8px; min-width: 0; font-size: 0.8rem;"
-                       Disabled="@isChecking">
-                @if (isChecking)
-                {
-                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                    <span style="white-space: nowrap;">確認中...</span>
-                }
-                else
-                {
-                    <MudIcon Icon="@Icons.Material.Filled.Update" Size="Size.Small" Class="mr-1" />
-                    <span style="white-space: nowrap;">@AppVersion</span>
-                }
-            </MudButton>
-        </div>
+        @* iOS Webブラウザ用 警告＆案内メッセージ *@
+        @if (isIosWebBrowser)
+        {
+            <div class="px-3 mb-2">
+                <MudAlert Severity="Severity.Warning" Class="pa-2" Style="font-size: 0.75rem; line-height: 1.4;">
+                    <div style="font-weight: bold; margin-bottom: 4px;">📱 iPhone/iPadの方へ</div>
+                    共有メニューから「ホーム画面に追加」でアプリ化できますが、<span style="color: #d32f2f; font-weight: bold;">Safariのデータは引き継がれません。</span><br />
+                    事前に「データ管理」からバックアップをお願いします。
+                </MudAlert>
+            </div>
+        }
+        @* バージョン表示 *@
+        <MudButton Variant="Variant.Text" OnClick="CheckForUpdateAsync" Style="color: var(--mud-palette-text-disabled); font-family: monospace; text-transform: none; padding: 4px 8px; min-width: 0; font-size: 0.8rem;" Disabled="@isChecking">
+            @if (isChecking)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <span style="white-space: nowrap;">確認中...</span>
+            }
+            else
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Update" Size="Size.Small" Class="mr-1" />
+                <span style="white-space: nowrap;">@AppVersion</span>
+            }
+        </MudButton>
     </div>
 </div>
 
@@ -53,6 +54,7 @@
     private bool isChecking = false;
     private bool canInstall = false;
     private DotNetObjectReference<NavMenu>? objRef;
+    private bool isIosWebBrowser = false;
     protected override void OnInitialized()
     {
         var assembly = Assembly.GetExecutingAssembly();
@@ -66,6 +68,8 @@
         {
             objRef = DotNetObjectReference.Create(this);
             await JSRuntime.InvokeVoidAsync("pwaInstall.init", objRef);
+            isIosWebBrowser = await JSRuntime.InvokeAsync<bool>("pwaHelper.isIosWeb");
+            StateHasChanged();
         }
     }
 
@@ -120,8 +124,8 @@
         try
         {
             // 少しだけ待機して、ボタンが押された感（UX）を出す
-            await Task.Delay(500); 
-            var result = await JSRuntime.InvokeAsync<string>("checkForUpdate");            
+            await Task.Delay(500);
+            var result = await JSRuntime.InvokeAsync<string>("checkForUpdate");
             if (result == "CHECKED")
             {
                 Snackbar.Add("アップデートをチェックしました", Severity.Info);

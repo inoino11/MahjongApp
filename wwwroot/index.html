@@ -562,6 +562,15 @@
                 return outcome === 'accepted';
             }
         };
+        // iOSかつWebブラウザであるかを判定
+        window.pwaHelper = {
+            isIosWeb: function () {
+                const ua = window.navigator.userAgent;
+                const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+                return isIOS && !isStandalone;
+            }
+        };
         // ブラウザが「インストール可能」と判定した時に発火するイベント
         window.addEventListener('beforeinstallprompt', (e) => {
             // デフォルトのミニインフォバー表示を防止
