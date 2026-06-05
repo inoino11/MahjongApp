@@ -209,3 +209,11 @@ public class MatchupStat
     public int HeroLosses { get; set; }
     public double DirectWinRate => (HeroWins + HeroLosses) == 0 ? 0 : (double)HeroWins / (HeroWins + HeroLosses) * 100;
 }
+
+public class EnvironmentInfo
+{
+    public bool IsIOS { get; set; }
+    public bool IsAndroid { get; set; }
+    public bool IsWindows { get; set; }
+    public bool IsPwa { get; set; }
+}

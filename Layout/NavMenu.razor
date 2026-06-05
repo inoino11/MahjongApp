@@ -23,14 +23,13 @@
             </div>
         }
         @* iOS Webブラウザ用 警告＆案内メッセージ *@
-        @if (isIosWebBrowser)
+        @if (envInfo.IsIOS && !envInfo.IsPwa)
         {
             <div class="px-3 mb-2">
-                <MudAlert Severity="Severity.Normal" Class="pa-2" Style="font-size: 0.75rem; line-height: 1.4;">
-                    <div style="font-weight: bold; margin-bottom: 4px;">iPhone/iPadの方へ</div>
+                <div Style="font-size: 0.60rem; line-height: 1.4;">
                     共有メニューから「ホーム画面に追加」でアプリ化できますが、<span style="color: var(--mud-palette-warning); font-weight: bold;">ブラウザ側のデータは引き継がれません。</span><br />
                     事前に「データ管理」からバックアップをお願いします。
-                </MudAlert>
+                </div>
             </div>
         }
         @* バージョン表示 *@
@@ -42,8 +41,8 @@
             }
             else
             {
-                <MudIcon Icon="@Icons.Material.Filled.Update" Size="Size.Small" Class="mr-1" />
-                <span style="white-space: nowrap;">@AppVersion</span>
+                <MudIcon Icon="@Icons.Material.Filled.Update" Size="Size.Small" Class="mr-1 mb-2" />
+                <span style="white-space: nowrap;" Class="mb-2">@AppVersion</span>
             }
         </MudButton>
     </div>
@@ -53,8 +52,8 @@
     private string AppVersion { get; set; } = "v--.--.--";
     private bool isChecking = false;
     private bool canInstall = false;
+    private EnvironmentInfo envInfo = new();
     private DotNetObjectReference<NavMenu>? objRef;
-    private bool isIosWebBrowser = false;
     protected override void OnInitialized()
     {
         var assembly = Assembly.GetExecutingAssembly();
@@ -68,7 +67,7 @@
         {
             objRef = DotNetObjectReference.Create(this);
             await JSRuntime.InvokeVoidAsync("pwaInstall.init", objRef);
-            isIosWebBrowser = await JSRuntime.InvokeAsync<bool>("pwaHelper.isIosWeb");
+            envInfo = await JSRuntime.InvokeAsync<EnvironmentInfo>("pwaHelper.getEnvironmentInfo");
             StateHasChanged();
         }
     }

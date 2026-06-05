@@ -11,7 +11,7 @@
         <MudIcon Icon="@Icons.Material.Filled.Settings" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
         データ管理
     </MudText>
-    @* アップロード *@
+    @* バックアップ *@
     <MudPaper Class="pa-6 mb-6" Outlined="true" Style="border-color: var(--mud-palette-info);">
         <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Info">データのバックアップ</MudText>
         <MudText Typo="Typo.body2" Class="mb-4">
@@ -21,21 +21,70 @@
         @* データ消失に関する注意喚起 *@
         <MudAlert Severity="Severity.Normal" Icon="@Icons.Material.Filled.Lightbulb" Class="mb-4 pa-3" Style="font-size: 0.8rem; line-height: 1.5; background-color: rgba(41, 182, 246, 0.05);">
             <div style="font-weight: bold; margin-bottom: 4px;">データ保存に関するTips</div>
-            データは現在のブラウザに保存されています。<br />
-            以下の操作でデータが消去されるため、<br />
-            事前のバックアップを推奨します。<br />
-            <ul style="margin-top: 4px; margin-bottom: 0; padding-left: 20px;">
-                <li>ブラウザの履歴・キャッシュの消去</li>
-                <li>プライベートモードでの利用終了</li>
-                <li>機種変更や別ブラウザへの移行</li>
-            </ul>
-            @if (isIosWebBrowser)
+            @if (!envInfo.IsPwa)
             {
+                @* Web *@
+                <div>
+                    データは現在のブラウザに保存されています。<br />
+                    以下の操作でデータが消去されるため、<br />
+                    事前のバックアップを推奨します。<br />
+                    <ul style="margin-top: 4px; margin-bottom: 0; padding-left: 20px;">
+                        <li>ブラウザの履歴・キャッシュの消去</li>
+                        <li>プライベートモードでの利用終了</li>
+                        <li>機種変更や別ブラウザへの移行</li>
+                    </ul>
+                </div>
+                <div style="margin-top: 8px; color: var(--mud-palette-warning); font-weight: bold;">
+                    @if (envInfo.IsIOS)
+                    {
+                        @* iOS *@
+                        <span>
+                            「ホーム画面に追加」してアプリ化する場合、<br /><span style="color: var(--mud-palette-error);">
+                            ブラウザのデータはアプリに引き継がれません。</span><br />
+                            事前にバックアップを保存し、アプリ側で復元してください。
+                        </span>
+                    }
+                    else
+                    {
+                        @* Android *@
+                        <span>
+                            「アプリとして追加」でアプリ化できます。<br />
+                            ブラウザのデータはアプリに引き継がれます。
+                        </span>
+                    }
+                </div>
+            }
+            else
+            {
+                @* PWA *@
                 <div style="margin-top: 8px; color: var(--mud-palette-normal); font-weight: bold;">
-                    ※iPhone/iPadをご利用の方へ：<br />
-                    「ホーム画面に追加」してアプリ化する際、<br />
-                    <span style="color: var(--mud-palette-warning); font-weight: bold;">ブラウザ側のデータは引き継がれません。</span><br />
-                    事前にバックアップを保存してください。
+                    @if (envInfo.IsIOS)
+                    {
+                        @* iOS *@
+                        <span>
+                            長期間アプリを使用しないとOSの判断で<br />
+                            データが削除される場合があります。<br />
+                            こまめなバックアップを推奨します。
+                        </span>
+                    }
+                    else if (envInfo.IsAndroid)
+                    {
+                        @* Android *@
+                        <span>
+                            アプリのデータはインストール元のブラウザと<br />
+                            共有されています。<br />
+                            ブラウザの履歴やCookie消去でデータが<br />
+                            消失するためご注意ください。
+                        </span>
+                    }
+                    else
+                    {
+                        @* Windowsなど *@
+                        <span>
+                            ブラウザのキャッシュやサイトデータをクリアすると<br />
+                            アプリのデータも消える可能性があります。
+                        </span>
+                    }
                 </div>
             }
         </MudAlert>
@@ -81,18 +130,17 @@
 @code {
     private string importMode = "merge"; // 初期値は統合
 
-    // iOSWeb判定フラグ
-    private bool isIosWebBrowser = false;
-
     // 初期化時にJSを呼び出して判定
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            isIosWebBrowser = await JSRuntime.InvokeAsync<bool>("pwaHelper.isIosWeb");
+            envInfo = await JSRuntime.InvokeAsync<EnvironmentInfo>("pwaHelper.getEnvironmentInfo");
             StateHasChanged();
         }
     }
+
+    private EnvironmentInfo envInfo = new();
 
     private async Task ExportData()
     {

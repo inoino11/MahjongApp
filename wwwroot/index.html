@@ -562,13 +562,22 @@
                 return outcome === 'accepted';
             }
         };
-        // iOSかつWebブラウザであるかを判定
+        // OSとPWAを判定
         window.pwaHelper = {
-            isIosWeb: function () {
+            getEnvironmentInfo: function () {
                 const ua = window.navigator.userAgent;
+                // OS判定
                 const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-                return isIOS && !isStandalone;
+                const isAndroid = /Android/.test(ua);
+                const isWindows = /Windows/.test(ua);
+                // PWA判定
+                const isPwa = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+                return {
+                    isIOS: isIOS,
+                    isAndroid: isAndroid,
+                    isWindows: isWindows,
+                    isPwa: isPwa
+                };
             }
         };
         // ブラウザが「インストール可能」と判定した時に発火するイベント
