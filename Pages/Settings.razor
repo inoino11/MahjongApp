@@ -6,6 +6,8 @@
 @inject MahjongApp.Services.StatsCacheService StatsCache
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4 pb-10">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
@@ -16,7 +18,7 @@
     <MudPaper Class="pa-6 mb-6" Outlined="true" Style="border-color: var(--mud-palette-info);">
         <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Info">データのバックアップ</MudText>
         <MudText Typo="Typo.body2" Class="mb-4">
-            現在のすべての成績データと対局者名簿を<br />
+            対局履歴、名簿およびルールプリセットを<br />
             JSONファイルとしてダウンロードします。
         </MudText>
         @* データ消失に関する注意喚起 *@
@@ -118,8 +120,8 @@
     <MudPaper Class="pa-6" Outlined="true" Style="border-color: var(--mud-palette-error);">
         <MudText Typo="Typo.h6" Color="Color.Error" Class="mb-2">⚠️データの初期化</MudText>
         <MudText Typo="Typo.body2" Class="mb-4">
-            すべての対局者名簿と対局履歴を<br />
-            完全に消去します。<br />
+            対局履歴、名簿およびルールプリセットを<br />
+            完全に削除します。<br />
             事前のバックアップをお勧めします。
         </MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="ConfirmWipeAllData">
@@ -222,7 +224,7 @@
     {
         bool? result1 = await DialogService.ShowMessageBoxAsync(
             "全データの初期化",
-            (MarkupString)"すべての対局者名簿と対局履歴を完全に消去します。<br />よろしいですか？",
+            (MarkupString)"すべての対局履歴、名簿およびルールプリセットを消去します。<br />よろしいですか？",
             yesText: "はい、消去します", cancelText: "キャンセル");
         if (result1 == true)
         {
@@ -233,7 +235,10 @@
             if (result2 == true)
             {
                 await DatabaseService.ClearAllDataAsync();
+                await LocalStorage.ClearAsync();
                 Snackbar.Add("すべてのデータを初期化しました", Severity.Success);
+                await Task.Delay(1500);
+                NavigationManager.NavigateTo("/", forceLoad: true);
             }
         }
     }
