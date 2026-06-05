@@ -36,13 +36,13 @@
         <MudButton Variant="Variant.Text" OnClick="CheckForUpdateAsync" Style="color: var(--mud-palette-text-disabled); font-family: monospace; text-transform: none; padding: 4px 8px; min-width: 0; font-size: 0.8rem;" Disabled="@isChecking">
             @if (isChecking)
             {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                <span style="white-space: nowrap;">確認中...</span>
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2 mb-3" />
+                <span style="white-space: nowrap;" Class="mb-3">確認中...</span>
             }
             else
             {
-                <MudIcon Icon="@Icons.Material.Filled.Update" Size="Size.Small" Class="mr-1 mb-2" />
-                <span style="white-space: nowrap;" Class="mb-2">@AppVersion</span>
+                <MudIcon Icon="@Icons.Material.Filled.Update" Size="Size.Small" Class="mr-1 mb-3" />
+                <span style="white-space: nowrap;" Class="mb-3">@AppVersion</span>
             }
         </MudButton>
     </div>

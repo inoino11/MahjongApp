@@ -1,16 +1,19 @@
 using System.Text.Json;
 using Microsoft.JSInterop;
 using MahjongApp.Models;
+using Blazored.LocalStorage;
 
 namespace MahjongApp.Services;
 
 public class DatabaseService
 {
     private readonly IJSRuntime _jsRuntime;
+    private readonly ILocalStorageService _localStorage;
     private bool _isInitialized = false;
-    public DatabaseService(IJSRuntime jsRuntime)
+    public DatabaseService(IJSRuntime jsRuntime, ILocalStorageService localStorage)
     {
         _jsRuntime = jsRuntime;
+        _localStorage = localStorage;
     }
 
     /// データベースの初期化を保証する内部メソッド
@@ -65,6 +68,8 @@ public class DatabaseService
     public async Task<string> ExportDataAsync()
     {
         var data = await GetAllDataAsync();
+        var presets = await _localStorage.GetItemAsync<List<RuleSet>>(StorageKeys.RulePresets);
+        data.RulePresets = presets ?? new List<RuleSet>();
         var options = new System.Text.Json.JsonSerializerOptions
         {
             PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
@@ -78,6 +83,45 @@ public class DatabaseService
     {
         await EnsureInitializedAsync();
         await _jsRuntime.InvokeVoidAsync("mahjongDb.restoreData", json, isMerge);
+        try
+        {
+            var options = new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+            var importedData = System.Text.Json.JsonSerializer.Deserialize<AllDbData>(json, options);
+            if (importedData?.RulePresets != null && importedData.RulePresets.Count > 0)
+            {
+                if (isMerge)
+                {
+                    var currentPresets = await _localStorage.GetItemAsync<List<RuleSet>>(StorageKeys.RulePresets) ?? new List<RuleSet>();
+                    foreach (var preset in importedData.RulePresets)
+                    {
+                        // 同名のプリセットが既に存在するかチェック
+                        if (currentPresets.Any(p => p.Name == preset.Name))
+                        {
+                            string baseName = preset.Name;
+                            int counter = 1;
+                            string newName = $"{baseName}_{counter}";
+                            while (currentPresets.Any(p => p.Name == newName))
+                            {
+                                counter++;
+                                newName = $"{baseName}_{counter}";
+                            }
+                            preset.Name = newName;
+                        }
+                        currentPresets.Add(preset);
+                    }
+                    await _localStorage.SetItemAsync(StorageKeys.RulePresets, currentPresets);
+                }
+                else
+                {
+                    // 完全上書きモード
+                    await _localStorage.SetItemAsync(StorageKeys.RulePresets, importedData.RulePresets);
+                }
+            }
+        }
+        catch
+        {
+            // JSONのパースエラー時はDBの復元だけで抜ける
+        }
     }
 
     public async Task DeleteSessionAsync(string sessionId)
@@ -93,4 +137,5 @@ public class AllDbData
     public List<PlayerProfile> Players { get; set; } = new();
     public List<SavedSessionRecord> Sessions { get; set; } = new();
     public List<SavedGameRecord> Games { get; set; } = new();
+    public List<RuleSet>? RulePresets { get; set; }
 }

@@ -5,6 +5,7 @@
 @inject IDialogService DialogService
 @inject MahjongApp.Services.StatsCacheService StatsCache
 @inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4 pb-10">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
@@ -190,7 +191,7 @@
                 // AllDbData型にパースできるかテスト
                 var testParse = System.Text.Json.JsonSerializer.Deserialize<MahjongApp.Services.AllDbData>(json, options);
 
-                if (testParse == null || (testParse.Players == null && testParse.Games == null))
+                if (testParse == null || (testParse.Players == null && testParse.Games == null && testParse.RulePresets == null))
                 {
                     Snackbar.Add("ファイル形式が正しくありません。麻雀集計ツールのバックアップデータを選択してください。", Severity.Error);
                     return;
@@ -207,6 +208,8 @@
             _ = StatsCache.InitializeAsync(forceReload: true); // キャッシュの再構築
             string successMsg = isMerge ? "データを統合しました！" : "データを復元しました！";
             Snackbar.Add(successMsg, Severity.Success);
+            await Task.Delay(1500);
+            NavigationManager.NavigateTo("/", forceLoad: true);
         }
         catch (Exception ex)
         {
