@@ -175,7 +175,8 @@ public class SavedSessionRecord
     public int Rate { get; set; } = 0;                              // 当時のレート (円/1k)
     public int ChipRate { get; set; } = 0;                          // 当時のチップレート (円/枚)
     public List<string> ParticipantPlayerIds { get; set; } = new(); // プレイヤーIDリスト
-   public List<int> SettledChips { get; set; } = new();             // 移動チップ枚数リスト
+    public List<int> SettledChips { get; set; } = new();            // 移動チップ枚数リスト
+    public RuleSet? Rules { get; set; }                             // 当時のルール
 }
 
 // --- ダッシュボード集計・キャッシュ用モデル ---

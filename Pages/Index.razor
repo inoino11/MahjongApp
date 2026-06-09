@@ -92,7 +92,8 @@
 </style>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="@($"mt-4 pb-10 {(activeScoreInputIndex.HasValue ? "keypad-open-padding" : "")}")" @onclick="OnContainerClick" Style="min-height: 100vh;">
-    <MudText Typo="Typo.h4" Align="Align.Center" Icon="@Icons.Material.Filled.Functions" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
+        <MudIcon Icon="@Icons.Material.Filled.Functions" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
         素点集計
     </MudText>
 
@@ -227,17 +228,8 @@
             </MudButton>
         </div>
         @* 共有ボタン *@
-        <div class="d-flex justify-end mt-4 gap-2">
-            <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Share" OnClick="ShareImageAsync" Disabled="isSharing" Style="width: 170px; white-space: nowrap;">
-                @(isSharing ? "画像を作成中..." : "結果を画像でシェア")
-            </MudButton>
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Link" OnClick="CopyShareUrlAsync" Style="white-space: nowrap;">
-                閲覧用URLをシェア
-            </MudButton>
-        </div>
+        <ShareButtonGroup Rules="rules" TablePlayers="TablePlayers" ActiveHistory="ActiveHistory" ActiveSessionChips="ActiveSessionChips" />
     </MudPaper>
-    @* 隠しシェア画像生成コンポーネント *@
-    <ShareTarget Rules="rules" TablePlayers="TablePlayers" ActiveHistory="ActiveHistory" ActiveSessionChips="ActiveSessionChips" />
 </MudContainer>
 @* テンキー *@
 <ScoreKeypad IsOpen="activeScoreInputIndex.HasValue" IsTotalCorrect="IsTotalCorrect" OnKeyPress="OnKeypadPress" />
@@ -281,7 +273,6 @@
     private const string YakiIcon = "<g transform=\"matrix(0.025, 0, 0, 0.025, 0, 24)\"><path d=\"M843-60 670-234l-85 85q-23 23-56.5 23T472-149l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23 23-56.5 23T246-375l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23-23-23-56.5t23-56.5l28-28L60-844l56-56 102 102 28-28q23-23 57-23t57 23l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l-85 84 172 173-56 57ZM529-205l227-226-57-57-227 227 57 56Zm-57-170 114-113-57-56-113 113 56 56Zm-170-56 227-227-57-56-226 226 56 57Zm-56-170 114-113-57-57-113 113 56 57Zm368 255ZM501-460ZM388-573ZM275-686Z\"/></g>";
     private int? armedDeleteIndex = null;
     private GameResult? armedDeleteTarget = null;
-    private bool isSharing = false;
     private string FormatPlus(double val, string fmt = "F1") => val > 0 ? $"+{val.ToString(fmt)}" : val.ToString(fmt);
     private int? activeScoreInputIndex = null;
     private string[] scoreInputBuffers
@@ -807,30 +798,6 @@
         }
     }
 
-    @* 結果共有画像を生成 *@
-    private async Task ShareImageAsync()
-    {
-        isSharing = true;
-        StateHasChanged();
-        await Task.Delay(50); // DOMの描画を確実に行うために待機
-        try
-        {
-            var result = await JSRuntime.InvokeAsync<string>("exportAndShareResult", "share-target");
-            if (result == "COPIED") Snackbar.Add("画像をクリップボードにコピーしました！", Severity.Success);
-            else if (result == "DOWNLOADED") Snackbar.Add("画像をダウンロードしました！", Severity.Info);
-            else if (result.StartsWith("ERROR")) Snackbar.Add($"画像の生成に失敗しました:\n{result}", Severity.Error);
-        }
-        catch (Exception)
-        {
-            Snackbar.Add("シェア処理中にエラーが発生しました。", Severity.Error);
-        }
-        finally
-        {
-            isSharing = false;
-            StateHasChanged();
-        }
-    }
-
     @* 素点入力欄を初期化 *@
     private void ResetInputForms()
     {
@@ -885,32 +852,6 @@
                 await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
             }
         }
-    }
-
-    @* 結果共有用のURLを生成してクリップボードにコピー *@
-    private async Task CopyShareUrlAsync()
-    {
-        try
-        {
-            var payload = new
-            {
-                r = rules,
-                p = TablePlayers,
-                c = TablePlayers.Select(p => ActiveSessionChips.TryGetValue(p, out var v) ? v : 0).ToList(),
-                h = ActiveHistory.Select(g => new { t = g.Timestamp.Ticks, s = g.RawScores, pt = g.Points, yp = g.YakiPlayers, tb = g.TobiBonusRecipients, sp = g.SinkPoints, ypt = g.YakiPoints, tpt = g.TobiPoints, cp = g.ColdPoints, y = g.Yen }).ToList()
-            };
-            string json = System.Text.Json.JsonSerializer.Serialize(payload);
-            byte[] jsonBytes = System.Text.Encoding.UTF8.GetBytes(json);
-            using var ms = new System.IO.MemoryStream();
-            using (var gzip = new System.IO.Compression.GZipStream(ms, System.IO.Compression.CompressionLevel.Optimal)) { gzip.Write(jsonBytes, 0, jsonBytes.Length); }
-            string base64 = Convert.ToBase64String(ms.ToArray());
-            string urlEncoded = base64.Replace("+", "-").Replace("/", "_").TrimEnd('=');
-            string shareUrl = $"{NavigationManager.BaseUri}shared?d={urlEncoded}";
-            string result = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 対局結果", shareUrl);
-            if (result == "COPIED") Snackbar.Add("閲覧用URLをクリップボードにコピーしました！", Severity.Success);
-            else if (result.StartsWith("ERROR")) Snackbar.Add("共有またはコピーに失敗しました", Severity.Error);
-        }
-        catch (Exception ex) { Snackbar.Add($"URLの生成に失敗しました:\n{ex.Message}", Severity.Error); }
     }
 
     @* 対局人数変更時の処理 *@
@@ -1085,8 +1026,11 @@
             foreach (var name in sessionPlayerNames)
             {
                 var existingPlayer = playerMaster.FirstOrDefault(p => p.Name == name);
-                if (existingPlayer != null) { nameToIdMap[name] = existingPlayer.Id; playersToUpdate.Add(new PlayerProfile { Id = existingPlayer.Id, Name = existingPlayer.Name, CumulativeChips = existingPlayer.CumulativeChips, CreatedAt = existingPlayer.CreatedAt }); }
-                else { var newId = Guid.NewGuid().ToString(); var newProfile = new PlayerProfile { Id = newId, Name = name, CumulativeChips = 0, CreatedAt = currentTimestamp }; playerMaster.Add(newProfile); playersToUpdate.Add(newProfile); nameToIdMap[name] = newId; }
+                if (existingPlayer != null) { nameToIdMap[name] = existingPlayer.Id; playersToUpdate.Add(new PlayerProfile { Id = existingPlayer.Id, Name = existingPlayer.Name, CumulativeChips = existingPlayer.CumulativeChips, CreatedAt = existingPlayer.CreatedAt });
+                }
+                else { var newId = Guid.NewGuid().ToString();
+                var newProfile = new PlayerProfile { Id = newId, Name = name, CumulativeChips = 0, CreatedAt = currentTimestamp }; playerMaster.Add(newProfile);
+                playersToUpdate.Add(newProfile); nameToIdMap[name] = newId; }
             }
             foreach (var game in ActiveHistory)
             {
@@ -1108,13 +1052,21 @@
                 };
                 gameRecordsToSave.Add(savedRecord);
             }
-            var sessionRecord = new SavedSessionRecord { SessionId = newSessionId, Date = currentTimestamp, Rate = rules.Rate, ChipRate = rules.ChipRate, ParticipantPlayerIds = new List<string>(), SettledChips = new List<int>() };
+            var sessionRecord = new SavedSessionRecord { 
+                SessionId = newSessionId, 
+                Date = currentTimestamp, 
+                Rate = rules.Rate, 
+                ChipRate = rules.ChipRate, 
+                ParticipantPlayerIds = new List<string>(), 
+                SettledChips = new List<int>(),
+                Rules = rules.DeepClone() 
+            };
+            
             for (int i = 0; i < TablePlayers.Count; i++)
             {
                 string name = TablePlayers[i];
                 if (!string.IsNullOrWhiteSpace(name) && nameToIdMap.TryGetValue(name, out var playerId))
                 {
-                    // 名前をキーにしてチップ数を取得
                     int chipCount = ActiveSessionChips.TryGetValue(name, out var c) ? c : 0;
                     sessionRecord.ParticipantPlayerIds.Add(playerId);
                     sessionRecord.SettledChips.Add(chipCount);

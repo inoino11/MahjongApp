@@ -1,0 +1,73 @@
+@using MahjongApp.Models
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
+<div class="d-flex justify-end mt-4 gap-2">
+    <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Image" OnClick="ShareImageAsync" Disabled="isSharing" Style="flex: 1; max-width: 140px; white-space: nowrap;">
+        @(isSharing ? "生成中..." : "画像シェア")
+    </MudButton>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Link" OnClick="CopyShareUrlAsync" Style="flex: 1; max-width: 140px; white-space: nowrap;">
+        URLシェア
+    </MudButton>
+</div>
+
+<ShareTarget TargetId="@targetId" Rules="Rules" TablePlayers="TablePlayers" ActiveHistory="ActiveHistory" ActiveSessionChips="ActiveSessionChips" />
+
+@code {
+    [Parameter] public RuleSet Rules { get; set; } = new();
+    [Parameter] public List<string> TablePlayers { get; set; } = new();
+    [Parameter] public List<GameResult> ActiveHistory { get; set; } = new();
+    [Parameter] public Dictionary<string, int> ActiveSessionChips { get; set; } = new();
+
+    private string targetId = $"share-target-{Guid.NewGuid():N}";
+    private bool isSharing = false;
+
+    private async Task ShareImageAsync()
+    {
+        isSharing = true;
+        StateHasChanged();
+        await Task.Delay(50);
+        try
+        {
+            var result = await JSRuntime.InvokeAsync<string>("exportAndShareResult", targetId);
+            if (result == "COPIED") Snackbar.Add("画像をクリップボードにコピーしました！", Severity.Success);
+            else if (result == "DOWNLOADED") Snackbar.Add("画像をダウンロードしました！", Severity.Info);
+            else if (result.StartsWith("ERROR")) Snackbar.Add($"画像の生成に失敗しました:\n{result}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("シェア処理中にエラーが発生しました。", Severity.Error);
+        }
+        finally
+        {
+            isSharing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CopyShareUrlAsync()
+    {
+        try
+        {
+            var payload = new
+            {
+                r = Rules,
+                p = TablePlayers,
+                c = TablePlayers.Select(p => ActiveSessionChips.TryGetValue(p, out var v) ? v : 0).ToList(),
+                h = ActiveHistory.Select(g => new { t = g.Timestamp.Ticks, s = g.RawScores, pt = g.Points, yp = g.YakiPlayers, tb = g.TobiBonusRecipients, sp = g.SinkPoints, ypt = g.YakiPoints, tpt = g.TobiPoints, cp = g.ColdPoints, y = g.Yen }).ToList()
+            };
+            string json = System.Text.Json.JsonSerializer.Serialize(payload);
+            byte[] jsonBytes = System.Text.Encoding.UTF8.GetBytes(json);
+            using var ms = new System.IO.MemoryStream();
+            using (var gzip = new System.IO.Compression.GZipStream(ms, System.IO.Compression.CompressionLevel.Optimal)) { gzip.Write(jsonBytes, 0, jsonBytes.Length); }
+            string base64 = Convert.ToBase64String(ms.ToArray());
+            string urlEncoded = base64.Replace("+", "-").Replace("/", "_").TrimEnd('=');
+            string shareUrl = $"{NavigationManager.BaseUri}shared?d={urlEncoded}";
+            string result = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 対局結果", shareUrl);
+            if (result == "COPIED") Snackbar.Add("閲覧用URLをクリップボードにコピーしました！", Severity.Success);
+            else if (result.StartsWith("ERROR")) Snackbar.Add("共有またはコピーに失敗しました", Severity.Error);
+        }
+        catch (Exception ex) { Snackbar.Add($"URLの生成に失敗しました:\n{ex.Message}", Severity.Error); }
+    }
+}
