@@ -176,7 +176,6 @@
             : "現在のアプリ内のデータはすべて消去され、選択したファイルの内容で上書きされます。\n本当によろしいですか？";
         bool? result = await DialogService.ShowMessageBoxAsync(
             title, message, yesText: "はい、実行します", cancelText: "キャンセル");
-
         if (result != true) return;
         try
         {
@@ -192,7 +191,6 @@
                 };
                 // AllDbData型にパースできるかテスト
                 var testParse = System.Text.Json.JsonSerializer.Deserialize<MahjongApp.Services.AllDbData>(json, options);
-
                 if (testParse == null || (testParse.Players == null && testParse.Games == null && testParse.RulePresets == null))
                 {
                     Snackbar.Add("ファイル形式が正しくありません。麻雀集計ツールのバックアップデータを選択してください。", Severity.Error);
@@ -211,7 +209,7 @@
             string successMsg = isMerge ? "データを統合しました！" : "データを復元しました！";
             Snackbar.Add(successMsg, Severity.Success);
             await Task.Delay(1500);
-            NavigationManager.NavigateTo("/", forceLoad: true);
+            NavigationManager.NavigateTo(NavigationManager.BaseUri, forceLoad: true);
         }
         catch (Exception ex)
         {
@@ -236,9 +234,10 @@
             {
                 await DatabaseService.ClearAllDataAsync();
                 await LocalStorage.ClearAsync();
+                _ = StatsCache.InitializeAsync(forceReload: true);
                 Snackbar.Add("すべてのデータを初期化しました", Severity.Success);
                 await Task.Delay(1500);
-                NavigationManager.NavigateTo("/", forceLoad: true);
+                NavigationManager.NavigateTo(NavigationManager.BaseUri, forceLoad: true);
             }
         }
     }

@@ -28,18 +28,27 @@ namespace MahjongApp.Services
             {
                 if (IsInitialized && !forceReload) return;
                 var dbData = await _databaseService.GetAllDataAsync();
-                // データ自体がnullの場合は安全に処理を終了
+                // データ自体がnullの場合、メモリ上のリストをクリア
                 if (dbData == null)
                 {
+                    Stats4.Clear();
+                    Stats3.Clear();
+                    AvailablePlayers.Clear();
+                    AllGames.Clear();
                     IsInitialized = true;
                     return;
                 }
-                // Listがnullの場合は空のリストを割り当ててNRE(NullReferenceException)を防ぐ
+                // Listがnullの場合、空のリストを割り当ててNRE(NullReferenceException)を防ぐ
                 var safePlayers = dbData.Players ?? new List<PlayerProfile>();
                 var safeGames = dbData.Games ?? new List<SavedGameRecord>();
                 var safeSessions = dbData.Sessions ?? new List<SavedSessionRecord>();
+                // データが空の場合、メモリ上のリストをクリア
                 if (!safePlayers.Any() || !safeGames.Any())
                 {
+                    Stats4.Clear();
+                    Stats3.Clear();
+                    AvailablePlayers.Clear();
+                    AllGames.Clear();
                     IsInitialized = true;
                     return;
                 }
@@ -107,9 +116,10 @@ namespace MahjongApp.Services
             finally
             {
                 // 成功・失敗に関わらず、必ずロックを解放する
-                _initLock.Release(); 
+                _initLock.Release();
             }
         }
+
         public List<MatchupStat> CalculateMatchups(string heroId, int playerCount)
         {
             var result = new List<MatchupStat>();

@@ -32,10 +32,6 @@
 
 <MudDialog>
     <DialogContent>
-        @* 
-           styleに max-height (画面高の55%) と overflow-y: auto を追加。
-           これでリストが長い場合のみ、このエリア内だけでスクロールが発生します。
-        *@
         <div @onclick="ClearArmedState" 
              style="max-height: 55vh; overflow-y: auto; overflow-x: hidden; padding: 4px 8px 12px 4px;">
             @if (Presets == null || Presets.Count == 0)
@@ -89,10 +85,6 @@
             }
         </div>
     </DialogContent>
-    <DialogActions>
-        @* ボタンの色をPrimaryにして視認性を向上 *@
-        <MudButton Color="Color.Primary" OnClick="Cancel">閉じる</MudButton>
-    </DialogActions>
 </MudDialog>
 
 @code {
@@ -159,17 +151,6 @@
                p.TieBreaker != TieBreakerRule.Kamicha ||
                p.Rounding != RoundingRule.GoshaRokunyu;
     }
-
-    private void Cancel()
-    {
-        MudDialog.Cancel();
-    }
-
-    // 移動直後のアイテムを保持する変数
-    private RuleSet? recentlyMovedPreset = null;
-
-    // アニメーションの発火回数を管理するカウンター
-    private int animationVersion = 0;
 
     // 複数の発光状態を独立して管理するリスト
     private List<RuleSet> flashingPresets = new();
