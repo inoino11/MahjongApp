@@ -1,5 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @inject MahjongApp.Services.StatsCacheService StatsCache
+@inject IJSRuntime JSRuntime
 
 <MudThemeProvider Theme="@mahjongTheme" @bind-IsDarkMode="_isDarkMode" />
 <MudDialogProvider />
@@ -42,6 +43,16 @@
     void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;
+    }
+
+    // 既存の動きに合わせて少し待機してからロード画面を消す
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Task.Delay(500);
+            await JSRuntime.InvokeVoidAsync("hideMahjongLoader");
+        }
     }
 
     private MudTheme mahjongTheme = new MudTheme()

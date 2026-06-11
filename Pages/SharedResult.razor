@@ -90,15 +90,6 @@
         }
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await Task.Delay(500);
-            await JSRuntime.InvokeVoidAsync("hideMahjongLoader");
-        }
-    }
-
     public class SharedPayload
     {
         public RuleSet? Rules { get; set; }

@@ -398,16 +398,6 @@
         EvaluateAutoFill(); // 自動計算枠などを再評価
     }
 
-    // 初回の描画（データバインド済みの状態）が完了した瞬間に、ローディング画面をフェードアウトさせる
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await Task.Delay(500);
-            await JSRuntime.InvokeVoidAsync("hideMahjongLoader");
-        }
-    }
-
     @* 持ち点の処理 *@
     private void OnStartingPointsChanged(int val)
     {
