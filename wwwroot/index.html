@@ -279,8 +279,7 @@
                         // 2. 【スマホ向け】モバイル端末 ＆ Web Share APIが使える場合
                         if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
                             navigator.share({
-                                files: [file],
-                                title: '麻雀対局結果'
+                                files: [file]
                             }).catch(e => console.log("Share aborted", e));
                             resolve("SHARED");
                             return;
@@ -531,8 +530,17 @@
     <script>
         window.scrollToInput = (elementId) => {
             const el = document.getElementById(elementId);
+            const keypad = document.querySelector('.custom-keypad-container');
             if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const rect = el.getBoundingClientRect();
+                const keypadHeight = keypad ? keypad.offsetHeight : 320;
+                const buttonHeight = 60;
+                const keypadTop = window.innerHeight - keypadHeight;
+                const targetY = window.scrollY + rect.bottom - buttonHeight - keypadTop;
+                window.scrollTo({
+                    top: targetY,
+                    behavior: 'smooth'
+                });
             }
         };
     </script>
@@ -597,6 +605,28 @@
             if (window.pwaInstall.dotNetHelper) {
                 window.pwaInstall.dotNetHelper.invokeMethodAsync('OnInstalled');
             }
+        });
+    </script>
+    <script>
+        // ハンバーガーメニューなど、入力エリア外を触った時にテンキーを閉じる
+        ['click', 'touchstart'].forEach(eventType => {
+            document.addEventListener(eventType, (e) => {
+                const keypad = document.querySelector('.custom-keypad-container.open');
+                if (keypad) {
+                    // タップされた場所が「テンキーの中」か「スコア入力枠（追加・削除ボタン含む）の中」か判定
+                    const clickedInsideKeypad = e.target.closest('.custom-keypad-container');
+                    const clickedInsideInput = e.target.closest('#score-input-section');
+                    // どちらでもない場所（上部のAppバーやメニュー等）を触った場合
+                    if (!clickedInsideKeypad && !clickedInsideInput) {
+                        const btn = document.getElementById('hidden-close-keypad-btn');
+                        if (btn && !btn.disabled) {
+                            btn.disabled = true; // タッチとクリックの連続発火による二重処理を防止
+                            btn.click();
+                            setTimeout(() => btn.disabled = false, 300);
+                        }
+                    }
+                }
+            }, { passive: true });
         });
     </script>
 </body>

@@ -35,6 +35,7 @@
         display: grid;
         grid-template-areas: "content";
         align-items: start;
+        min-width: 0;
     }
 
     /* グラフと表の共通設定。フェードアニメーションを追加 */
@@ -44,6 +45,7 @@
         width: 100%;
         transition: opacity 0.5s ease-in-out;
         opacity: 1;
+        min-width: 0;
     }
 
     .hide-element {
@@ -85,7 +87,6 @@
         .chart-flex-container {
             flex-direction: row;
             align-items: stretch;
-            /* グラフと凡例の高さを揃える */
         }
     }
 
@@ -93,6 +94,18 @@
     .responsive-chart-wrapper {
         padding-top: 12px;
         padding-bottom: 12px;
+        width: 100%;
+        /* 横幅の60%のサイズを高さとする */
+        height: 40vw; 
+        min-height: 150px; 
+        max-height: 300px; 
+    }
+
+    @@media (min-width: 960px) {
+        .responsive-chart-wrapper {
+            height: 100%;
+            min-height: 300px; 
+        }
     }
 
     .responsive-chart-wrapper svg {
@@ -142,13 +155,8 @@
     <div id="chart-wrapper" class="@(DisplayMode == 7 ? "" : "hide-element")">
         <div class="pa-2 pa-md-4 mud-background-gray rounded-lg" style="background-color: rgba(255,255,255,0.02);">
             <div class="chart-flex-container gap-3">
-                <div style="flex-grow: 1; min-width: 0; width: 100%; overflow-x: auto; overflow-y: hidden; touch-action: pan-x;">
-                    @{
-                        int minWidthPx = 300;
-                        // 凡例の数から大まかな必要な高さを算出 (PC版の最低限の高さ確保用)
-                        int estimatedHeight = Math.Max(200, _finalStats.Count * 45);
-                    }
-                    <div class="responsive-chart-wrapper" style="min-width: max(100%, @(minWidthPx)px); height: 100%; min-height: @(estimatedHeight)px;">
+                <div style="flex-grow: 1; min-width: 0; width: 100%;">
+                    <div class="responsive-chart-wrapper">
                         <MudChart ChartType="ChartType.Line" ChartSeries="@_chartSeries" XAxisLabels="@_xAxisLabels" Width="100%" Height="100%" ChartOptions="@_chartOptions" />
                     </div>
                 </div>

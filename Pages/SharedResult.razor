@@ -1,9 +1,9 @@
 @page "/shared"
 @inject NavigationManager NavigationManager
-@using System.Text.Json
-@using System.IO.Compression
-@using System.Text
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
 @using System.Text.Json.Serialization
+@using MahjongApp.Models
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 pb-10">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white;">
@@ -20,8 +20,8 @@
     }
     else
     {
-        <MudPaper Class="pa-4" Elevation="2">
-            <ResultTable History="sharedData?.History ?? new()" Players="sharedData?.Players ?? new()" ActiveParticipantCount="sharedData?.Players?.Count ?? 0" @bind-DisplayMode="displayMode" Rules="sharedData?.Rules ?? new()" SessionChips="sharedData?.SessionChips ?? new()" IsReadOnly="true" />
+        <MudPaper Class="pa-4" Elevation="2" Style="overflow: hidden; width: 100%;">
+             <ResultTable History="sharedData?.History ?? new()" Players="sharedData?.Players ?? new()" ActiveParticipantCount="sharedData?.Players?.Count ?? 0" @bind-DisplayMode="displayMode" Rules="sharedData?.Rules ?? new()" SessionChips="sharedData?.SessionChips ?? new()" IsReadOnly="true" />
             <MudAlert Severity="Severity.Info" Class="mt-4">
                 これは共有された閲覧専用ページです。
                 <MudLink Href="/" Color="Color.Primary" Underline="Underline.Always">自分のツールを開く</MudLink>
@@ -35,41 +35,34 @@
     private string? errorMessage;
     private int displayMode = 1;
     private SharedPayload? sharedData;
+    private readonly string workerUrl = "https://mahjong-share.inoino11.workers.dev";
 
-    [SupplyParameterFromQuery(Name = "d")]
-    public string? SharedDataParam { get; set; }
+    // パラメータ名を "d" から "id" に変更
+    [SupplyParameterFromQuery(Name = "id")]
+    public string? SharedIdParam { get; set; }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        if (!string.IsNullOrEmpty(SharedDataParam))
+        if (!string.IsNullOrEmpty(SharedIdParam))
         {
             try
             {
-                string base64 = SharedDataParam.Replace("-", "+").Replace("_", "/");
-                // 削除した = を元に戻す (4の倍数になるようにパディング)
-                switch (base64.Length % 4)
-                {
-                    case 2: base64 += "=="; break;
-                    case 3: base64 += "="; break;
-                }
-                byte[] compressedBytes = Convert.FromBase64String(base64);
-                using var ms = new MemoryStream(compressedBytes);
-                using var gzip = new GZipStream(ms, CompressionMode.Decompress);
-                using var reader = new StreamReader(gzip, Encoding.UTF8);
-                string json = reader.ReadToEnd();
-                // 短縮キーでデシリアライズ
-                var minData = JsonSerializer.Deserialize<MinifiedPayload>(json);
+                // Cloudflare WorkerからJSONデータを取得
+                var minData = await Http.GetFromJsonAsync<MinifiedPayload>($"{workerUrl}/{SharedIdParam}");
                 if (minData != null)
                 {
+                    // 割り当て用にプレイヤーリストを変数に格納しておく
+                    var resolvedPlayers = minData.Players ?? new List<string>();
                     // 元のデータ構造にマッピングして復元
                     sharedData = new SharedPayload
                     {
                         Rules = minData.Rules,
-                        Players = minData.Players,
+                        Players = resolvedPlayers,
                         SessionChips = minData.SessionChips,
                         History = minData.History?.Select(m => new GameResult
                         {
                             Timestamp = new DateTime(m.Ticks),
+                            PlayerNames = resolvedPlayers,
                             RawScores = m.RawScores ?? new(),
                             Points = m.Points ?? new(),
                             YakiPlayers = m.YakiPlayers ?? new(),
@@ -86,7 +79,7 @@
             }
             catch
             {
-                errorMessage = "無効なURL、またはデータが破損しています。";
+                errorMessage = "無効なURL、またはデータの有効期限（90日）が切れています。";
                 isLoading = false;
             }
         }
@@ -97,7 +90,15 @@
         }
     }
 
-    // データ受け渡し・復元用クラス
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Task.Delay(500);
+            await JSRuntime.InvokeVoidAsync("hideMahjongLoader");
+        }
+    }
+
     public class SharedPayload
     {
         public RuleSet? Rules { get; set; }
@@ -106,7 +107,6 @@
         public List<int>? SessionChips { get; set; }
     }
 
-    // JSONの短いキー名と紐付けるための受信用DTO
     public class MinifiedPayload
     {
         [JsonPropertyName("r")] public RuleSet? Rules { get; set; }

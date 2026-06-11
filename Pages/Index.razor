@@ -273,6 +273,9 @@
         <ShareButtonGroup Rules="rules" TablePlayers="TablePlayers" ActiveHistory="ActiveHistory" ActiveSessionChips="ActiveSessionChips" />
     </MudPaper>
 </MudContainer>
+
+@* 外部からテンキーを閉じるための隠しボタン *@
+<button id="hidden-close-keypad-btn" style="display: none;" @onclick="CloseKeypadOutside"></button>
 @* テンキー *@
 <ScoreKeypad IsOpen="activeScoreInputIndex.HasValue" IsTotalCorrect="IsTotalCorrect" OnKeyPress="OnKeypadPress" />
 
@@ -671,7 +674,9 @@
     private async Task CalculateAndRecordGame()
     {
         int pCount = rules.PlayerCount;
-        var activeIndices = Enumerable.Range(0, activeParticipantCount).Where(i => !currentSitOuts[i]).ToList();
+        var activeIndices = Enumerable.Range(0, activeParticipantCount)
+            .Where(i => !currentSitOuts[i] && currentScores[i].HasValue)
+            .ToList();
         if (activeIndices.Count != pCount) return;
         var activeScores = activeIndices.Select(i => (currentScores[i] ?? 0) * 100).ToList();
         var activePlayers = activeIndices.Select(i => currentPlayers[i].Name).ToList();
@@ -1133,14 +1138,18 @@
     private async Task OpenKeypad(int index)
     {
         if (currentSitOuts[index]) return; // 抜け番の時は開かない
+        bool isAlreadyOpen = activeScoreInputIndex.HasValue;
         if (activeScoreInputIndex.HasValue && activeScoreInputIndex.Value != index)
             await CommitScoreBuffer(activeScoreInputIndex.Value);
         activeScoreInputIndex = index;
         var score = currentScores[index];
         if (string.IsNullOrEmpty(scoreInputBuffers[index]) && score.HasValue)
             scoreInputBuffers[index] = score.Value.ToString();
-        await Task.Delay(50);
-        await JS.InvokeVoidAsync("scrollToInput", "score-input-section");
+        if (!isAlreadyOpen)
+        {
+            await Task.Delay(50);
+            await JS.InvokeVoidAsync("scrollToInput", "score-input-section");
+        }
     }
 
     private async Task CloseKeypad(bool saveToStorage = true)
@@ -1213,6 +1222,16 @@
         if (saveToStorage)
         {
             await SessionState.SaveScoreBuffersAsync(scoreInputBuffers);
+        }
+    }
+
+    // 外部のメニューなどをタップした際にテンキーを閉じる処理
+    private async Task CloseKeypadOutside()
+    {
+        if (activeScoreInputIndex.HasValue)
+        {
+            await CloseKeypad();
+            StateHasChanged();
         }
     }
 }
