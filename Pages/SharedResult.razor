@@ -7,7 +7,7 @@
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 pb-10">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white;">
-        対局結果<br />（共有ビュー）
+        対局結果
     </MudText>
     @if (isLoading)
     {
@@ -18,16 +18,16 @@
     {
         <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
     }
-    @* else
+    else
     {
         <MudPaper Class="pa-4" Elevation="2" Style="overflow: hidden; width: 100%;">
              <ResultTable History="sharedData?.History ?? new()" Players="sharedData?.Players ?? new()" ActiveParticipantCount="sharedData?.Players?.Count ?? 0" @bind-DisplayMode="displayMode" Rules="sharedData?.Rules ?? new()" SessionChips="sharedData?.SessionChips ?? new()" IsReadOnly="true" />
-            <MudAlert Severity="Severity.Info" Class="mt-4">
+            @* <MudAlert Severity="Severity.Info" Class="mt-4">
                 これは共有された閲覧専用ページです。
                 <MudLink Href="/" Color="Color.Primary" Underline="Underline.Always">自分のツールを開く</MudLink>
-            </MudAlert>
+            </MudAlert> *@
         </MudPaper>
-    } *@
+    }
 </MudContainer>
 
 @code {

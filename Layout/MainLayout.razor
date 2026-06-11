@@ -1,6 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @inject MahjongApp.Services.StatsCacheService StatsCache
 @inject IJSRuntime JSRuntime
+@inject NavigationManager NavManager
 
 <MudThemeProvider Theme="@mahjongTheme" @bind-IsDarkMode="_isDarkMode" />
 <MudDialogProvider />
@@ -10,7 +11,10 @@
 <MudLayout>
     @* 上部のバー *@
     <MudAppBar Elevation="1" Dense="true">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        @if (!IsSharedPage)
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        }
         <MudText Typo="Typo.h6" Class="ml-3">麻雀集計ツール</MudText>
         <MudSpacer />
         @* --- ダークモード切り替えスイッチ --- *@
@@ -20,9 +24,12 @@
     </MudAppBar>
 
     @* 左側のメニュー *@
-    <MudDrawer @bind-Open="_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always" Width="160px">
-        <NavMenu />
-    </MudDrawer>
+    @if (!IsSharedPage)
+    {
+        <MudDrawer @bind-Open="_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always" Width="160px">
+            <NavMenu />
+        </MudDrawer>
+    }
 
     @* メイン画面 *@
     <MudMainContent>
@@ -33,6 +40,23 @@
 @code {
     bool _drawerOpen = false;
     bool _isDarkMode = true; // デフォルトをダークモードに設定
+    bool IsSharedPage = false;
+
+    protected override void OnInitialized()
+    {
+        CheckIfSharedPage(NavManager.Uri);
+        NavManager.LocationChanged += (s, e) => 
+        {
+            CheckIfSharedPage(e.Location);
+            StateHasChanged();
+        };
+    }
+
+    // URLに "/shared" が含まれているか判定
+    private void CheckIfSharedPage(string uri)
+    {
+        IsSharedPage = uri.Contains("/shared");
+    }
 
     // 起動直後に裏で中間構造体を作成
     protected override async Task OnInitializedAsync()
