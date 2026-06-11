@@ -18,7 +18,7 @@
     {
         <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
     }
-    else
+    @* else
     {
         <MudPaper Class="pa-4" Elevation="2" Style="overflow: hidden; width: 100%;">
              <ResultTable History="sharedData?.History ?? new()" Players="sharedData?.Players ?? new()" ActiveParticipantCount="sharedData?.Players?.Count ?? 0" @bind-DisplayMode="displayMode" Rules="sharedData?.Rules ?? new()" SessionChips="sharedData?.SessionChips ?? new()" IsReadOnly="true" />
@@ -27,7 +27,7 @@
                 <MudLink Href="/" Color="Color.Primary" Underline="Underline.Always">自分のツールを開く</MudLink>
             </MudAlert>
         </MudPaper>
-    }
+    } *@
 </MudContainer>
 
 @code {
