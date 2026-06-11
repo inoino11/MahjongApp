@@ -83,8 +83,7 @@
                         <MudCollapse Expanded="group.ShowDetails">
                             <div class="px-4 pb-4 pt-1" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                                 <MudCard Elevation="0" Style="background-color: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);">
-                                    <MudCardContent Class="py-2">
-                                        <MudText Typo="Typo.subtitle2" Class="mb-2" Color="Color.Secondary">◆ 対局一覧</MudText>
+                                    <MudCardContent Class="py-4">
                                         @if (group.Games.Count > 0)
                                         {
                                             <div class="child-table-wrapper mb-4">
@@ -111,7 +110,7 @@
                                                     chipsDict[pName] = safeChips.Count > i ? safeChips[i] : 0;
                                                 }
                                             }
-                                            <MudText Typo="Typo.subtitle2" Class="mt-2 mb-2" Color="Color.Warning">◆ @($"{group.Session.Rules.Name}")</MudText>
+                                            <MudText Typo="Typo.subtitle2" Class="mt-2 mb-2" Color="Color.Warning">@($"{group.Session.Rules.Name}")</MudText>
                                             <div class="d-flex flex-wrap gap-1 mt-1">
                                                 <span class="rule-badge">@(group.Session.Rules.PlayerCount == 3 ? "三人麻雀" : "四人麻雀")</span>
                                                 <span class="rule-badge">@($"{group.Session.Rules.StartingPoints} / {group.Session.Rules.ReturnPoints}")</span>
