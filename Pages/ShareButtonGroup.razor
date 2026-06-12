@@ -5,10 +5,10 @@
 @inject HttpClient Http
 
 <div class="d-flex justify-end mt-4 gap-2">
-    <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Image" OnClick="ShareImageAsync" Disabled="isSharing" Style="flex: 1; max-width: 140px; white-space: nowrap;">
+    <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Image" OnClick="ShareImageAsync" Disabled="@(isSharing || ActiveHistory.Count == 0)" Style="flex: 1; max-width: 140px; white-space: nowrap;">
         @(isSharing ? "生成中..." : "画像シェア")
     </MudButton>
-    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Link" OnClick="CopyShareUrlAsync" Disabled="isSharing" Style="flex: 1; max-width: 140px; white-space: nowrap;">
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Link" OnClick="CopyShareUrlAsync" Disabled="@(isSharing || ActiveHistory.Count == 0)" Style="flex: 1; max-width: 140px; white-space: nowrap;">
         @(isSharing ? "生成中..." : "URLシェア")
     </MudButton>
 </div>
@@ -25,6 +25,47 @@
     private bool isSharing = false;
     private readonly string workerUrl = "https://mahjong-share.inoino11.workers.dev";
 
+    // --- URLキャッシュと変更検知用の変数 ---
+    private string? cachedShareUrl = null;
+    private string lastPayloadJson = "";
+
+    // パラメータ（データ）が更新されるたびに呼ばれるライフサイクルメソッド
+    protected override void OnParametersSet()
+    {
+        // 現在のデータ状態をJSON化して比較
+        var currentPayloadJson = System.Text.Json.JsonSerializer.Serialize(CreatePayloadObject());
+        if (currentPayloadJson != lastPayloadJson)
+        {
+            // データに変化があった場合、キャッシュしていたURLを破棄する
+            cachedShareUrl = null;
+            lastPayloadJson = currentPayloadJson;
+        }
+    }
+
+    // API送信用・および変更検知比較用のオブジェクトを生成
+    private object CreatePayloadObject()
+    {
+        return new
+        {
+            r = Rules,
+            p = TablePlayers,
+            c = TablePlayers.Select(p => ActiveSessionChips.TryGetValue(p, out var v) ? v : 0).ToList(),
+            h = ActiveHistory.Select(g => new
+            {
+                t = g.Timestamp.Ticks,
+                s = g.RawScores,
+                pt = g.Points,
+                yp = g.YakiPlayers,
+                tb = g.TobiBonusRecipients,
+                sp = g.SinkPoints,
+                ypt = g.YakiPoints,
+                tpt = g.TobiPoints,
+                cp = g.ColdPoints,
+                y = g.Yen
+            }).ToList()
+        };
+    }
+
     private async Task ShareImageAsync()
     {
         isSharing = true;
@@ -33,13 +74,13 @@
         try
         {
             var result = await JSRuntime.InvokeAsync<string>("exportAndShareResult", targetId);
-            if (result == "COPIED") Snackbar.Add("画像をクリップボードにコピーしました！", Severity.Success);
-            else if (result == "DOWNLOADED") Snackbar.Add("画像をダウンロードしました！", Severity.Info);
+            if (result == "COPIED") Snackbar.Add("画像をクリップボードにコピーしました", Severity.Success);
+            else if (result == "DOWNLOADED") Snackbar.Add("画像をダウンロードしました", Severity.Info);
             else if (result.StartsWith("ERROR")) Snackbar.Add($"画像の生成に失敗しました:\n{result}", Severity.Error);
         }
         catch (Exception)
         {
-            Snackbar.Add("シェア処理中にエラーが発生しました。", Severity.Error);
+            Snackbar.Add("シェア処理中にエラーが発生しました", Severity.Error);
         }
         finally
         {
@@ -54,24 +95,27 @@
         StateHasChanged();
         try
         {
-            var payload = new
+            // すでに生成済みのURLがあれば、APIを叩かずに再利用する
+            if (!string.IsNullOrEmpty(cachedShareUrl))
             {
-                r = Rules,
-                p = TablePlayers,
-                c = TablePlayers.Select(p => ActiveSessionChips.TryGetValue(p, out var v) ? v : 0).ToList(),
-                h = ActiveHistory.Select(g => new { t = g.Timestamp.Ticks, s = g.RawScores, pt = g.Points, yp = g.YakiPlayers, tb = g.TobiBonusRecipients, sp = g.SinkPoints, ypt = g.YakiPoints, tpt = g.TobiPoints, cp = g.ColdPoints, y = g.Yen }).ToList()
-            };
+                string shareResult = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 対局結果", cachedShareUrl);
+                if (shareResult == "COPIED") Snackbar.Add("閲覧用URLをクリップボードにコピーしました", Severity.Success);
+                else if (shareResult.StartsWith("ERROR")) Snackbar.Add("共有またはコピーに失敗しました", Severity.Error);
+                return;
+            }
             // Cloudflare WorkerにデータをPOSTして短縮IDを取得
+            var payload = CreatePayloadObject();
             var response = await Http.PostAsJsonAsync(workerUrl, payload);
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<WorkerResponse>();
                 if (result != null && !string.IsNullOrEmpty(result.Id))
                 {
-                    // ?d= から ?id= に変更し、取得した短いIDを結合
-                    string shareUrl = $"{NavigationManager.BaseUri}shared?id={result.Id}";
-                    string shareResult = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 対局結果", shareUrl);
-                    if (shareResult == "COPIED") Snackbar.Add("閲覧用URLをクリップボードにコピーしました！", Severity.Success);
+                    // URLを生成してキャッシュに保持
+                    cachedShareUrl = $"{NavigationManager.BaseUri}shared?id={result.Id}";
+
+                    string shareResult = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 対局結果", cachedShareUrl);
+                    if (shareResult == "COPIED") Snackbar.Add("閲覧用URLをクリップボードにコピーしました", Severity.Success);
                     else if (shareResult.StartsWith("ERROR")) Snackbar.Add("共有またはコピーに失敗しました", Severity.Error);
                 }
             }
@@ -91,7 +135,6 @@
         }
     }
 
-    // Cloudflareからのレスポンス受け取り用クラス
     public class WorkerResponse
     {
         public string Id { get; set; } = string.Empty;

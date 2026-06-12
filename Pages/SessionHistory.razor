@@ -110,7 +110,10 @@
                                                     chipsDict[pName] = safeChips.Count > i ? safeChips[i] : 0;
                                                 }
                                             }
-                                            <MudText Typo="Typo.subtitle2" Class="mt-2 mb-2" Color="Color.Warning">@($"{group.Session.Rules.Name}")</MudText>
+                                            <MudText Typo="Typo.subtitle2" Class="d-flex align-center mt-2 mb-2" Color="Color.Warning">
+                                                <MudIcon Icon="@Icons.Material.Filled.Article" Size="Size.Small" Class="mr-1" />
+                                                @($"{group.Session.Rules.Name}")
+                                            </MudText>
                                             <div class="d-flex flex-wrap gap-1 mt-1">
                                                 <span class="rule-badge">@(group.Session.Rules.PlayerCount == 3 ? "三人麻雀" : "四人麻雀")</span>
                                                 <span class="rule-badge">@($"{group.Session.Rules.StartingPoints} / {group.Session.Rules.ReturnPoints}")</span>
