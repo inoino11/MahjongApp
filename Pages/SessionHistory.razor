@@ -95,24 +95,33 @@
                 <MudTablePager HideRowsPerPage="true" />
             </PagerContent>
             <RowTemplate Context="group">
-                <MudTd Style="@($"padding: 10px 12px {(group.ShowDetails ? "0px" : "10px")} 12px; border-bottom: {(group.ShowDetails ? "none" : "1px solid var(--mud-palette-divider)")}; transition: padding-bottom 0.2s ease;")">
-                    <div class="d-flex align-center justify-space-between w-100" style="margin-bottom: 2px; padding-left: 36px;">
-                        <span style="font-size: 0.95rem; font-weight: bold; letter-spacing: 0.5px;">
-                            @group.Session.Date.ToString("yyyy/MM/dd HH:mm")
-                        </span>
-                        <div class="d-flex align-center" style="gap: 8px;">
-                            <span style="font-size: 0.8rem; color: #9e9e9e; background-color: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; font-weight: bold;">
-                                @group.Games.Count 局
-                            </span>
-                            <span @onclick="() => { }" @onclick:stopPropagation="true">
-                                <MudButton Size="Size.Small" Variant="Variant.Text" Color="@(ArmedDeleteTarget == group ? Color.Error : Color.Default)" StartIcon="@(ArmedDeleteTarget == group ? DeleteEmpty : Icons.Material.Filled.Delete)" Style="@(ArmedDeleteTarget == group ? "font-weight: bold; min-width: 32px; padding: 4px;" : "color: #9e9e9e; min-width: 32px; padding: 4px;")" OnClick="@(() => HandleDeleteClick(group))"></MudButton>
-                            </span>
+                <MudTd Style="@($"cursor: pointer; padding: 10px 12px {(group.ShowDetails ? "0px" : "10px")} 12px; border-bottom: {(group.ShowDetails ? "none" : "1px solid var(--mud-palette-divider)")}; transition: padding-bottom 0.2s ease;")"
+                       @onclick="@(() => { group.ShowDetails = !group.ShowDetails; group.HasBeenOpened = true; })">
+                    <div class="d-flex align-start w-100">
+                        @* 1. 左側のアイコン領域（幅を固定してインデントの軸を作る） *@
+                        <div style="width: 32px; flex-shrink: 0; display: flex; justify-content: flex-start; margin-top: 1px;">
+                            <MudIcon Icon="@(group.ShowDetails ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Size="Size.Small" Style="color: #888;" />
                         </div>
-                    </div>
-                    <div class="d-flex align-center w-100" style="text-align: left; font-size: 0.85rem; color: #aaaaaa; white-space: normal; word-break: break-all; line-height: 1.4;">
-                        <MudIconButton Icon="@(group.ShowDetails ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" OnClick="@(() => { group.ShowDetails = !group.ShowDetails; group.HasBeenOpened = true; })" Size="Size.Small" Style="padding: 4px; margin-right: 4px;" />
-                        <div>
-                            @GetPlayerNames(group.Session.ParticipantPlayerIds)
+                        @* 2. 右側のテキスト領域（タイトルと対局者名） *@
+                        <div class="flex-grow-1 d-flex flex-column" style="min-width: 0;">
+                            @* 日付とバッジの行 *@
+                            <div class="d-flex align-center justify-space-between w-100" style="margin-bottom: 4px;">
+                                <span style="font-size: 0.95rem; font-weight: bold; letter-spacing: 0.5px;">
+                                    @group.Session.Date.ToString("yyyy/MM/dd HH:mm")
+                                </span>
+                                <div class="d-flex align-center" style="gap: 8px;">
+                                    <span style="font-size: 0.8rem; color: #9e9e9e; background-color: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; font-weight: bold;">
+                                        @group.Games.Count 局
+                                    </span>
+                                    <span @onclick="() => { }" @onclick:stopPropagation="true">
+                                        <MudButton Size="Size.Small" Variant="Variant.Text" Color="@(ArmedDeleteTarget == group ? Color.Error : Color.Default)" StartIcon="@(ArmedDeleteTarget == group ? DeleteEmpty : Icons.Material.Filled.Delete)" Style="@(ArmedDeleteTarget == group ? "font-weight: bold; min-width: 32px; padding: 4px;" : "color: #9e9e9e; min-width: 32px; padding: 4px;")" OnClick="@(() => HandleDeleteClick(group))"></MudButton>
+                                    </span>
+                                </div>
+                            </div>
+                            @* 対局者名の行（改行を自然に） *@
+                            <div style="font-size: 0.85rem; color: #aaaaaa; line-height: 1.5; overflow-wrap: break-word; word-break: normal;">
+                                @GetPlayerNames(group.Session.ParticipantPlayerIds)
+                            </div>
                         </div>
                     </div>
                 </MudTd>
@@ -152,7 +161,6 @@
                                                         <span class="rule-badge">チップ @(group.Session.Rules.ChipRate)</span>
                                                     }
                                                 </div>
-                                                <MudDivider Class="my-3" Style="opacity: 0.1;" />
                                                 <ShareButtonGroup Rules="group.Session.Rules" TablePlayers="group.CachedPlayerNames" ActiveHistory="group.CachedResults" ActiveSessionChips="group.CachedChipsDict" />
                                             }
                                             else if (group.Session.SettledChips != null && group.Session.SettledChips.Count > 0 && group.Session.SettledChips.Any(c => c != 0))
