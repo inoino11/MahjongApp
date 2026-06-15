@@ -34,6 +34,43 @@
             color: #ddd;
             white-space: nowrap;
         }
+    }
+
+    /* --- ページネーションの配置・間隔調整 --- */
+
+    /* 1. 外枠と内部ツールバーの両方の高さを強制的に上書き */
+    .session-table .mud-table-pagination,
+    .session-table .mud-table-pagination .mud-toolbar {
+        min-height: 36px !important;
+        height: 36px !important;
+    }
+
+    /* 2. 内部ツールバーを「両端揃え」にし、左右の端からの距離をとる */
+    .session-table .mud-table-pagination .mud-toolbar {
+        justify-content: space-between !important;
+        padding: 0 32px !important; /* ← 端の余白 */
+    }
+
+    /* 3. 見えないスペーサーを無効化（テキストを左側に持っていくため） */
+    .session-table .mud-table-pagination-spacer {
+        display: none !important;
+    }
+
+    /* 4. テキストの不要なマージンをリセット */
+    .session-table .mud-table-pagination-information {
+        margin-right: 0 !important;
+    }
+
+    /* 5. ボタン群のラップ要素の余白を消す */
+    .session-table .mud-table-pagination-actions {
+        margin-left: 0 !important;
+    }
+
+    /* 6. ボタン同士の間隔とクリック範囲の調整 */
+    .session-table .mud-table-pagination-actions .mud-icon-button {
+        padding: 4px !important;  
+        margin: 0 8px !important; 
+    }
 </style>
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 pb-10" @onclick="ClearArmedState">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
@@ -52,7 +89,11 @@
     }
     else
     {
-        <MudTable Items="@sessionGroups" Class="session-table" Hover="true" Dense="true" Elevation="1" Breakpoint="Breakpoint.None">
+        <MudTable Items="@sessionGroups" RowsPerPage="100" Class="session-table" Hover="true" Dense="true" Elevation="1" Breakpoint="Breakpoint.None">
+            @* ページネーション *@
+            <PagerContent>
+                <MudTablePager HideRowsPerPage="true" />
+            </PagerContent>
             <RowTemplate Context="group">
                 <MudTd Style="@($"padding: 10px 12px {(group.ShowDetails ? "0px" : "10px")} 12px; border-bottom: {(group.ShowDetails ? "none" : "1px solid var(--mud-palette-divider)")}; transition: padding-bottom 0.2s ease;")">
                     <div class="d-flex align-center justify-space-between w-100" style="margin-bottom: 2px; padding-left: 36px;">
@@ -64,13 +105,12 @@
                                 @group.Games.Count 局
                             </span>
                             <span @onclick="() => { }" @onclick:stopPropagation="true">
-                                <MudButton Size="Size.Small" Variant="Variant.Text" Color="@(ArmedDeleteTarget == group ? Color.Error : Color.Default)" StartIcon="@(ArmedDeleteTarget == group ? DeleteEmpty : Icons.Material.Filled.Delete)" Style="@(ArmedDeleteTarget == group ? "font-weight: bold; min-width: 32px; padding: 4px;" : "color: #9e9e9e; min-width: 32px; padding: 4px;")" OnClick="@(() => HandleDeleteClick(group))">
-                                </MudButton>
+                                <MudButton Size="Size.Small" Variant="Variant.Text" Color="@(ArmedDeleteTarget == group ? Color.Error : Color.Default)" StartIcon="@(ArmedDeleteTarget == group ? DeleteEmpty : Icons.Material.Filled.Delete)" Style="@(ArmedDeleteTarget == group ? "font-weight: bold; min-width: 32px; padding: 4px;" : "color: #9e9e9e; min-width: 32px; padding: 4px;")" OnClick="@(() => HandleDeleteClick(group))"></MudButton>
                             </span>
                         </div>
                     </div>
                     <div class="d-flex align-center w-100" style="text-align: left; font-size: 0.85rem; color: #aaaaaa; white-space: normal; word-break: break-all; line-height: 1.4;">
-                        <MudIconButton Icon="@(group.ShowDetails ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" OnClick="@(() => group.ShowDetails = !group.ShowDetails)" Size="Size.Small" Style="padding: 4px; margin-right: 4px;" />
+                        <MudIconButton Icon="@(group.ShowDetails ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" OnClick="@(() => { group.ShowDetails = !group.ShowDetails; group.HasBeenOpened = true; })" Size="Size.Small" Style="padding: 4px; margin-right: 4px;" />
                         <div>
                             @GetPlayerNames(group.Session.ParticipantPlayerIds)
                         </div>
@@ -81,78 +121,66 @@
                 <MudTr>
                     <td colspan="1" style="padding: 0; border: none;">
                         <MudCollapse Expanded="group.ShowDetails">
-                            <div class="px-4 pb-4 pt-1" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <MudCard Elevation="0" Style="background-color: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);">
-                                    <MudCardContent Class="py-4">
-                                        @if (group.Games.Count > 0)
-                                        {
-                                            <div class="child-table-wrapper mb-4">
-                                                <ResultTable History="@ConvertToGameResults(group.Games)" Players="@GetSessionPlayerNames(group)" ActiveParticipantCount="@group.Session.ParticipantPlayerIds.Count" Rules="@(group.Session.Rules ?? new RuleSet())" SessionChips="@(group.Session.SettledChips ?? new List<int>())" IsReadOnly="true" />
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <MudText Typo="Typo.body2" Class="mb-4">ここには対局記録がありません。</MudText>
-                                        }
-                                        @if (group.Session.Rules != null)
-                                        {
-                                            @* シェアボタン用データの準備（C#コードは一番上に配置） *@
-                                            var history = ConvertToGameResults(group.Games);
-                                            var players = GetSessionPlayerNames(group);
-                                            var chipsDict = new Dictionary<string, int>();
-                                            var safeChips = group.Session.SettledChips ?? new List<int>();
-                                            for (int i = 0; i < group.Session.ParticipantPlayerIds.Count; i++)
+                            @if (group.HasBeenOpened)
+                            {
+                                <div class="px-4 pb-4 pt-1" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <MudCard Elevation="0" Style="background-color: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);">
+                                        <MudCardContent Class="py-4">
+                                            @if (group.Games.Count > 0)
                                             {
-                                                var pId = group.Session.ParticipantPlayerIds[i];
-                                                if (!string.IsNullOrEmpty(pId))
-                                                {
-                                                    var pName = GetPlayerName(pId);
-                                                    chipsDict[pName] = safeChips.Count > i ? safeChips[i] : 0;
-                                                }
+                                                <div class="child-table-wrapper mb-4">
+                                                    <ResultTable History="@group.CachedResults" Players="@group.CachedPlayerNames" ActiveParticipantCount="@group.Session.ParticipantPlayerIds.Count" Rules="@(group.Session.Rules ?? new RuleSet())" SessionChips="@(group.Session.SettledChips ?? new List<int>())" IsReadOnly="true" />
+                                                </div>
                                             }
-                                            <MudText Typo="Typo.subtitle2" Class="d-flex align-center mt-2 mb-2" Color="Color.Warning">
-                                                <MudIcon Icon="@Icons.Material.Filled.Article" Size="Size.Small" Class="mr-1" />
-                                                @($"{group.Session.Rules.Name}")
-                                            </MudText>
-                                            <div class="d-flex flex-wrap gap-1 mt-1">
-                                                <span class="rule-badge">@(group.Session.Rules.PlayerCount == 3 ? "三人麻雀" : "四人麻雀")</span>
-                                                <span class="rule-badge">@($"{group.Session.Rules.StartingPoints} / {group.Session.Rules.ReturnPoints}")</span>
-                                                <span class="rule-badge">ウマ: @group.Session.Rules.GetUmaDisplayText()</span>
-                                                <span class="rule-badge">レート: @(group.Session.Rules.Rate)</span>
-                                                @if (group.Session.Rules.ChipRate > 0)
-                                                {
-                                                    <span class="rule-badge">チップ: @(group.Session.Rules.ChipRate)</span>
-                                                }
-                                            </div>
-                                            @* コンポーネント配置 *@
-                                            <MudDivider Class="my-3" Style="opacity: 0.1;" />
-                                            <ShareButtonGroup Rules="group.Session.Rules" TablePlayers="players" ActiveHistory="history" ActiveSessionChips="chipsDict" />
-                                        }
-                                        else if (group.Session.SettledChips != null && group.Session.SettledChips.Count > 0 && group.Session.SettledChips.Any(c => c != 0))
-                                        {
-                                            <MudText Typo="Typo.subtitle2" Class="mt-2 mb-2" Color="Color.Warning">◆ チップ精算 (レート: @group.Session.ChipRate 円)</MudText>
-                                            <div class="d-flex flex-wrap gap-2">
-                                                @for (int i = 0; i < group.Session.ParticipantPlayerIds.Count; i++)
-                                                {
-                                                    var pId = group.Session.ParticipantPlayerIds[i];
-                                                    if (string.IsNullOrEmpty(pId)) continue;
-                                                    var pName = GetPlayerName(pId);
-                                                    var chips = group.Session.SettledChips.Count > i ? group.Session.SettledChips[i] : 0;
-                                                    var chipYen = chips * group.Session.ChipRate;
-                                                    var color = chips >= 0 ? "#ff6b6b" : "#4dabf7";
-                                                    var sign = chips > 0 ? "+" : "";
-                                                    if (chips != 0)
+                                            else
+                                            {
+                                                <MudText Typo="Typo.body2" Class="mb-4">対局記録がありません。</MudText>
+                                            }
+                                            @if (group.Session.Rules != null)
+                                            {
+                                                <MudText Typo="Typo.subtitle2" Class="d-flex align-center mt-2 mb-2" Color="Color.Warning">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Article" Size="Size.Small" Class="mr-1" />
+                                                    @($"{group.Session.Rules.Name}")
+                                                </MudText>
+                                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                                    <span class="rule-badge">@(group.Session.Rules.PlayerCount == 3 ? "三人麻雀" : "四人麻雀")</span>
+                                                    <span class="rule-badge">@($"{group.Session.Rules.StartingPoints} / {group.Session.Rules.ReturnPoints}")</span>
+                                                    <span class="rule-badge">ウマ @group.Session.Rules.GetUmaDisplayText()</span>
+                                                    <span class="rule-badge">レート @(group.Session.Rules.Rate)</span>
+                                                    @if (group.Session.Rules.ChipRate > 0)
                                                     {
-                                                        <span style="font-size: 0.85rem; padding: 2px 6px; background-color: rgba(255,255,255,0.05); border-radius: 4px;">
-                                                            @pName: <span style="color: @color; font-weight: bold;">@sign@chips 枚 (@sign@chipYen.ToString("N0")円)</span>
-                                                        </span>
+                                                        <span class="rule-badge">チップ @(group.Session.Rules.ChipRate)</span>
                                                     }
-                                                }
-                                            </div>
-                                        }
-                                    </MudCardContent>
-                                </MudCard>
-                            </div>
+                                                </div>
+                                                <MudDivider Class="my-3" Style="opacity: 0.1;" />
+                                                <ShareButtonGroup Rules="group.Session.Rules" TablePlayers="group.CachedPlayerNames" ActiveHistory="group.CachedResults" ActiveSessionChips="group.CachedChipsDict" />
+                                            }
+                                            else if (group.Session.SettledChips != null && group.Session.SettledChips.Count > 0 && group.Session.SettledChips.Any(c => c != 0))
+                                            {
+                                                <MudText Typo="Typo.subtitle2" Class="mt-2 mb-2" Color="Color.Warning">♦ チップ精算 (レート @group.Session.ChipRate 円)</MudText>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    @for (int i = 0; i < group.Session.ParticipantPlayerIds.Count; i++)
+                                                    {
+                                                        var pId = group.Session.ParticipantPlayerIds[i];
+                                                        if (string.IsNullOrEmpty(pId)) continue;
+                                                        var pName = GetPlayerName(pId);
+                                                        var chips = group.Session.SettledChips.Count > i ? group.Session.SettledChips[i] : 0;
+                                                        var chipYen = chips * group.Session.ChipRate;
+                                                        var color = chips >= 0 ? "#ff6b6b" : "#4dabf7";
+                                                        var sign = chips > 0 ? "+" : "";
+                                                        if (chips != 0)
+                                                        {
+                                                            <span style="font-size: 0.85rem; padding: 2px 6px; background-color: rgba(255,255,255,0.05); border-radius: 4px;">
+                                                                @pName: <span style="color: @color; font-weight: bold;">@sign@chips 枚 (@sign@chipYen.ToString("N0")円)</span>
+                                                            </span>
+                                                        }
+                                                    }
+                                                </div>
+                                            }
+                                        </MudCardContent>
+                                    </MudCard>
+                                </div>
+                            }
                         </MudCollapse>
                     </td>
                 </MudTr>
@@ -173,6 +201,10 @@
         public SavedSessionRecord Session { get; set; } = new();
         public List<SavedGameRecord> Games { get; set; } = new();
         public bool ShowDetails { get; set; }
+        public bool HasBeenOpened { get; set; }
+        public List<GameResult> CachedResults { get; set; } = new();
+        public List<string> CachedPlayerNames { get; set; } = new();
+        public Dictionary<string, int> CachedChipsDict { get; set; } = new();
     }
 
     protected override async Task OnInitializedAsync()
@@ -192,16 +224,36 @@
             var safeGames = dbData.Games ?? new List<SavedGameRecord>();
             allPlayers = safePlayers.Where(p => p != null).ToList();
             playerMap = allPlayers.ToDictionary(p => p.Id, p => p.Name);
+
             sessionGroups = safeSessions
-                .Where(s => s != null)
-                .OrderByDescending(s => s.Date)
-                .Select(s => new SessionGroup
-                {
-                    Session = AggregateSessionDuplicates(s),
-                    Games = safeGames.Where(g => g != null && g.SessionId == s.SessionId).OrderBy(g => g.Timestamp).ToList(),
-                    ShowDetails = false
-                })
-                .ToList();
+                            .Where(s => s != null)
+                            .OrderByDescending(s => s.Date)
+                            .Select(s =>
+                            {
+                                var group = new SessionGroup
+                                {
+                                    Session = AggregateSessionDuplicates(s),
+                                    Games = safeGames.Where(g => g != null && g.SessionId == s.SessionId).OrderBy(g => g.Timestamp).ToList(),
+                                    ShowDetails = false,
+                                    HasBeenOpened = false
+                                };
+                                group.CachedResults = ConvertToGameResults(group.Games);
+                                group.CachedPlayerNames = GetSessionPlayerNames(group);
+                                var chipsDict = new Dictionary<string, int>();
+                                var safeChips = group.Session.SettledChips ?? new List<int>();
+                                for (int i = 0; i < group.Session.ParticipantPlayerIds.Count; i++)
+                                {
+                                    var pId = group.Session.ParticipantPlayerIds[i];
+                                    if (!string.IsNullOrEmpty(pId))
+                                    {
+                                        var pName = GetPlayerName(pId);
+                                        chipsDict[pName] = safeChips.Count > i ? safeChips[i] : 0;
+                                    }
+                                }
+                                group.CachedChipsDict = chipsDict;
+                                return group;
+                            })
+                            .ToList();
         }
         isLoading = false;
         StateHasChanged();
