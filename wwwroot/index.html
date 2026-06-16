@@ -390,9 +390,8 @@
     <script>
         window.syncScroll = (id1, id2) => {
             const el1 = document.getElementById(id1);
-            const wrapper2 = document.getElementById(id2);
-            if (!el1 || !wrapper2) return;
-            const el2 = wrapper2.querySelector('.mud-table-container') || wrapper2;
+            const el2 = document.getElementById(id2);
+            if (!el1 || !el2) return;
             if (el1.dataset.isSyncing === "true") return;
             el1.dataset.isSyncing = "true";
             let isSyncing1 = false;
@@ -404,7 +403,6 @@
                 }
                 isSyncing1 = false;
             }, { passive: true });
-
             el2.addEventListener('scroll', () => {
                 if (!isSyncing2) {
                     isSyncing1 = true;

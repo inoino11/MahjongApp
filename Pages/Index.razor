@@ -265,7 +265,7 @@
         <ResultTable History="ActiveHistory" Players="TablePlayers" ActiveParticipantCount="TablePlayers.Count" @bind-DisplayMode="displayMode" Rules="rules" SessionChips="TablePlayers.Select(p => ActiveSessionChips.TryGetValue(p, out var v) ? v : 0).ToList()" IsReadOnly="false" ArmedDeleteTarget="armedDeleteTarget" OnDeleteRequested="HandleDeleteRequest" OnResetRequested="ConfirmReset" OnChipChanged="HandleChipChangedCallback" />
         @* DBへ保存するボタン *@
         <div class="d-flex justify-center mt-6">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.CloudUpload" Disabled="@(ActiveHistory.Count == 0)" OnClick="ConfirmFinalizeSession" Style="width: 100%; max-width: 400px; font-weight: bold; padding: 12px 0;">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.QueryStats" Disabled="@(ActiveHistory.Count == 0)" OnClick="ConfirmFinalizeSession" Style="width: 100%; max-width: 400px; font-weight: bold; padding: 12px 0;">
                 結果を通算成績に保存
             </MudButton>
         </div>

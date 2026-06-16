@@ -18,9 +18,22 @@
         /* Chrome, Safari用 */
     }
 
-    /* 内側コンテナのスクロールを殺し、外側のJavaScript監視用divにスクロールを一任する */
+    /* テーブル部分のスクロールラッパー（縦スクロールとバー非表示を設定） */
+    .sync-table-scroll {
+        max-height: 55vh;            /* 画面高の55%で一旦止める */
+        overflow-y: auto !important; /* 縦スクロールを有効化 */
+        -ms-overflow-style: none !important; /* IE, Edge用スクロールバー非表示 */
+        scrollbar-width: none !important;    /* Firefox用スクロールバー非表示 */
+    }
+
+    .sync-table-scroll::-webkit-scrollbar {
+        display: none !important; /* Chrome, Safari用スクロールバー非表示 */
+    }
+
+    /* 内部コンテナのスクロールを殺し、外側のJavaScript監視用divにスクロールを一任する */
     .sync-table-scroll .mud-table-container {
         overflow-x: visible !important;
+        overflow-y: visible !important;
     }
 
     /* テーブルの最小幅を設定 */
@@ -188,7 +201,10 @@
             <MudCard Class="mb-4" Elevation="0" Outlined="true">
                 <MudCardContent Class="py-3 px-0">
                     <div class="d-flex align-center mb-2 px-3">
-                        <MudText Typo="Typo.subtitle2" Class="mr-5">チップ集計</MudText>
+                        <MudText Typo="Typo.subtitle2" Class="mr-2">チップ集計</MudText>
+                        <span style="color: #9e9e9e; font-size: 0.8rem; font-weight: normal; margin-right: auto;">
+                            @(Rules?.ChipRate ?? 0)円/枚
+                        </span>
                         @if (!IsReadOnly)
                         {
                             int currentChipTotal = SessionChips.Take(ActiveParticipantCount).Sum();
@@ -229,6 +245,9 @@
                                                     @(chip > 0 ? $"+{chip}" : chip.ToString())枚
                                                 </MudText>
                                             }
+                                            <span style="color: #9e9e9e; font-size: 0.6rem; font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 2px;">
+                                                @(FormatPlus(chip * (Rules?.ChipRate ?? 0), "N0")) 円
+                                            </span>
                                         </div>
                                     </div>
                                 }
@@ -259,12 +278,12 @@
                     }
                 </ColGroup>
                 <HeaderContent>
-                    <MudTh Style="position: sticky; left: -1px; background-color: var(--mud-palette-surface); z-index: 2; text-align: center; white-space: nowrap; padding: 4px 0px !important; font-size: 0.65rem; letter-spacing: -0.5px; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box;">時刻</MudTh>
+                    <MudTh Style="position: sticky; top: 0; left: -1px; background-color: var(--mud-palette-surface); z-index: 4; text-align: center; white-space: nowrap; padding: 4px 0px !important; font-size: 0.65rem; letter-spacing: -0.5px; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box;">時刻</MudTh>
                     @for (int i = 0; i < ActiveParticipantCount; i++)
                     {
                         var idx = i;
                         string boxWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
-                        <MudTh Style="text-align: center; padding: 4px 0px !important; font-size: 0.75rem; letter-spacing: -0.5px;">
+                        <MudTh Style="position: sticky; top: 0; background-color: var(--mud-palette-surface); z-index: 3; text-align: center; padding: 4px 0px !important; font-size: 0.75rem; letter-spacing: -0.5px;">
                             <div style="width: @boxWidth; min-width: @boxWidth; height: 0px; margin: 0 auto;"></div>
                             <div style="max-width: @boxWidth; white-space: nowrap; margin: 0 auto;">
                                 @GetShortName(Players.ElementAtOrDefault(idx))
@@ -273,7 +292,7 @@
                     }
                     @if (!IsReadOnly)
                     {
-                        <MudTh Style="padding: 4px 0px !important;"></MudTh>
+                        <MudTh Style="position: sticky; top: 0; background-color: var(--mud-palette-surface); z-index: 3; padding: 4px 0px !important;"></MudTh>
                     }
                 </HeaderContent>
                 <RowTemplate>
@@ -300,7 +319,7 @@
                     }
                 </RowTemplate>
                 <FooterContent>
-                    <MudTd Style="position: sticky; left: -1px; background: linear-gradient(rgba(46, 125, 50, 0.08), rgba(46, 125, 50, 0.08)), var(--mud-palette-surface); z-index: 2; text-align: center; border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 8px 0px 12px 0px !important; font-size: 0.75rem; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box;">
+                    <MudTd Style="position: sticky; bottom: -1px; left: -1px; background: linear-gradient(rgba(46, 125, 50, 0.08), rgba(46, 125, 50, 0.08)), var(--mud-palette-surface); z-index: 4; text-align: center; border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 8px 0px 12px 0px !important; font-size: 0.75rem; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box; background-clip: padding-box;">
                         <MudIcon Icon="@(DisplayMode == 0 ? Icons.Material.Filled.Calculate : Icons.Material.Filled.Functions)" Style="font-size: 1rem; vertical-align: text-bottom; margin-right: 2px; color: #2e7d32;" />
                         @(DisplayMode == 0 ? "平均" : "合計")
                     </MudTd>
@@ -308,7 +327,7 @@
                     {
                         var idx = i;
                         string cellWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
-                        <MudTd Style="@($"{GetTotalTdStyle(idx)} text-align: center; padding: 8px 0px 12px 0px !important; white-space: nowrap; width: {cellWidth}; min-width: {cellWidth}; max-width: {cellWidth};")">
+                        <MudTd Style="@($"{GetTotalTdStyle(idx)} position: sticky; bottom: -1px; z-index: 3; text-align: center; padding: 8px 0px 12px 0px !important; white-space: nowrap; width: {cellWidth}; min-width: {cellWidth}; max-width: {cellWidth}; background-clip: padding-box;")">
                             <span style="@GetTotalSpanStyle(idx)">
                                 @GetTotalDisplayValue(idx)
                             </span>
@@ -316,7 +335,7 @@
                     }
                     @if (!IsReadOnly)
                     {
-                        <MudTd Style="background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; padding: 8px 0px 12px 0px !important;"></MudTd>
+                        <MudTd Style="position: sticky; bottom: -1px; z-index: 3; background: linear-gradient(rgba(46, 125, 50, 0.08), rgba(46, 125, 50, 0.08)), var(--mud-palette-surface); border-top: 2px solid #4caf50; padding: 8px 0px 12px 0px !important; background-clip: padding-box;"></MudTd>
                     }
                 </FooterContent>
             </MudTable>
@@ -636,7 +655,7 @@
         return FormatPlus(val, "F1");
     }
 
-    private string GetTotalTdStyle(int idx) => "background-color: rgba(46, 125, 50, 0.08); border-top: 2px solid #4caf50; ";
+    private string GetTotalTdStyle(int idx) => "background: linear-gradient(rgba(46, 125, 50, 0.08), rgba(46, 125, 50, 0.08)), var(--mud-palette-surface); border-top: 2px solid #4caf50; ";
 
     private string GetTotalSpanStyle(int idx)
     {
