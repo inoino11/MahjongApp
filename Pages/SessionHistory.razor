@@ -28,10 +28,10 @@
             display: inline-flex;
             align-items: center;
             padding: 1px 6px;
-            background-color: rgba(255, 255, 255, 0.08);
+            background-color: var(--mud-palette-background-grey);
             border-radius: 4px;
             font-size: 0.7rem;
-            color: #ddd;
+            color: var(--mud-palette-text-secondary);
             white-space: nowrap;
         }
     }
@@ -132,8 +132,8 @@
                         <MudCollapse Expanded="group.ShowDetails">
                             @if (group.HasBeenOpened)
                             {
-                                <div class="px-4 pb-4 pt-1" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                    <MudCard Elevation="0" Style="background-color: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);">
+                                <div class="px-4 pb-4 pt-1" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                                    <MudCard Elevation="0" Style="background-color: var(--mud-palette-background-grey); border: 1px solid var(--mud-palette-divider);">
                                         <MudCardContent Class="py-4">
                                             @if (group.Games.Count > 0)
                                             {
@@ -147,7 +147,7 @@
                                             }
                                             @if (group.Session.Rules != null)
                                             {
-                                                <MudText Typo="Typo.subtitle2" Class="d-flex align-center mt-2 mb-2" Color="Color.Warning">
+                                                <MudText Typo="Typo.subtitle2" Class="d-flex align-center mt-2 mb-2" Color="Color.Primary">
                                                     <MudIcon Icon="@Icons.Material.Filled.Article" Size="Size.Small" Class="mr-1" />
                                                     @($"{group.Session.Rules.Name}")
                                                 </MudText>
@@ -165,7 +165,7 @@
                                             }
                                             else if (group.Session.SettledChips != null && group.Session.SettledChips.Count > 0 && group.Session.SettledChips.Any(c => c != 0))
                                             {
-                                                <MudText Typo="Typo.subtitle2" Class="mt-2 mb-2" Color="Color.Warning">♦ チップ精算 (レート @group.Session.ChipRate 円)</MudText>
+                                                <MudText Typo="Typo.subtitle2" Class="mt-2 mb-2" Color="Color.Primary">💰 チップ精算 (レート: @group.Session.ChipRate 円)</MudText>
                                                 <div class="d-flex flex-wrap gap-2">
                                                     @for (int i = 0; i < group.Session.ParticipantPlayerIds.Count; i++)
                                                     {
@@ -178,7 +178,7 @@
                                                         var sign = chips > 0 ? "+" : "";
                                                         if (chips != 0)
                                                         {
-                                                            <span style="font-size: 0.85rem; padding: 2px 6px; background-color: rgba(255,255,255,0.05); border-radius: 4px;">
+                                                            <span style="font-size: 0.85rem; padding: 2px 6px; background-color: var(--mud-palette-surface); border: 1px solid var(--mud-palette-divider); border-radius: 4px;">
                                                                 @pName: <span style="color: @color; font-weight: bold;">@sign@chips 枚 (@sign@chipYen.ToString("N0")円)</span>
                                                             </span>
                                                         }

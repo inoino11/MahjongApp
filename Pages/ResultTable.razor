@@ -20,14 +20,19 @@
 
     /* テーブル部分のスクロールラッパー（縦スクロールとバー非表示を設定） */
     .sync-table-scroll {
-        max-height: 55vh;            /* 画面高の55%で一旦止める */
-        overflow-y: auto !important; /* 縦スクロールを有効化 */
-        -ms-overflow-style: none !important; /* IE, Edge用スクロールバー非表示 */
-        scrollbar-width: none !important;    /* Firefox用スクロールバー非表示 */
+        max-height: 55vh;
+        /* 画面高の55%で一旦止める */
+        overflow-y: auto !important;
+        /* 縦スクロールを有効化 */
+        -ms-overflow-style: none !important;
+        /* IE, Edge用スクロールバー非表示 */
+        scrollbar-width: none !important;
+        /* Firefox用スクロールバー非表示 */
     }
 
     .sync-table-scroll::-webkit-scrollbar {
-        display: none !important; /* Chrome, Safari用スクロールバー非表示 */
+        display: none !important;
+        /* Chrome, Safari用スクロールバー非表示 */
     }
 
     /* 内部コンテナのスクロールを殺し、外側のJavaScript監視用divにスクロールを一任する */
@@ -165,7 +170,7 @@
 <div id="result-container">
     @* --- グラフ表示 --- *@
     <div id="chart-wrapper" class="@(DisplayMode == 7 ? "" : "hide-element")">
-        <div class="pa-2 pa-md-4 mud-background-gray rounded-lg" style="background-color: rgba(255,255,255,0.02);">
+        <div class="pa-2 pa-md-4 mud-background-gray rounded-lg">
             <div class="chart-flex-container gap-3">
                 <div style="flex-grow: 1; min-width: 0; width: 100%;">
                     <div class="responsive-chart-wrapper">
@@ -174,11 +179,11 @@
                 </div>
                 <div class="d-flex flex-row flex-wrap flex-md-column gap-2" style="min-width: 140px; align-content: flex-start; flex-shrink: 0;">
                     <div style="width: 100%;">
-                        <MudText Typo="Typo.caption" Class="mud-text-secondary ml-1">最終pt</MudText>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary ml-1">最終Pt</MudText>
                     </div>
                     @foreach (var stat in _finalStats.OrderByDescending(x => x.TotalPt))
                     {
-                        <div class="custom-legend-item d-flex align-center px-2 py-1 rounded" style="background: rgba(255,255,255,0.05); border-left: 4px solid @stat.Color;">
+                        <div class="custom-legend-item d-flex align-center px-2 py-1 rounded" style="background: var(--mud-palette-background-grey); border-left: 4px solid @stat.Color;">
                             <div style="flex-grow: 1; overflow: hidden;">
                                 <MudText Typo="Typo.body2" Style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold;">
                                     @stat.Name
@@ -319,7 +324,7 @@
                     }
                 </RowTemplate>
                 <FooterContent>
-                    <MudTd Style="position: sticky; bottom: -1px; left: -1px; background: linear-gradient(rgba(46, 125, 50, 0.08), rgba(46, 125, 50, 0.08)), var(--mud-palette-surface); z-index: 4; text-align: center; border-top: 2px solid #4caf50; font-weight: bold; white-space: nowrap; padding: 8px 0px 12px 0px !important; font-size: 0.75rem; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box; background-clip: padding-box;">
+                    <MudTd Style="position: sticky; bottom: -1px; left: -1px; background: linear-gradient(rgba(46, 125, 50, 0.08), rgba(46, 125, 50, 0.08)), var(--mud-palette-surface); z-index: 4; text-align: center; font-weight: bold; white-space: nowrap; padding: 8px 0px 12px 0px !important; font-size: 0.75rem; width: 45px; min-width: 45px; max-width: 45px; box-sizing: border-box; box-shadow: inset 0 2px 0 0 #4caf50, 0 10px 0 0 var(--mud-palette-surface);">
                         <MudIcon Icon="@(DisplayMode == 0 ? Icons.Material.Filled.Calculate : Icons.Material.Filled.Functions)" Style="font-size: 1rem; vertical-align: text-bottom; margin-right: 2px; color: #2e7d32;" />
                         @(DisplayMode == 0 ? "平均" : "合計")
                     </MudTd>
@@ -327,7 +332,7 @@
                     {
                         var idx = i;
                         string cellWidth = _columnWidths.Length > idx ? _columnWidths[idx] : "4.5rem";
-                        <MudTd Style="@($"{GetTotalTdStyle(idx)} position: sticky; bottom: -1px; z-index: 3; text-align: center; padding: 8px 0px 12px 0px !important; white-space: nowrap; width: {cellWidth}; min-width: {cellWidth}; max-width: {cellWidth}; background-clip: padding-box;")">
+                        <MudTd Style="@($"{GetTotalTdStyle(idx)} position: sticky; bottom: -1px; z-index: 3; text-align: center; padding: 8px 0px 12px 0px !important; white-space: nowrap; width: {cellWidth}; min-width: {cellWidth}; max-width: {cellWidth};")">
                             <span style="@GetTotalSpanStyle(idx)">
                                 @GetTotalDisplayValue(idx)
                             </span>
@@ -335,7 +340,7 @@
                     }
                     @if (!IsReadOnly)
                     {
-                        <MudTd Style="position: sticky; bottom: -1px; z-index: 3; background: linear-gradient(rgba(46, 125, 50, 0.08), rgba(46, 125, 50, 0.08)), var(--mud-palette-surface); border-top: 2px solid #4caf50; padding: 8px 0px 12px 0px !important; background-clip: padding-box;"></MudTd>
+                        <MudTd Style="position: sticky; bottom: -1px; z-index: 3; background: linear-gradient(rgba(46, 125, 50, 0.08), rgba(46, 125, 50, 0.08)), var(--mud-palette-surface); padding: 8px 0px 12px 0px !important; box-shadow: inset 0 2px 0 0 #4caf50, 0 10px 0 0 var(--mud-palette-surface);"></MudTd>
                     }
                 </FooterContent>
             </MudTable>
@@ -655,7 +660,7 @@
         return FormatPlus(val, "F1");
     }
 
-    private string GetTotalTdStyle(int idx) => "background: linear-gradient(rgba(46, 125, 50, 0.08), rgba(46, 125, 50, 0.08)), var(--mud-palette-surface); border-top: 2px solid #4caf50; ";
+    private string GetTotalTdStyle(int idx) => "background: linear-gradient(rgba(46, 125, 50, 0.08), rgba(46, 125, 50, 0.08)), var(--mud-palette-surface); box-shadow: inset 0 2px 0 0 #4caf50, 0 10px 0 0 var(--mud-palette-surface); ";
 
     private string GetTotalSpanStyle(int idx)
     {

@@ -8,7 +8,7 @@
     <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Image" OnClick="ShareImageAsync" Disabled="@(isSharing || ActiveHistory.Count == 0)" Style="flex: 1; max-width: 140px; white-space: nowrap;">
         @(isSharing ? "生成中..." : "画像シェア")
     </MudButton>
-    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Link" OnClick="CopyShareUrlAsync" Disabled="@(isSharing || ActiveHistory.Count == 0)" Style="flex: 1; max-width: 140px; white-space: nowrap;">
+    <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Link" OnClick="CopyShareUrlAsync" Disabled="@(isSharing || ActiveHistory.Count == 0)" Style="flex: 1; max-width: 140px; white-space: nowrap;">
         @(isSharing ? "生成中..." : "URLシェア")
     </MudButton>
 </div>
