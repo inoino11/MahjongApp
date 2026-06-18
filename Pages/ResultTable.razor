@@ -183,7 +183,7 @@
                     </div>
                     @foreach (var stat in _finalStats.OrderByDescending(x => x.TotalPt))
                     {
-                        <div class="custom-legend-item d-flex align-center px-2 py-1 rounded" style="background: var(--mud-palette-background-grey); border-left: 4px solid @stat.Color;">
+                        <div class="custom-legend-item d-flex align-center px-2 py-1 rounded" style="background: var(--mud-palette-surface); border-left: 4px solid @stat.Color;">
                             <div style="flex-grow: 1; overflow: hidden;">
                                 <MudText Typo="Typo.body2" Style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold;">
                                     @stat.Name
