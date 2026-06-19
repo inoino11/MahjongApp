@@ -1,4 +1,5 @@
 @using MahjongApp.Models
+@using System.Net.Http.Json
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
@@ -13,7 +14,8 @@
     </MudButton>
 </div>
 
-<ShareTarget TargetId="@targetId" Rules="Rules" TablePlayers="TablePlayers" ActiveHistory="ActiveHistory" ActiveSessionChips="ActiveSessionChips" />
+<ShareTarget 
+    TargetId="@targetId" Rules="Rules" TablePlayers="TablePlayers" ActiveHistory="ActiveHistory" ActiveSessionChips="ActiveSessionChips" />
 
 @code {
     [Parameter] public RuleSet Rules { get; set; } = new();
@@ -25,24 +27,19 @@
     private bool isSharing = false;
     private readonly string workerUrl = "https://mahjong-share.inoino11.workers.dev";
 
-    // --- URLキャッシュと変更検知用の変数 ---
     private string? cachedShareUrl = null;
     private string lastPayloadJson = "";
 
-    // パラメータ（データ）が更新されるたびに呼ばれるライフサイクルメソッド
     protected override void OnParametersSet()
     {
-        // 現在のデータ状態をJSON化して比較
         var currentPayloadJson = System.Text.Json.JsonSerializer.Serialize(CreatePayloadObject());
         if (currentPayloadJson != lastPayloadJson)
         {
-            // データに変化があった場合、キャッシュしていたURLを破棄する
             cachedShareUrl = null;
             lastPayloadJson = currentPayloadJson;
         }
     }
 
-    // API送信用・および変更検知比較用のオブジェクトを生成
     private object CreatePayloadObject()
     {
         return new
@@ -95,7 +92,6 @@
         StateHasChanged();
         try
         {
-            // すでに生成済みのURLがあれば、APIを叩かずに再利用する
             if (!string.IsNullOrEmpty(cachedShareUrl))
             {
                 string shareResult = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 対局結果", cachedShareUrl);
@@ -103,17 +99,24 @@
                 else if (shareResult.StartsWith("ERROR")) Snackbar.Add("共有またはコピーに失敗しました", Severity.Error);
                 return;
             }
-            // Cloudflare WorkerにデータをPOSTして短縮IDを取得
-            var payload = CreatePayloadObject();
-            var response = await Http.PostAsJsonAsync(workerUrl, payload);
+
+            string rawJson = System.Text.Json.JsonSerializer.Serialize(CreatePayloadObject());
+
+            // --- 変更点: JSのWeb Crypto APIを呼び出して暗号化 ---
+            var cryptoRes = await JSRuntime.InvokeAsync<CryptoResult>("blazorCrypto.encrypt", rawJson);
+
+            // 暗号文だけをサーバーに送る
+            var postPayload = new { encryptedData = cryptoRes.CombinedBase64 };
+            
+            var response = await Http.PostAsJsonAsync(workerUrl, postPayload);
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<WorkerResponse>();
                 if (result != null && !string.IsNullOrEmpty(result.Id))
                 {
-                    // URLを生成してキャッシュに保持
-                    cachedShareUrl = $"{NavigationManager.BaseUri}shared?id={result.Id}";
-
+                    // URLに鍵(フラグメント)を付与して結合
+                    cachedShareUrl = $"{NavigationManager.BaseUri}shared?id={result.Id}#{cryptoRes.KeyUrlSafeBase64}";
+                    
                     string shareResult = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 対局結果", cachedShareUrl);
                     if (shareResult == "COPIED") Snackbar.Add("閲覧用URLをクリップボードにコピーしました", Severity.Success);
                     else if (shareResult.StartsWith("ERROR")) Snackbar.Add("共有またはコピーに失敗しました", Severity.Error);
@@ -133,6 +136,13 @@
             isSharing = false;
             StateHasChanged();
         }
+    }
+
+    // JSから受け取る暗号化結果の型
+    public class CryptoResult
+    {
+        public string CombinedBase64 { get; set; } = "";
+        public string KeyUrlSafeBase64 { get; set; } = "";
     }
 
     public class WorkerResponse

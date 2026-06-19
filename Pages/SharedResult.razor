@@ -22,10 +22,6 @@
     {
         <MudPaper Class="pa-4" Elevation="2" Style="overflow: hidden; width: 100%;">
              <ResultTable History="sharedData?.History ?? new()" Players="sharedData?.Players ?? new()" ActiveParticipantCount="sharedData?.Players?.Count ?? 0" @bind-DisplayMode="displayMode" Rules="sharedData?.Rules ?? new()" SessionChips="sharedData?.SessionChips ?? new()" IsReadOnly="true" />
-            @* <MudAlert Severity="Severity.Info" Class="mt-4">
-                これは共有された閲覧専用ページです。
-                <MudLink Href="/" Color="Color.Primary" Underline="Underline.Always">自分のツールを開く</MudLink>
-            </MudAlert> *@
         </MudPaper>
     }
 </MudContainer>
@@ -37,7 +33,6 @@
     private SharedPayload? sharedData;
     private readonly string workerUrl = "https://mahjong-share.inoino11.workers.dev";
 
-    // パラメータ名を "d" から "id" に変更
     [SupplyParameterFromQuery(Name = "id")]
     public string? SharedIdParam { get; set; }
 
@@ -47,39 +42,68 @@
         {
             try
             {
-                // Cloudflare WorkerからJSONデータを取得
-                var minData = await Http.GetFromJsonAsync<MinifiedPayload>($"{workerUrl}/{SharedIdParam}");
-                if (minData != null)
+                var uri = new Uri(NavigationManager.Uri);
+                string fragment = uri.Fragment;
+                if (string.IsNullOrEmpty(fragment) || fragment.Length < 2)
                 {
-                    // 割り当て用にプレイヤーリストを変数に格納しておく
-                    var resolvedPlayers = minData.Players ?? new List<string>();
-                    // 元のデータ構造にマッピングして復元
-                    sharedData = new SharedPayload
-                    {
-                        Rules = minData.Rules,
-                        Players = resolvedPlayers,
-                        SessionChips = minData.SessionChips,
-                        History = minData.History?.Select(m => new GameResult
-                        {
-                            Timestamp = new DateTime(m.Ticks),
-                            PlayerNames = resolvedPlayers,
-                            RawScores = m.RawScores ?? new(),
-                            Points = m.Points ?? new(),
-                            YakiPlayers = m.YakiPlayers ?? new(),
-                            TobiBonusRecipients = m.TobiBonusRecipients ?? new(),
-                            SinkPoints = m.SinkPoints ?? new(),
-                            YakiPoints = m.YakiPoints ?? new(),
-                            TobiPoints = m.TobiPoints ?? new(),
-                            ColdPoints = m.ColdPoints ?? new(),
-                            Yen = m.Yen ?? new()
-                        }).ToList()
-                    };
+                    errorMessage = "復号用の鍵がURLに含まれていません。";
+                    isLoading = false;
+                    return;
                 }
+                string decryptionKey = fragment.Substring(1);
+
+                var encData = await Http.GetFromJsonAsync<EncryptedResponse>($"{workerUrl}/{SharedIdParam}");
+                
+                if (encData != null && !string.IsNullOrEmpty(encData.EncryptedData))
+                {
+                    // --- 変更点: JS側のWeb Crypto APIを利用して復号 ---
+                    string decryptedJson = await JSRuntime.InvokeAsync<string>("blazorCrypto.decrypt", encData.EncryptedData, decryptionKey);
+                    
+                    var options = new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+                    var minData = System.Text.Json.JsonSerializer.Deserialize<MinifiedPayload>(decryptedJson, options);
+
+                    if (minData != null)
+                    {
+                        var resolvedPlayers = minData.Players ?? new List<string>();
+                        
+                        sharedData = new SharedPayload
+                        {
+                            Rules = minData.Rules,
+                            Players = resolvedPlayers,
+                            SessionChips = minData.SessionChips,
+                            History = minData.History?.Select(m => new GameResult
+                            {
+                                Timestamp = new DateTime(m.Ticks),
+                                PlayerNames = resolvedPlayers,
+                                RawScores = m.RawScores ?? new(),
+                                Points = m.Points ?? new(),
+                                YakiPlayers = m.YakiPlayers ?? new(),
+                                TobiBonusRecipients = m.TobiBonusRecipients ?? new(),
+                                SinkPoints = m.SinkPoints ?? new(),
+                                YakiPoints = m.YakiPoints ?? new(),
+                                TobiPoints = m.TobiPoints ?? new(),
+                                ColdPoints = m.ColdPoints ?? new(),
+                                Yen = m.Yen ?? new()
+                            }).ToList()
+                        };
+                    }
+                }
+                else
+                {
+                    errorMessage = "データが存在しないか、形式が異なります。";
+                }
+                
                 isLoading = false;
             }
-            catch
+            catch (Microsoft.JSInterop.JSException)
             {
-                errorMessage = "無効なURL、またはデータの有効期限（90日）が切れています。";
+                // JavaScript側での復号（crypto.subtle.decrypt）に失敗した場合
+                errorMessage = "データの復号に失敗しました。URLが欠損しているか、鍵が間違っています。";
+                isLoading = false;
+            }
+            catch (Exception)
+            {
+                errorMessage = "無効なURL、またはデータの有効期限（30日）が切れています。";
                 isLoading = false;
             }
         }
@@ -88,6 +112,12 @@
             errorMessage = "データが見つかりません。";
             isLoading = false;
         }
+    }
+
+    public class EncryptedResponse
+    {
+        [JsonPropertyName("encryptedData")]
+        public string? EncryptedData { get; set; }
     }
 
     public class SharedPayload
