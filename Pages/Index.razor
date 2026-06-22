@@ -262,7 +262,7 @@
 
     @* --- セクション3: 集計結果 --- *@
     <MudPaper Class="pa-2 px-sm-4" Elevation="2">
-        <ResultTable History="ActiveHistory" Players="TablePlayers" ActiveParticipantCount="TablePlayers.Count" @bind-DisplayMode="displayMode" Rules="rules" SessionChips="TablePlayers.Select(p => ActiveSessionChips.TryGetValue(p, out var v) ? v : 0).ToList()" IsReadOnly="false" ArmedDeleteTarget="armedDeleteTarget" OnDeleteRequested="HandleDeleteRequest" OnResetRequested="ConfirmReset" OnChipChanged="HandleChipChangedCallback" />
+        <ResultTable History="ActiveHistory" Players="TablePlayers" ActiveParticipantCount="TablePlayers.Count" @bind-DisplayMode="displayMode" Rules="rules" SessionChips="TablePlayers.Select(p => ActiveSessionChips.TryGetValue(p, out var v) ? v : 0).ToList()" IsReadOnly="false" ArmedDeleteTarget="armedDeleteTarget" OnDeleteRequested="HandleDeleteRequest" OnResetRequested="ConfirmReset" OnChipChanged="HandleChipChangedCallback" ActiveChipInputIndex="@activeChipInputIndex" ChipInputBuffer="@chipInputBuffer" OnChipInputClicked="OpenChipKeypad" />
         @* DBへ保存するボタン *@
         <div class="d-flex justify-center mt-6">
             <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.QueryStats" Disabled="@(ActiveHistory.Count == 0)" OnClick="ConfirmFinalizeSession" Style="width: 100%; max-width: 400px; font-weight: bold; padding: 12px 0;">
@@ -277,7 +277,7 @@
 @* 外部からテンキーを閉じるための隠しボタン *@
 <button id="hidden-close-keypad-btn" style="display: none;" @onclick="CloseKeypadOutside"></button>
 @* テンキー *@
-<ScoreKeypad IsOpen="activeScoreInputIndex.HasValue" IsTotalCorrect="IsTotalCorrect" OnKeyPress="OnKeypadPress" />
+<ScoreKeypad IsOpen="isKeypadOpen" IsTotalCorrect="IsTotalCorrect" ShowRecordButton="showRecordButton" OnKeyPress="OnKeypadPress" />
 
 @code {
     // 画面の入力状態を管理するための内部クラス
@@ -318,6 +318,10 @@
     private const string YakiIcon = "<g transform=\"matrix(0.025, 0, 0, 0.025, 0, 24)\"><path d=\"M843-60 670-234l-85 85q-23 23-56.5 23T472-149l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23 23-56.5 23T246-375l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23-23-23-56.5t23-56.5l28-28L60-844l56-56 102 102 28-28q23-23 57-23t57 23l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l-85 84 172 173-56 57ZM529-205l227-226-57-57-227 227 57 56Zm-57-170 114-113-57-56-113 113 56 56Zm-170-56 227-227-57-56-226 226 56 57Zm-56-170 114-113-57-57-113 113 56 57Zm368 255ZM501-460ZM388-573ZM275-686Z\"/></g>";
     private GameResult? armedDeleteTarget = null;
     private int? activeScoreInputIndex = null;
+    private int? activeChipInputIndex = null;
+    private string chipInputBuffer = "";
+    private bool isKeypadOpen => activeScoreInputIndex.HasValue || activeChipInputIndex.HasValue;
+    private bool showRecordButton => activeScoreInputIndex.HasValue;
     private string[] scoreInputBuffers
     {
         get => SessionState.ScoreInputBuffers;
@@ -1125,9 +1129,11 @@
         catch (Exception ex) { Snackbar.Add("保存中にエラーが発生しました:\n" + ex.Message, Severity.Error); }
     }
 
+    // 素点用にテンキーを開く
     private async Task OpenKeypad(int index)
     {
-        if (currentSitOuts[index]) return; // 抜け番の時は開かない
+        if (currentSitOuts[index]) return;
+        if (activeChipInputIndex.HasValue) await CloseKeypad();
         bool isAlreadyOpen = activeScoreInputIndex.HasValue;
         if (activeScoreInputIndex.HasValue && activeScoreInputIndex.Value != index)
             await CommitScoreBuffer(activeScoreInputIndex.Value);
@@ -1142,11 +1148,34 @@
         }
     }
 
+    // チップ用にテンキーを開く
+    private async Task OpenChipKeypad(int index)
+    {
+        if (activeScoreInputIndex.HasValue) await CloseKeypad();
+        activeChipInputIndex = index;
+        var name = TablePlayers[index];
+        int currentChip = ActiveSessionChips.TryGetValue(name, out var c) ? c : 0;
+        chipInputBuffer = currentChip == 0 ? "" : currentChip.ToString();
+        await Task.Delay(50);
+        await JS.InvokeVoidAsync("scrollToInput", "table-wrapper");
+    }
+
     private async Task CloseKeypad(bool saveToStorage = true)
     {
         if (activeScoreInputIndex.HasValue)
             await CommitScoreBuffer(activeScoreInputIndex.Value, saveToStorage);
+        if (activeChipInputIndex.HasValue)
+        {
+            int? finalChip = EvaluateScoreExpression(chipInputBuffer);
+            var name = TablePlayers[activeChipInputIndex.Value];
+            ActiveSessionChips[name] = finalChip ?? 0;
+            if (saveToStorage)
+                await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
+            chipInputBuffer = "";
+        }
         activeScoreInputIndex = null;
+        activeChipInputIndex = null;
+        StateHasChanged();
     }
 
     // 画面外をタップした時の統合ハンドラー
@@ -1159,41 +1188,40 @@
     // テンキーのボタンが押された時のコアロジック
     private async Task OnKeypadPress(string key)
     {
-        if (!activeScoreInputIndex.HasValue) return;
-        int idx = activeScoreInputIndex.Value;
+        if (!activeChipInputIndex.HasValue && !activeScoreInputIndex.HasValue) return;
         if (key == "閉じる") { await CloseKeypad(); return; }
-        if (key == "記録")
+        string UpdateBuffer(string current)
         {
-            await CloseKeypad(saveToStorage: false);
-            await CalculateAndRecordGame();
+            if (key == "C") return string.Empty;
+            if (key == "⌫" || key == "竚ｫ") return current.Length > 0 ? current[..^1] : current;
+            if (key is "+" or "-" && (current.EndsWith('+') || current.EndsWith('-'))) current = current[..^1];
+            return System.Text.RegularExpressions.Regex.Replace(current + key, @"(^|[-+])0+(?=[0-9])", "$1");
+        }
+        if (activeChipInputIndex is int chipIdx)
+        {
+            chipInputBuffer = UpdateBuffer(chipInputBuffer);
+            int? parsed = EvaluateScoreExpression(chipInputBuffer);
+            var name = TablePlayers[chipIdx];
+            ActiveSessionChips[name] = parsed ?? 0;
+            StateHasChanged();
             return;
         }
-        if (key == "C")
+        if (activeScoreInputIndex is int scoreIdx)
         {
-            scoreInputBuffers[idx] = string.Empty;
-            if (idx == autoFilledIndex) autoFilledIndex = null;
+            if (key == "記録")
+            {
+                await CloseKeypad(saveToStorage: false);
+                await CalculateAndRecordGame();
+                return;
+            }
+            if (scoreIdx == autoFilledIndex)
+            {
+                scoreInputBuffers[scoreIdx] = string.Empty;
+                autoFilledIndex = null;
+            }
+            scoreInputBuffers[scoreIdx] = UpdateBuffer(scoreInputBuffers[scoreIdx]);
             EvaluateAutoFill();
-            return;
         }
-        if (idx == autoFilledIndex)
-        {
-            scoreInputBuffers[idx] = string.Empty;
-            autoFilledIndex = null;
-        }
-        if (key == "⌫")
-        {
-            if (scoreInputBuffers[idx].Length > 0)
-                scoreInputBuffers[idx] = scoreInputBuffers[idx].Substring(0, scoreInputBuffers[idx].Length - 1);
-        }
-        else
-        {
-            if (key == "+" || key == "-")
-                if (scoreInputBuffers[idx].EndsWith("+") || scoreInputBuffers[idx].EndsWith("-"))
-                    scoreInputBuffers[idx] = scoreInputBuffers[idx].Substring(0, scoreInputBuffers[idx].Length - 1);
-            scoreInputBuffers[idx] += key;
-            scoreInputBuffers[idx] = System.Text.RegularExpressions.Regex.Replace(scoreInputBuffers[idx], @"(^|[-+])0+(?=[0-9])", "$1");
-        }
-        EvaluateAutoFill();
     }
 
     // 指定したインデックスの入力内容を計算・確定するヘルパーメソッド

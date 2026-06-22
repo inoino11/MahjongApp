@@ -50,10 +50,23 @@
         background-color: rgba(255, 255, 255, 0.18);
     }
 
-    .keypad-btn.op-key { background-color: #2e7d32; color: white; }
-    .keypad-btn.op-key:active { background-color: #1b5e20; }
-    .keypad-btn.action-key { background-color: #b71c1c; color: white; }
-    .keypad-btn.action-key:active { background-color: #7f0000; }
+    .keypad-btn.op-key {
+        background-color: #2e7d32;
+        color: white;
+    }
+
+    .keypad-btn.op-key:active {
+        background-color: #1b5e20;
+    }
+
+    .keypad-btn.action-key {
+        background-color: #b71c1c;
+        color: white;
+    }
+
+    .keypad-btn.action-key:active {
+        background-color: #7f0000;
+    }
 
     .keypad-btn.record-key {
         background-color: #ff9800 !important;
@@ -61,12 +74,23 @@
         font-weight: bold;
         animation: keypad-pulse-border 1.5s infinite;
     }
-    .keypad-btn.record-key:active { background-color: #e65100 !important; }
+
+    .keypad-btn.record-key:active {
+        background-color: #e65100 !important;
+    }
 
     @@keyframes keypad-pulse-border {
-        0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(255, 152, 0, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+        0% {
+            box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7);
+        }
+
+        70% {
+            box-shadow: 0 0 0 6px rgba(255, 152, 0, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(255, 152, 0, 0);
+        }
     }
 </style>
 
@@ -94,7 +118,7 @@
             <td><button type="button" class="keypad-btn action-key" @onclick='() => OnKeyPress.InvokeAsync("C")'>C</button></td>
             <td colspan="2"><button type="button" class="keypad-btn" @onclick='() => OnKeyPress.InvokeAsync("0")'>0</button></td>
             <td>
-                @if (IsTotalCorrect)
+                @if (ShowRecordButton && IsTotalCorrect)
                 {
                     <button type="button" class="keypad-btn record-key" @onclick='() => OnKeyPress.InvokeAsync("記録")'>記録</button>
                 }
@@ -110,5 +134,6 @@
 @code {
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public bool IsTotalCorrect { get; set; }
+    [Parameter] public bool ShowRecordButton { get; set; } = true;
     [Parameter] public EventCallback<string> OnKeyPress { get; set; }
 }

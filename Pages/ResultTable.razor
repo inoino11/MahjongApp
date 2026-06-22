@@ -128,6 +128,14 @@
     .responsive-chart-wrapper svg {
         overflow: visible !important;
     }
+
+    /* チップ入力中（テンキーが開いている対象）をハイライトするスタイル */
+    .chip-input-active {
+        background-color: rgba(76, 175, 80, 0.15) !important;
+        border-radius: 4px;
+        box-shadow: 0 0 6px rgba(129, 199, 132, 0.8);
+        border-bottom: 1px solid transparent !important;
+    }
 </style>
 
 @* 1. 表示モード切替ボタン ＆ リセットボタン *@
@@ -242,7 +250,12 @@
                                             </MudText>
                                             @if (!IsReadOnly)
                                             {
-                                                <MudNumericField T="int" Value="chip" ValueChanged="@(v => OnChipChanged.InvokeAsync((idx, v)))" Step="1" HideSpinButtons="true" Margin="Margin.Dense" Class="chip-input" Style="@(isChipError ? "max-width: 2.5rem; color:#ff0000; font-weight:bold; margin: 0 auto;" : "max-width: 2.5rem; margin: 0 auto;")" onfocus="this.select();" Format="+0;-0;0" />
+                                                string displayValue = ActiveChipInputIndex == idx
+                                                    ? ChipInputBuffer
+                                                    : (chip == 0 ? "0" : (chip > 0 ? $"+{chip}" : chip.ToString()));
+                                                <div @onclick="@(async () => await OnChipInputClicked.InvokeAsync(idx))" @onclick:stopPropagation="true">
+                                                    <MudTextField T="string" Value="@displayValue" ReadOnly="true" Margin="Margin.Dense" Class="@($"chip-input {(ActiveChipInputIndex == idx ? "chip-input-active" : "")}")" Style="@(isChipError && ActiveChipInputIndex != idx ? "max-width: 2.5rem; color:#ff0000; font-weight:bold; margin: 0 auto; cursor: pointer;" : "max-width: 2.5rem; margin: 0 auto; cursor: pointer;")" />
+                                                </div>
                                             }
                                             else
                                             {
@@ -362,6 +375,9 @@
     [Parameter] public EventCallback<GameResult> OnDeleteRequested { get; set; }
     [Parameter] public EventCallback OnResetRequested { get; set; }
     [Parameter] public EventCallback<(int Index, int Value)> OnChipChanged { get; set; }
+    [Parameter] public int? ActiveChipInputIndex { get; set; }
+    [Parameter] public string ChipInputBuffer { get; set; } = "";
+    [Parameter] public EventCallback<int> OnChipInputClicked { get; set; }
 
     // スクロール要素に個別IDを設定
     private readonly string _uid = Guid.NewGuid().ToString("N");
