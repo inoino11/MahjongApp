@@ -541,6 +541,23 @@
                 });
             }
         };
+        // 要素をテンキー上部の安全なエリアの中央にスクロールする関数
+        window.scrollToCenter = (elementId) => {
+            const el = document.getElementById(elementId);
+            const keypad = document.querySelector('.custom-keypad-container');
+            if (el) {
+                const rect = el.getBoundingClientRect();
+                const keypadHeight = keypad ? keypad.offsetHeight : 320;
+                const safeAreaHeight = window.innerHeight - keypadHeight;
+                const elementCenterY = rect.top + (rect.height / 2);
+                const safeAreaCenterY = safeAreaHeight / 2;
+                const targetY = window.scrollY + elementCenterY - safeAreaCenterY;
+                window.scrollTo({
+                    top: targetY,
+                    behavior: 'smooth'
+                });
+            }
+        };
     </script>
     <script>
         // PWAインストール制御用のグローバルオブジェクト
@@ -674,7 +691,7 @@
 
                 // Base64化
                 const combinedBase64 = this.bufferToBase64(combined);
-                
+
                 // 鍵はURLのフラグメントに含めるため URL Safe Base64 にする
                 const keyBase64 = this.bufferToBase64(exportedKey)
                     .replace(/\+/g, '-')

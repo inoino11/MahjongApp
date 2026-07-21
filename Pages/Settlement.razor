@@ -1,0 +1,703 @@
+@page "/settlement"
+@using MahjongApp.Models
+@inject MahjongApp.Services.DatabaseService DatabaseService
+@inject MahjongApp.Services.SessionStateService SessionStateService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+
+<style>
+    .settlement-table th,
+    .settlement-table td {
+        white-space: nowrap;
+        text-align: right;
+    }
+
+    .settlement-table th:first-child,
+    .settlement-table td:first-child {
+        text-align: left;
+    }
+
+    .fee-text {
+        color: var(--color-negative);
+    }
+
+    .unsaved-badge {
+        font-size: 0.7rem;
+        background-color: var(--mud-palette-warning);
+        color: var(--mud-palette-warning-text);
+        padding: 2px 6px;
+        border-radius: 4px;
+        display: inline-block;
+        white-space: nowrap; /* 追加：文字の折り返しを防止 */
+    }
+
+    /* テンキー表示時のパディング確保 */
+    .keypad-open-padding {
+        padding-bottom: 350px !important; /* 少し余裕を持たせて拡張 */
+    }
+
+    /* 場代入力フィールドのスタイル */
+    .fee-input input {
+        text-align: center !important;
+        font-size: 1.2rem !important;
+        font-weight: 500 !important;
+        padding-right: 4px !important;
+    }
+
+    .fee-input-active {
+        border: 1px solid #81c784 !important;
+        box-shadow: 0 0 6px rgba(129, 199, 132, 0.5);
+        background-color: rgba(76, 175, 80, 0.05) !important;
+        border-radius: 4px;
+    }
+
+    /* ラベルと枠線の重なりを解消 */
+    .mud-input-label-outlined {
+        background-color: var(--mud-palette-surface) !important;
+        padding: 0 4px !important;
+    }
+</style>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="@($"mt-4 pb-10 {(isKeypadOpen ? "keypad-open-padding" : "")}")" @onclick="OnContainerClick" Style="min-height: 100vh;">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
+        <MudIcon Icon="@Icons.Material.Filled.Payments" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
+        場代清算
+    </MudText>
+
+    <MudGrid>
+        <MudItem xs="12" md="5">
+            <MudPaper Class="pa-4 mb-4" Outlined="true">
+                <MudText Typo="Typo.subtitle1" Class="mb-2" Style="font-weight: bold;">
+                    <MudIcon Icon="@Icons.Material.Filled.Filter1" Size="Size.Small" Class="mr-1" />
+                    対象セッションを選択
+                </MudText>
+                @if (isLoading)
+                {
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" />
+                }
+                else if (allSessions.Count == 0)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">記録された対局がありません。</MudText>
+                }
+                else
+                {
+                    <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--mud-palette-divider); border-radius: 4px;">
+                        @* Breakpoint="Breakpoint.None" を追加し、スマホでのレイアウト崩れを防止 *@
+                        <MudTable Items="@allSessions" MultiSelection="true" @bind-SelectedItems="selectedSessions" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None">
+                            <RowTemplate>
+                                <MudTd>
+                                    @* セル内を縦並びにして綺麗に整頓 *@
+                                    <div class="d-flex flex-column gap-1 py-1">
+                                        @if (context.IsUnsaved)
+                                        {
+                                            <div>
+                                                <span class="unsaved-badge">現在入力中</span>
+                                            </div>
+                                        }
+                                        <div style="font-weight: bold; font-size: 1rem;">
+                                            @context.Session.Date.ToString("MM/dd HH:mm")
+                                        </div>
+                                        <div style="font-size: 0.75rem; color: var(--mud-palette-text-secondary);">
+                                            @(context.Games.Count)局 / @(context.Session.Rules?.Name ?? "カスタム")
+                                        </div>
+                                    </div>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </div>
+                }
+            </MudPaper>
+
+            @* ステップ2：場代とルールの入力 *@
+            <MudPaper Class="pa-4" Outlined="true">
+                <MudText Typo="Typo.subtitle1" Class="mb-3" Style="font-weight: bold;">
+                    <MudIcon Icon="@Icons.Material.Filled.Filter2" Size="Size.Small" Class="mr-1" />
+                    場代と支払いルール
+                </MudText>
+
+                <MudGrid Spacing="2">
+                    <MudItem xs="6">
+                        @* 固有のID (fee-input-section) を割り当てて確実なスクロールを保証 *@
+                        <div id="fee-input-section" @onclick="OpenKeypad" @onclick:stopPropagation="true">
+                            <MudTextField T="string" 
+                                          Value="@(isKeypadOpen ? feeInputBuffer : (totalFee != 0 ? totalFee.ToString("N0") : ""))" 
+                                          Label="場代総額 (円)" 
+                                          Variant="Variant.Outlined" 
+                                          ReadOnly="true" 
+                                          Placeholder="0"
+                                          Class="@($"fee-input {(isKeypadOpen ? "fee-input-active" : "")}")" 
+                                          Style="cursor: pointer;" />
+                        </div>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudSelect T="FeeRule" @bind-Value="selectedRule" Label="支払いルール" Variant="Variant.Outlined">
+                            <MudSelectItem T="FeeRule" Value="FeeRule.TopPays">トップ支払い</MudSelectItem>
+                            <MudSelectItem T="FeeRule" Value="FeeRule.SplitEvenly">均等割り</MudSelectItem>
+                            <MudSelectItem T="FeeRule" Value="FeeRule.SplitByGames">局数割り</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+
+        @* --- 右カラム：結果表示とシェア --- *@
+        <MudItem xs="12" md="7">
+            <MudPaper Class="pa-0" Outlined="true" Style="overflow: hidden; background-color: var(--mud-palette-surface);">
+                <div id="@shareTargetId" style="padding: 24px; background-color: #1a1a27; color: white; border-radius: inherit;">
+                    <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-4" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; border-bottom: 1px solid #444; padding-bottom: 8px;">
+                        本日の精算結果
+                    </MudText>
+
+                    @if (selectedSessions.Count == 0)
+                    {
+                        <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary" Class="py-8">
+                            リストからセッションを選択してください。
+                        </MudText>
+                    }
+                    else if (calculatedResults.Count == 0)
+                    {
+                        <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary" Class="py-8">
+                            有効なスコアデータがありません。
+                        </MudText>
+                    }
+                    else
+                    {
+                        <div style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px; display: flex; justify-content: space-between;">
+                            <span>対象: @selectedSessions.Count セッション / @(calculatedResults.Sum(r => r.GamesPlayed)) 局</span>
+                            <span>場代: @totalFee.ToString("N0") 円 (@GetRuleName(selectedRule))</span>
+                        </div>
+
+                        <div style="overflow-x: auto;">
+                            @{
+                                // セッションを日付順に並び替えて列を固定
+                                var orderedSessions = selectedSessions.OrderBy(s => s.Session.Date).ToList();
+                            }
+                            <table class="settlement-table" style="width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #555; font-size: 0.85rem; color: #bbb;">
+                                        <th style="padding: 8px 4px; position: sticky; left: 0; background-color: #1a1a27; z-index: 2;">名前</th>
+                                        <th style="padding: 8px 4px;">打数</th>
+                                        
+                                        @* セッションごとの列を動的に生成 *@
+                                        @foreach (var os in orderedSessions)
+                                        {
+                                            <th style="padding: 8px 4px;">
+                                                @* @(os.IsUnsaved ? "現在" : os.Session.Date.ToString("M/d")) *@
+                                            </th>
+                                        }
+                                        
+                                        @* <th style="padding: 8px 4px; font-weight: bold; color: white;">収支計</th> *@
+                                        <th style="padding: 8px 4px;">場代負担</th>
+                                        <th style="padding: 8px 4px; font-size: 0.95rem; color: white;">最終受渡額</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var res in calculatedResults)
+                                    {
+                                        <tr style="border-bottom: 1px solid #333;">
+                                            <td style="padding: 12px 4px; font-weight: bold; font-size: 1.05rem; position: sticky; left: 0; background-color: #1a1a27; z-index: 1;">@res.Name</td>
+                                            <td style="padding: 12px 4px; color: #aaa; font-size: 0.8rem;">@res.GamesPlayed 局</td>
+                                            
+                                            @* セッションごとの収支を表示 *@
+                                            @foreach (var os in orderedSessions)
+                                            {
+                                                int sYen = res.SessionYen.GetValueOrDefault(os.Session.SessionId, 0);
+                                                <td style="padding: 12px 4px; font-size: 0.9rem;">
+                                                    @if (sYen != 0)
+                                                    {
+                                                        <span style="@GetAmountStyle(sYen)">
+                                                            @(sYen > 0 ? "+" : "")@sYen.ToString("N0")
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span style="color: #555;">-</span>
+                                                    }
+                                                </td>
+                                            }
+
+                                            @* <td style="padding: 12px 4px; font-size: 0.9rem; font-weight: bold; background-color: rgba(255,255,255,0.02);">
+                                                <span style="@GetAmountStyle(res.TotalMahjongYen)">
+                                                    @(res.TotalMahjongYen > 0 ? "+" : "")@res.TotalMahjongYen.ToString("N0")
+                                                </span>
+                                            </td> *@
+                                            <td style="padding: 12px 4px; font-size: 0.9rem;">
+                                                <span style="@(res.Fee > 0 ? "color: var(--color-negative);" : (res.Fee < 0 ? "color: var(--color-positive);" : "color: #9e9e9e;"))">
+                                                    @(res.Fee > 0 ? "-" : (res.Fee < 0 ? "+" : ""))@(Math.Abs(res.Fee).ToString("F1"))
+                                                </span>
+                                            </td>
+                                            <td style="padding: 12px 4px; font-weight: bold; font-size: 1.05rem; background-color: rgba(255,255,255,0.02);">
+                                                <span style="@GetAmountStyle(res.FinalAmount)">
+                                                    @(res.FinalAmount > 0 ? "+" : "")@res.FinalAmount.ToString("F1")円
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </MudPaper>
+
+            <div class="d-flex justify-end mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Image" OnClick="ShareImageAsync" Disabled="@(isSharing || selectedSessions.Count == 0)" Style="font-weight: bold;">
+                    @(isSharing ? "生成中..." : "結果を画像でシェア")
+                </MudButton>
+            </div>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@* 外部からテンキーを閉じるための隠しボタン *@
+<button id="hidden-close-keypad-btn" style="display: none;" @onclick="CloseKeypadOutside"></button>
+
+@* 自作テンキーコンポーネント *@
+<ScoreKeypad IsOpen="isKeypadOpen" IsTotalCorrect="true" ShowRecordButton="false" OnKeyPress="OnKeypadPress" />
+
+@code {
+    public enum FeeRule { TopPays, SplitEvenly, SplitByGames }
+
+    private bool isLoading = true;
+    private bool isSharing = false;
+    private readonly string shareTargetId = $"settlement-share-{Guid.NewGuid():N}";
+
+    private List<SettlementSessionGroup> allSessions = new();
+    private HashSet<SettlementSessionGroup> _selectedSessions = new();
+    private HashSet<SettlementSessionGroup> selectedSessions
+    {
+        get => _selectedSessions;
+        set { _selectedSessions = value; CalculateSettlement(); }
+    }
+
+    private int _totalFee = 0;
+    private int totalFee
+    {
+        get => _totalFee;
+        set 
+        { 
+            if (_totalFee != value)
+            {
+                _totalFee = value;
+                _ = SessionStateService.SaveTemporaryFeeAsync(_totalFee);
+                CalculateSettlement(); 
+            }
+        }
+    }
+
+    private FeeRule _selectedRule = FeeRule.SplitEvenly;
+    private FeeRule selectedRule
+    {
+        get => _selectedRule;
+        set 
+        { 
+            if (_selectedRule != value)
+            {
+                _selectedRule = value;
+                _ = SessionStateService.SaveTemporaryFeeRuleAsync((int)_selectedRule);
+                CalculateSettlement(); 
+            }
+        }
+    }
+
+    private Dictionary<string, string> playerMap = new();
+    private List<PlayerResult> calculatedResults = new();
+
+    // --- テンキー制御用の変数 ---
+    private bool isKeypadOpen = false;
+    private string feeInputBuffer = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _totalFee = SessionStateService.TemporaryTotalFee;
+        if (_totalFee != 0)
+        {
+            feeInputBuffer = _totalFee.ToString();
+        }
+        _selectedRule = (FeeRule)SessionStateService.TemporaryFeeRule;
+
+        await LoadData();
+        CalculateSettlement();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        var dbData = await DatabaseService.GetAllDataAsync();
+
+        if (dbData != null)
+        {
+            var safePlayers = dbData.Players ?? new();
+            var safeSessions = dbData.Sessions ?? new();
+            var safeGames = dbData.Games ?? new();
+
+            playerMap = safePlayers.Where(p => p != null).ToDictionary(p => p.Id, p => p.Name);
+
+            allSessions = safeSessions
+                .Where(s => s != null)
+                .OrderByDescending(s => s.Date)
+                .Select(s => new SettlementSessionGroup
+                {
+                    Session = AggregateSessionDuplicates(s),
+                    Games = safeGames.Where(g => g != null && g.SessionId == s.SessionId).ToList(),
+                    IsUnsaved = false
+                }).ToList();
+        }
+
+        if (SessionStateService.ActiveHistory != null && SessionStateService.ActiveHistory.Count > 0)
+        {
+            var activePlayerNames = SessionStateService.CurrentPlayerNames
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .ToList();
+
+            var activeChips = new List<int>();
+            foreach (var name in activePlayerNames)
+            {
+                if (SessionStateService.ActiveSessionChips != null && 
+                    SessionStateService.ActiveSessionChips.TryGetValue(name, out int chipValue))
+                {
+                    activeChips.Add(chipValue);
+                }
+                else
+                {
+                    activeChips.Add(0);
+                }
+            }
+
+            var activeSessionGroup = new SettlementSessionGroup
+            {
+                Session = new SavedSessionRecord
+                {
+                    SessionId = "ACTIVE_UNSAVED", 
+                    Date = DateTime.Now,
+                    Rules = SessionStateService.Rules, 
+                    ParticipantPlayerIds = activePlayerNames, 
+                    SettledChips = activeChips
+                },
+                Games = SessionStateService.ActiveHistory.Select(g => new SavedGameRecord 
+                {
+                    SessionId = "ACTIVE_UNSAVED",
+                    PlayerIds = activePlayerNames.Cast<string?>().ToList(),
+                    Points = g.Points?.ToList() ?? new(),
+                    Yen = g.Yen?.ToList() ?? new(),
+                    RawScores = g.RawScores?.ToList() ?? new()
+                }).ToList(),
+                IsUnsaved = true
+            };
+
+            foreach (var name in activePlayerNames)
+            {
+                playerMap[name] = name;
+            }
+
+            activeSessionGroup.Session = AggregateSessionDuplicates(activeSessionGroup.Session);
+            allSessions.Insert(0, activeSessionGroup);
+            _selectedSessions.Add(activeSessionGroup);
+        }
+
+        isLoading = false;
+    }
+
+    private void CalculateSettlement()
+    {
+        calculatedResults.Clear();
+        if (selectedSessions == null || selectedSessions.Count == 0) return;
+
+        var map = new Dictionary<string, PlayerResult>();
+
+        foreach (var group in selectedSessions)
+        {
+            var session = group.Session;
+            var sessionId = session.SessionId; // 収支を紐付けるためのキー
+            var rules = session.Rules;
+            var pIds = session.ParticipantPlayerIds ?? new();
+            var sChips = session.SettledChips ?? new();
+
+            for (int i = 0; i < pIds.Count; i++)
+            {
+                var pId = pIds[i];
+                if (string.IsNullOrEmpty(pId)) continue;
+                var res = GetOrAddPlayer(map, pId);
+                
+                if (!res.SessionYen.ContainsKey(sessionId)) res.SessionYen[sessionId] = 0;
+
+                if (sChips.Count > i)
+                {
+                    res.SessionYen[sessionId] += sChips[i] * (rules?.ChipRate ?? 0);
+                }
+            }
+
+            foreach (var game in group.Games)
+            {
+                var gPids = game.PlayerIds ?? new();
+                var gPts = game.Points ?? new();
+                var gYen = game.Yen ?? new();
+                var gRaws = game.RawScores ?? new();
+
+                for (int i = 0; i < gPids.Count; i++)
+                {
+                    var pId = gPids[i];
+                    if (string.IsNullOrEmpty(pId)) continue;
+                    var res = GetOrAddPlayer(map, pId);
+
+                    if (!res.SessionYen.ContainsKey(sessionId)) res.SessionYen[sessionId] = 0;
+
+                    if (gRaws.Count > i && gRaws[i].HasValue)
+                    {
+                        res.GamesPlayed++;
+                        res.TotalPt += gPts.Count > i ? gPts[i] : 0;
+                        res.SessionYen[sessionId] += gYen.Count > i ? gYen[i] : 0;
+                    }
+                }
+            }
+        }
+
+        // ▼ 変更: MahjongYen ではなく TotalMahjongYen で判定
+        var activePlayers = map.Values.Where(p => p.GamesPlayed > 0 || p.TotalMahjongYen != 0).ToList();
+        if (activePlayers.Count == 0) return;
+
+        double fee = totalFee;
+        if (selectedRule == FeeRule.TopPays)
+        {
+            double maxPt = activePlayers.Max(p => p.TotalPt);
+            var topPlayers = activePlayers.Where(p => p.TotalPt == maxPt).ToList();
+            double splitFee = fee / topPlayers.Count; 
+            foreach (var p in topPlayers) p.Fee = splitFee;
+        }
+        else if (selectedRule == FeeRule.SplitEvenly)
+        {
+            double splitFee = fee / activePlayers.Count;
+            foreach (var p in activePlayers) p.Fee = splitFee;
+        }
+        else if (selectedRule == FeeRule.SplitByGames)
+        {
+            int totalGames = activePlayers.Sum(p => p.GamesPlayed);
+            if (totalGames > 0)
+            {
+                foreach (var p in activePlayers)
+                {
+                    p.Fee = fee * ((double)p.GamesPlayed / totalGames);
+                }
+            }
+        }
+
+        calculatedResults = activePlayers.OrderByDescending(p => p.FinalAmount).ToList();
+    }
+
+    private PlayerResult GetOrAddPlayer(Dictionary<string, PlayerResult> map, string pId)
+    {
+        if (!map.TryGetValue(pId, out var res))
+        {
+            res = new PlayerResult
+            {
+                Id = pId,
+                Name = playerMap.TryGetValue(pId, out var name) ? name : "不明"
+            };
+            map[pId] = res;
+        }
+        return res;
+    }
+
+    private async Task ShareImageAsync()
+    {
+        isSharing = true;
+        StateHasChanged();
+        await Task.Delay(100);
+        try
+        {
+            var result = await JSRuntime.InvokeAsync<string>("exportAndShareResult", shareTargetId);
+            if (result == "COPIED") Snackbar.Add("精算表をクリップボードにコピーしました", Severity.Success);
+            else if (result == "DOWNLOADED") Snackbar.Add("精算表をダウンロードしました", Severity.Info);
+            else if (result.StartsWith("ERROR")) Snackbar.Add($"画像の生成に失敗しました:\n{result}", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("シェア処理中にエラーが発生しました", Severity.Error);
+        }
+        finally
+        {
+            isSharing = false;
+            StateHasChanged();
+        }
+    }
+
+    // --- テンキー制御ロジック ---
+
+    private void OnContainerClick()
+    {
+        if (isKeypadOpen)
+        {
+            CloseKeypad();
+        }
+    }
+
+    private void CloseKeypadOutside()
+    {
+        if (isKeypadOpen)
+        {
+            CloseKeypad();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenKeypad()
+    {
+        if (isKeypadOpen) return;
+        isKeypadOpen = true;
+        feeInputBuffer = totalFee == 0 ? "" : totalFee.ToString();
+        StateHasChanged(); 
+        await Task.Delay(150);
+        await JSRuntime.InvokeVoidAsync("scrollToCenter", "fee-input-section");
+    }
+
+    private void CloseKeypad()
+    {
+        isKeypadOpen = false;
+        // 閉じたタイミングで計算結果の数値をバッファに戻す（例：「1000-500」→「500」に確定）
+        feeInputBuffer = totalFee == 0 ? "" : totalFee.ToString();
+    }
+
+    private void OnKeypadPress(string key)
+    {
+        if (!isKeypadOpen) return;
+        
+        if (key == "閉じる" || key == "記録")
+        {
+            CloseKeypad();
+            return;
+        }
+
+        if (key == "C")
+        {
+            feeInputBuffer = "";
+        }
+        else if (key == "⌫" || key == "戻る")
+        {
+            if (feeInputBuffer.Length > 0) feeInputBuffer = feeInputBuffer[..^1];
+        }
+        else if (key == "+" || key == "-")
+        {
+            // 連続する符号や、末尾の符号を上書きする処理
+            if (feeInputBuffer.EndsWith('+') || feeInputBuffer.EndsWith('-'))
+            {
+                feeInputBuffer = feeInputBuffer[..^1];
+            }
+            feeInputBuffer += key;
+        }
+        else
+        {
+            // 数字の入力（先頭の無駄な0を削除）
+            feeInputBuffer += key;
+            feeInputBuffer = System.Text.RegularExpressions.Regex.Replace(feeInputBuffer, @"(^|[-+])0+(?=[0-9])", "$1");
+        }
+
+        // 入力式をリアルタイム計算
+        int? parsed = EvaluateScoreExpression(feeInputBuffer);
+        totalFee = parsed ?? 0; // 値の変更に伴い、CalculateSettlement() が自動発火
+    }
+
+    // 文字列の計算式（+ / -）を評価して整数を返すメソッド
+    private int? EvaluateScoreExpression(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return null;
+        input = input.Replace(" ", "").Replace(" ", "");
+        try
+        {
+            int total = 0;
+            string currentNumber = "";
+            char currentOp = '+';
+            for (int i = 0; i < input.Length; i++)
+            {
+                char c = input[i];
+                if (c == '+' || c == '-')
+                {
+                    if (string.IsNullOrEmpty(currentNumber))
+                    {
+                        currentOp = c == '-' && currentOp == '+' ? '-' : c;
+                        continue;
+                    }
+                    int val = int.Parse(currentNumber);
+                    total = currentOp == '+' ? total + val : total - val;
+                    currentNumber = "";
+                    currentOp = c;
+                }
+                else if (char.IsDigit(c))
+                {
+                    currentNumber += c;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            if (!string.IsNullOrEmpty(currentNumber))
+            {
+                int val = int.Parse(currentNumber);
+                total = currentOp == '+' ? total + val : total - val;
+            }
+            return total;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    // --- ヘルパーメソッド ---
+
+    private string GetRuleName(FeeRule rule) => rule switch
+    {
+        FeeRule.TopPays => "トップ払い",
+        FeeRule.SplitEvenly => "均等割り",
+        FeeRule.SplitByGames => "打数割り",
+        _ => ""
+    };
+
+    private string GetAmountStyle(double amount)
+    {
+        if (amount == 0) return "color: var(--mud-palette-text-secondary);";
+        return amount > 0 ? "color: var(--color-positive);" : "color: var(--color-negative);";
+    }
+
+    private SavedSessionRecord AggregateSessionDuplicates(SavedSessionRecord session)
+    {
+        var distinctIds = new List<string>();
+        var distinctChips = new List<int>();
+        var pIds = session.ParticipantPlayerIds ?? new();
+        var sChips = session.SettledChips ?? new();
+        for (int i = 0; i < pIds.Count; i++)
+        {
+            var id = pIds[i];
+            var chip = sChips.Count > i ? sChips[i] : 0;
+            int existingIdx = id == null ? -1 : distinctIds.IndexOf(id);
+            if (existingIdx != -1) distinctChips[existingIdx] += chip;
+            else { distinctIds.Add(id ?? ""); distinctChips.Add(chip); }
+        }
+        session.ParticipantPlayerIds = distinctIds;
+        session.SettledChips = distinctChips;
+        return session;
+    }
+
+    // --- ローカルクラス ---
+
+    public class SettlementSessionGroup
+    {
+        public SavedSessionRecord Session { get; set; } = new();
+        public List<SavedGameRecord> Games { get; set; } = new();
+        public bool IsUnsaved { get; set; } = false;
+        public override bool Equals(object? obj) => obj is SettlementSessionGroup other && Session.SessionId == other.Session.SessionId;
+        public override int GetHashCode() => Session.SessionId.GetHashCode();
+    }
+
+    public class PlayerResult
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public double TotalPt { get; set; }
+        public int GamesPlayed { get; set; }
+        public double Fee { get; set; }
+        public Dictionary<string, int> SessionYen { get; set; } = new();
+        public int TotalMahjongYen => SessionYen.Values.Sum();        
+        public double FinalAmount => TotalMahjongYen - Fee;
+    }
+}

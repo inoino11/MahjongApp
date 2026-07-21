@@ -18,6 +18,8 @@ public class SessionStateService
     public List<GameResult> ActiveHistory { get; private set; } = new();
     public Dictionary<string, int> ActiveSessionChips { get; private set; } = new();
     public string[] ScoreInputBuffers { get; private set; } = Enumerable.Repeat(string.Empty, 7).ToArray();
+    public int TemporaryTotalFee { get; private set; } = 0;
+    public int TemporaryFeeRule { get; private set; } = 1;
 
     // 内部で使用するキーの定数管理（タイポ防止）
     private const string KeyRules = "rules";
@@ -26,6 +28,8 @@ public class SessionStateService
     private const string KeyHistory = "ActiveHistory";
     private const string KeyChips = "ActiveSessionChips";
     private const string KeyBackupBuffers = "backup_score_buffers";
+    private const string KeyTempFee = "temp_total_fee";
+    private const string KeyTempFeeRule = "temp_fee_rule";
 
     public SessionStateService(ILocalStorageService localStorage)
     {
@@ -95,6 +99,14 @@ public class SessionStateService
                 ScoreInputBuffers = backupBuffers;
             }
         }
+
+        // 7. 一時場代の復元
+        var savedTempFee = await _localStorage.GetItemAsync<int?>(KeyTempFee);
+        if (savedTempFee.HasValue) TemporaryTotalFee = savedTempFee.Value;
+
+        // 8. 一時支払いルールの復元
+        var savedTempRule = await _localStorage.GetItemAsync<int?>(KeyTempFeeRule);
+        if (savedTempRule.HasValue) TemporaryFeeRule = savedTempRule.Value;
     }
 
     // --- 状態変更 兼 永続化メソッド群 ---
@@ -151,6 +163,18 @@ public class SessionStateService
     {
         ScoreInputBuffers = Enumerable.Repeat(string.Empty, 7).ToArray();
         await _localStorage.RemoveItemAsync(KeyBackupBuffers);
+    }
+
+    public async Task SaveTemporaryFeeAsync(int fee)
+    {
+        TemporaryTotalFee = fee;
+        await _localStorage.SetItemAsync(KeyTempFee, TemporaryTotalFee);
+    }
+
+    public async Task SaveTemporaryFeeRuleAsync(int rule)
+    {
+        TemporaryFeeRule = rule;
+        await _localStorage.SetItemAsync(KeyTempFeeRule, TemporaryFeeRule);
     }
 
     /// <summary>
