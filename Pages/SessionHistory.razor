@@ -174,7 +174,7 @@
                                                         var pName = GetPlayerName(pId);
                                                         var chips = group.Session.SettledChips.Count > i ? group.Session.SettledChips[i] : 0;
                                                         var chipYen = chips * group.Session.ChipRate;
-                                                        var color = chips >= 0 ? "#ff6b6b" : "#4dabf7";
+                                                        var color = chips >= 0 ? "var(--color-positive)" : "var(--color-negative)";
                                                         var sign = chips > 0 ? "+" : "";
                                                         if (chips != 0)
                                                         {

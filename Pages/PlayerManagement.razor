@@ -5,6 +5,7 @@
 @inject IDialogService DialogService
 @inject MahjongApp.Services.StatsCacheService StatsCache
 @inject ILocalStorageService LocalStorage
+@inject MahjongApp.Services.SessionStateService SessionState
 
 <style>
     /* テーブルを画面幅に収め、横スクロールを防止する */
@@ -50,7 +51,7 @@
                             <div class="d-flex flex-column gap-3 py-2">
                                 <MudTextField @bind-Value="editName" Margin="Margin.Dense" AutoFocus="true" Label="新しい名前" Variant="Variant.Outlined" Style="background-color: rgba(0,0,0,0.2);" />
                                 <div class="d-flex justify-end gap-2">
-                                    <MudButton Size="Size.Small" Color="Color.Default" OnClick="CancelEdit">取消</MudButton>
+                                    <MudButton Size="Size.Small" Color="Color.Default" OnClick="CancelEdit">キャンセル</MudButton>
                                     <MudButton Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveEdit">保存</MudButton>
                                 </div>
                             </div>
@@ -69,7 +70,7 @@
                                     }
                                 </MudSelect>
                                 <div class="d-flex justify-end gap-2">
-                                    <MudButton Size="Size.Small" Color="Color.Default" OnClick="CancelMerge">取消</MudButton>
+                                    <MudButton Size="Size.Small" Color="Color.Default" OnClick="CancelMerge">キャンセル</MudButton>
                                     <MudButton Size="Size.Small" Color="Color.Error" Variant="Variant.Filled" Disabled="@string.IsNullOrEmpty(mergeSourceId)" OnClick="ExecuteMerge">統合</MudButton>
                                 </div>
                             </div>
@@ -261,7 +262,7 @@
     {
         int yen = GetPlayerTotalYen(playerId);
         if (yen == 0) return "";
-        return yen > 0 ? "color:#ff6b6b;font-weight:bold;" : "color:#4dabf7;font-weight:bold;";
+        return yen > 0 ? "color:var(--color-positive);font-weight:bold;" : "color:var(--color-negative);font-weight:bold;";
     }
 
     // 5. UI表示用のテキスト（内チップ）
@@ -289,8 +290,8 @@
             Snackbar.Add("その名前は既に存在します", Severity.Warning);
             return;
         }
-        // ▼ データベースを更新する前に、入力欄の名前を置き換える
         await SyncActiveSessionNames(player.Name, editName);
+        await SessionState.InitializeStateAsync();
         player.Name = editName;
         await DatabaseService.UpdatePlayerAsync(player);
         _ = StatsCache.InitializeAsync(forceReload: true);
@@ -338,17 +339,16 @@
         var sourceName = players.First(p => p.Id == mergeSourceId).Name;
         var targetName = players.First(p => p.Id == mergeTargetId).Name;
         bool? result = await DialogService.ShowMessageBoxAsync(
-            "🚨 名前の統合",
-            (MarkupString)$"【{sourceName}】のすべての履歴とチップは<br />【{targetName}】の中でこれからも生き続けます。<br /><br />※この操作は取り消せません。実行しますか？",
+            "🔀 名前の統合",
+            (MarkupString)$"【{sourceName}】のすべての履歴とチップを<br />【{targetName}】の中でこれからも生き続けます。<br /><br />※この操作は取り消せません。実行しますか？",
             yesText: "統合を実行", cancelText: "キャンセル");
-            
         if (result == true)
         {
-            // ▼ データベースを統合する前に、入力欄の「吸収される名前」を「吸収先」に置き換える
             await SyncActiveSessionNames(sourceName, targetName);
+            await SessionState.InitializeStateAsync();
             await DatabaseService.MergePlayersAsync(mergeSourceId, mergeTargetId);
             _ = StatsCache.InitializeAsync(forceReload: true);
-            Snackbar.Add("名前を統合しました！", Severity.Success);
+            Snackbar.Add("名前を統合しました。", Severity.Success);
             mergeTargetId = null;
             mergeSourceId = null;
             await LoadData();

@@ -11,8 +11,8 @@ else
     <MudGrid Spacing="3" Class="mb-4">
         <MudItem xs="12" sm="6">
             <MudPaper Class="pa-3 d-flex flex-column align-center justify-center" Outlined="true" Style="height: 100%; width: 100%;">
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">@(PlayerCount == 4 ? "四麻" : "三麻")トップ (@top.Name)</MudText>
-                <MudText Typo="Typo.h4" Style="@(top.TotalYen >= 0 ? "color: #ff6b6b; font-weight: bold;" : "color: #4dabf7; font-weight: bold;")">
+                <MudText Typo="Typo.body2" Color="Color.Success" Class="mb-1">@(PlayerCount == 4 ? "四麻" : "三麻")トップ (@top.Name)</MudText>
+                <MudText Typo="Typo.h4" Style="@(top.TotalYen >= 0 ? "color: var(--color-positive); font-weight: bold;" : "color: var(--color-negative); font-weight: bold;")">
                     @(top.TotalYen > 0 ? "+" : "")@top.TotalYen.ToString("N0")<span style="font-size: 1rem;">円</span>
                 </MudText>
                 <div class="d-flex gap-3 mt-1" style="font-size: 0.75rem; color: var(--mud-palette-text-secondary);">
@@ -23,7 +23,7 @@ else
         </MudItem>
         <MudItem xs="12" sm="6">
             <MudPaper Class="pa-3 d-flex flex-column align-center justify-center" Outlined="true" Style="height: 100%; width: 100%;">
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">平均順位</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Success" Class="mb-1">平均順位</MudText>
                 <MudText Typo="Typo.h4" Style="font-weight: bold;">@top.AverageRank.ToString("F2")<span style="font-size: 1rem; color: var(--mud-palette-text-secondary);"> 位</span></MudText>
             </MudPaper>
         </MudItem>
@@ -55,12 +55,12 @@ else
                     <div style="@(RankLayout.GetDataStyle(1))">@stat.TotalGames 局</div>
                 </MudTd>
                 <MudTd Style="@(RankLayout.GetTdStyle(2, "background-color: rgba(76, 175, 80, 0.05);"))">
-                    <div style="@(RankLayout.GetDataStyle(2, stat.TotalPoint >= 0 ? "color:#ff6b6b; font-weight:bold;" : "color:#4dabf7; font-weight:bold;"))">
+                    <div style="@(RankLayout.GetDataStyle(2, stat.TotalPoint >= 0 ? "color:var(--color-positive); font-weight:bold;" : "color:var(--color-negative); font-weight:bold;"))">
                         @(stat.TotalPoint > 0 ? "+" : "")@stat.TotalPoint.ToString("F1")
                     </div>
                 </MudTd>
                 <MudTd Style="@(RankLayout.GetTdStyle(3, "background-color: rgba(76, 175, 80, 0.05);"))">
-                    <div style="@(RankLayout.GetDataStyle(3, stat.TotalYen >= 0 ? "color:#ff6b6b; font-weight:bold;" : "color:#4dabf7; font-weight:bold;"))">
+                    <div style="@(RankLayout.GetDataStyle(3, stat.TotalYen >= 0 ? "color:var(--color-positive); font-weight:bold;" : "color:var(--color-negative); font-weight:bold;"))">
                         @(stat.TotalYen > 0 ? "+" : "")@stat.TotalYen.ToString("N0")円
                     </div>
                 </MudTd>
@@ -126,12 +126,12 @@ else
                         <div style="@(MatchupLayout.GetDataStyle(1))">@mStat.GamesTogether 局</div>
                     </MudTd>
                     <MudTd Style="@(MatchupLayout.GetTdStyle(2, mStat.HeroNetPoint >= 0 ? "background-color: rgba(76, 175, 80, 0.05);" : "background-color: rgba(244, 67, 54, 0.05);"))">
-                        <div style="@(MatchupLayout.GetDataStyle(2, mStat.HeroNetPoint >= 0 ? "color:#ff6b6b; font-weight:bold;" : "color:#4dabf7; font-weight:bold;"))">
+                        <div style="@(MatchupLayout.GetDataStyle(2, mStat.HeroNetPoint >= 0 ? "color:var(--color-positive); font-weight:bold;" : "color:var(--color-negative); font-weight:bold;"))">
                             @(mStat.HeroNetPoint > 0 ? "+" : "")@mStat.HeroNetPoint.ToString("F1")
                         </div>
                     </MudTd>
                     <MudTd Style="@(MatchupLayout.GetTdStyle(3, mStat.HeroNetYen >= 0 ? "background-color: rgba(76, 175, 80, 0.05);" : "background-color: rgba(244, 67, 54, 0.05);"))">
-                        <div style="@(MatchupLayout.GetDataStyle(3, mStat.HeroNetYen >= 0 ? "color:#ff6b6b; font-weight:bold;" : "color:#4dabf7; font-weight:bold;"))">
+                        <div style="@(MatchupLayout.GetDataStyle(3, mStat.HeroNetYen >= 0 ? "color:var(--color-positive); font-weight:bold;" : "color:var(--color-negative); font-weight:bold;"))">
                             @(mStat.HeroNetYen > 0 ? "+" : "")@mStat.HeroNetYen.ToString("N0")円
                         </div>
                     </MudTd>

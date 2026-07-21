@@ -76,7 +76,7 @@ namespace MahjongApp.Services
                     for (int rank = 0; rank < validPlayers.Count; rank++)
                     {
                         var p = validPlayers[rank];
-                        if (currentMap.TryGetValue(p.Id!, out var stat))
+                        if (p.Id != "deleted" && currentMap.TryGetValue(p.Id!, out var stat))
                         {
                             var idx = p.Index;
                             stat.TotalGames++;
@@ -141,7 +141,7 @@ namespace MahjongApp.Services
                     string? oppId = playerIds[i];
                     if (string.IsNullOrEmpty(oppId) || oppId == "deleted" || oppId == heroId) continue;
                     if (i >= rawScores.Count || !rawScores[i].HasValue) continue;
-                   if (!map.TryGetValue(oppId, out var stat))
+                    if (!map.TryGetValue(oppId, out var stat))
                     {
                         var oppName = AvailablePlayers.FirstOrDefault(p => p != null && p.Id == oppId)?.Name ?? "不明";
                         stat = new MatchupStat { OpponentName = oppName };

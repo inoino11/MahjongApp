@@ -6,7 +6,6 @@
 @inject NavigationManager NavigationManager
 @inject MahjongApp.Services.DatabaseService DatabaseService
 @inject MahjongApp.Services.StatsCacheService StatsCache
-@inject IJSRuntime JS
 @inject MahjongApp.Services.SessionStateService SessionState
 @inject MahjongApp.Services.MahjongCalculatorService Calculator
 
@@ -1144,7 +1143,7 @@
         if (!isAlreadyOpen)
         {
             await Task.Delay(50);
-            await JS.InvokeVoidAsync("scrollToInput", "score-input-section");
+            await JSRuntime.InvokeVoidAsync("scrollToInput", "score-input-section");
         }
     }
 
@@ -1157,7 +1156,7 @@
         int currentChip = ActiveSessionChips.TryGetValue(name, out var c) ? c : 0;
         chipInputBuffer = currentChip == 0 ? "" : currentChip.ToString();
         await Task.Delay(50);
-        await JS.InvokeVoidAsync("scrollToInput", "table-wrapper");
+        await JSRuntime.InvokeVoidAsync("scrollToInput", "table-wrapper");
     }
 
     private async Task CloseKeypad(bool saveToStorage = true)

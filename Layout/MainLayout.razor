@@ -2,11 +2,20 @@
 @inject MahjongApp.Services.StatsCacheService StatsCache
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavManager
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 
 <MudThemeProvider Theme="@mahjongTheme" @bind-IsDarkMode="_isDarkMode" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 <MudPopoverProvider />
+
+@* 正負のカラーをアプリ全体に適用するCSS変数 *@
+<style>
+    :root {
+        --color-positive: @(_isColorInverted ? "#1e88e5" : "#e53935");
+        --color-negative: @(_isColorInverted ? "#e53935" : "#1e88e5");
+    }
+</style>
 
 <MudLayout>
     @* 上部のバー *@
@@ -17,7 +26,12 @@
         }
         <MudText Typo="Typo.h6" Class="ml-3">麻雀集計ツール</MudText>
         <MudSpacer />
-        @* --- ダークモード切り替えスイッチ --- *@
+        @* 正負カラー切り替えスイッチ *@
+        <MudToggleIconButton Toggled="_isColorInverted"
+                             ToggledChanged="OnColorInvertChanged"
+                             Icon="@Icons.Material.Filled.InvertColors" Color="Color.Error" Title="正負のカラー設定（現在：赤がプラス）"
+                             ToggledIcon="@Icons.Material.Filled.InvertColors" ToggledColor="Color.Info" ToggledTitle="正負のカラー設定（現在：青がプラス）" />
+        @* ダークモード切り替えスイッチ *@
         <MudToggleIconButton @bind-Toggled="_isDarkMode"
                              Icon="@Icons.Material.Filled.DarkMode" Color="Color.Inherit" Title="ダークモードへ"
                              ToggledIcon="@Icons.Material.Filled.LightMode" ToggledColor="Color.Inherit" ToggledTitle="ライトモードへ" />
@@ -39,8 +53,9 @@
 
 @code {
     bool _drawerOpen = false;
-    bool _isDarkMode = true; // デフォルトをダークモードに設定
+    bool _isDarkMode = true;
     bool IsSharedPage = false;
+    bool _isColorInverted = false;
 
     protected override void OnInitialized()
     {
@@ -62,6 +77,8 @@
     protected override async Task OnInitializedAsync()
     {
         _ = StatsCache.InitializeAsync();
+        _isColorInverted = await LocalStorage.GetItemAsync<bool>("isColorInverted");
+        StateHasChanged();
     }
 
     void DrawerToggle()
@@ -77,6 +94,13 @@
             await Task.Delay(500);
             await JSRuntime.InvokeVoidAsync("hideMahjongLoader");
         }
+    }
+
+    // ボタンが押された時の処理
+    private async Task OnColorInvertChanged(bool newValue)
+    {
+        _isColorInverted = newValue;
+        await LocalStorage.SetItemAsync("isColorInverted", newValue);
     }
 
     private MudTheme mahjongTheme = new MudTheme()
