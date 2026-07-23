@@ -6,15 +6,24 @@
 @inject IJSRuntime JSRuntime
 
 <style>
+    /* ヘッダーとデータセルを中央揃えに */
     .settlement-table th,
     .settlement-table td {
         white-space: nowrap;
-        text-align: right;
+        text-align: center;
     }
 
+    /* 1列目（名前）は左揃えを維持 */
     .settlement-table th:first-child,
     .settlement-table td:first-child {
         text-align: left;
+    }
+
+    /* 追加：数値を揃えるための固定幅ブロック */
+    .num-box {
+        display: inline-block;
+        text-align: right;
+        width: 5.5em;
     }
 
     .fee-text {
@@ -28,12 +37,12 @@
         padding: 2px 6px;
         border-radius: 4px;
         display: inline-block;
-        white-space: nowrap; /* 追加：文字の折り返しを防止 */
+        white-space: nowrap;
     }
 
     /* テンキー表示時のパディング確保 */
     .keypad-open-padding {
-        padding-bottom: 350px !important; /* 少し余裕を持たせて拡張 */
+        padding-bottom: 350px !important;
     }
 
     /* 場代入力フィールドのスタイル */
@@ -82,11 +91,9 @@
                 else
                 {
                     <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--mud-palette-divider); border-radius: 4px;">
-                        @* Breakpoint="Breakpoint.None" を追加し、スマホでのレイアウト崩れを防止 *@
                         <MudTable Items="@allSessions" MultiSelection="true" @bind-SelectedItems="selectedSessions" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None">
                             <RowTemplate>
                                 <MudTd>
-                                    @* セル内を縦並びにして綺麗に整頓 *@
                                     <div class="d-flex flex-column gap-1 py-1">
                                         @if (context.IsUnsaved)
                                         {
@@ -112,26 +119,19 @@
             <MudPaper Class="pa-4" Outlined="true">
                 <MudText Typo="Typo.subtitle1" Class="mb-3" Style="font-weight: bold;">
                     <MudIcon Icon="@Icons.Material.Filled.Filter2" Size="Size.Small" Class="mr-1" />
-                    場代と支払いルール
+                    場代と払いルール
                 </MudText>
 
                 <MudGrid Spacing="2">
                     <MudItem xs="6">
-                        @* 固有のID (fee-input-section) を割り当てて確実なスクロールを保証 *@
                         <div id="fee-input-section" @onclick="OpenKeypad" @onclick:stopPropagation="true">
-                            <MudTextField T="string" 
-                                          Value="@(isKeypadOpen ? feeInputBuffer : (totalFee != 0 ? totalFee.ToString("N0") : ""))" 
-                                          Label="場代総額 (円)" 
-                                          Variant="Variant.Outlined" 
-                                          ReadOnly="true" 
-                                          Placeholder="0"
-                                          Class="@($"fee-input {(isKeypadOpen ? "fee-input-active" : "")}")" 
-                                          Style="cursor: pointer;" />
+                            <MudTextField T="string" Value="@(isKeypadOpen ? feeInputBuffer : (totalFee != 0 ? totalFee.ToString("N0") : ""))" Label="場代総額 (円)" Variant="Variant.Outlined" ReadOnly="true" Placeholder="0" Class="@($"fee-input {(isKeypadOpen ? "fee-input-active" : "")}")" Style="cursor: pointer;" />
                         </div>
                     </MudItem>
                     <MudItem xs="6">
-                        <MudSelect T="FeeRule" @bind-Value="selectedRule" Label="支払いルール" Variant="Variant.Outlined">
-                            <MudSelectItem T="FeeRule" Value="FeeRule.TopPays">トップ支払い</MudSelectItem>
+                        <MudSelect T="FeeRule" @bind-Value="selectedRule" Label="払いルール" Variant="Variant.Outlined">
+                            <MudSelectItem T="FeeRule" Value="FeeRule.TopPays">総額トップ払い</MudSelectItem>
+                            <MudSelectItem T="FeeRule" Value="FeeRule.TopPerGame">各局トップ払い</MudSelectItem>
                             <MudSelectItem T="FeeRule" Value="FeeRule.SplitEvenly">均等割り</MudSelectItem>
                             <MudSelectItem T="FeeRule" Value="FeeRule.SplitByGames">局数割り</MudSelectItem>
                         </MudSelect>
@@ -178,14 +178,14 @@
                                     <tr style="border-bottom: 2px solid #555; font-size: 0.85rem; color: #bbb;">
                                         <th style="padding: 8px 4px; position: sticky; left: 0; background-color: #1a1a27; z-index: 2;">名前</th>
                                         <th style="padding: 8px 4px;">局数</th>
-                                        
+
                                         @foreach (var os in orderedSessions)
                                         {
                                             <th style="padding: 8px 4px;">
                                                 @* @(os.IsUnsaved ? "現在" : os.Session.Date.ToString("M/d")) *@
                                             </th>
                                         }
-                                        
+
                                         <th style="padding: 8px 4px;">場代</th>
                                         <th style="padding: 8px 4px; font-size: 0.95rem; color: white;">最終収支</th>
                                     </tr>
@@ -195,32 +195,34 @@
                                     {
                                         <tr style="border-bottom: 1px solid #333;">
                                             <td style="padding: 12px 4px; font-weight: bold; font-size: 1.05rem; position: sticky; left: 0; background-color: #1a1a27; z-index: 1;">@res.Name</td>
-                                            <td style="padding: 12px 4px; color: #aaa; font-size: 0.8rem;">@res.GamesPlayed 局</td>
-                                            
+                                            <td style="padding: 12px 4px; color: #aaa; font-size: 0.8rem;">
+                                                <span class="num-box">@res.GamesPlayed 局</span>
+                                            </td>
+
                                             @foreach (var os in orderedSessions)
                                             {
                                                 int sYen = res.SessionYen.GetValueOrDefault(os.Session.SessionId, 0);
                                                 <td style="padding: 12px 4px; font-size: 0.9rem;">
                                                     @if (sYen != 0)
                                                     {
-                                                        <span style="@GetAmountStyle(sYen)">
+                                                        <span class="num-box" style="@GetAmountStyle(sYen)">
                                                             @(sYen > 0 ? "+" : "")@sYen.ToString("N0")
                                                         </span>
                                                     }
                                                     else
                                                     {
-                                                        <span style="color: #555;">-</span>
+                                                        <span class="num-box" style="color: #555;">-</span>
                                                     }
                                                 </td>
                                             }
 
                                             <td style="padding: 12px 4px; font-size: 0.9rem;">
-                                                <span style="@(res.Fee > 0 ? "color: var(--color-negative);" : (res.Fee < 0 ? "color: var(--color-positive);" : "color: #9e9e9e;"))">
+                                                <span class="num-box" style="@(res.Fee > 0 ? "color: var(--color-negative);" : (res.Fee < 0 ? "color: var(--color-positive);" : "color: #9e9e9e;"))">
                                                     @(res.Fee > 0 ? "-" : (res.Fee < 0 ? "+" : ""))@(Math.Abs(res.Fee).ToString("F1"))
                                                 </span>
                                             </td>
                                             <td style="padding: 12px 4px; font-weight: bold; font-size: 1.05rem; background-color: rgba(255,255,255,0.02);">
-                                                <span style="@GetAmountStyle(res.FinalAmount)">
+                                                <span class="num-box" style="@GetAmountStyle(res.FinalAmount)">
                                                     @(res.FinalAmount > 0 ? "+" : "")@res.FinalAmount.ToString("F1")円
                                                 </span>
                                             </td>
@@ -319,12 +321,10 @@
 <ScoreKeypad IsOpen="isKeypadOpen" IsTotalCorrect="true" ShowRecordButton="false" OnKeyPress="OnKeypadPress" />
 
 @code {
-    public enum FeeRule { TopPays, SplitEvenly, SplitByGames }
-
+    public enum FeeRule { TopPays, SplitEvenly, SplitByGames, TopPerGame }
     private bool isLoading = true;
     private bool isSharing = false;
     private readonly string shareTargetId = $"settlement-share-{Guid.NewGuid():N}";
-
     private List<SettlementSessionGroup> allSessions = new();
     private HashSet<SettlementSessionGroup> _selectedSessions = new();
     private HashSet<SettlementSessionGroup> selectedSessions
@@ -337,13 +337,13 @@
     private int totalFee
     {
         get => _totalFee;
-        set 
-        { 
+        set
+        {
             if (_totalFee != value)
             {
                 _totalFee = value;
                 _ = SessionStateService.SaveTemporaryFeeAsync(_totalFee);
-                CalculateSettlement(); 
+                CalculateSettlement();
             }
         }
     }
@@ -352,13 +352,13 @@
     private FeeRule selectedRule
     {
         get => _selectedRule;
-        set 
-        { 
+        set
+        {
             if (_selectedRule != value)
             {
                 _selectedRule = value;
                 _ = SessionStateService.SaveTemporaryFeeRuleAsync((int)_selectedRule);
-                CalculateSettlement(); 
+                CalculateSettlement();
             }
         }
     }
@@ -416,7 +416,7 @@
             var activeChips = new List<int>();
             foreach (var name in activePlayerNames)
             {
-                if (SessionStateService.ActiveSessionChips != null && 
+                if (SessionStateService.ActiveSessionChips != null &&
                     SessionStateService.ActiveSessionChips.TryGetValue(name, out int chipValue))
                 {
                     activeChips.Add(chipValue);
@@ -431,13 +431,13 @@
             {
                 Session = new SavedSessionRecord
                 {
-                    SessionId = "ACTIVE_UNSAVED", 
+                    SessionId = "ACTIVE_UNSAVED",
                     Date = DateTime.Now,
-                    Rules = SessionStateService.Rules, 
-                    ParticipantPlayerIds = activePlayerNames, 
+                    Rules = SessionStateService.Rules,
+                    ParticipantPlayerIds = activePlayerNames,
                     SettledChips = activeChips
                 },
-                Games = SessionStateService.ActiveHistory.Select(g => new SavedGameRecord 
+                Games = SessionStateService.ActiveHistory.Select(g => new SavedGameRecord
                 {
                     SessionId = "ACTIVE_UNSAVED",
                     PlayerIds = activePlayerNames.Cast<string?>().ToList(),
@@ -481,7 +481,7 @@
                 var pId = pIds[i];
                 if (string.IsNullOrEmpty(pId)) continue;
                 var res = GetOrAddPlayer(map, pId);
-                
+
                 if (!res.SessionYen.ContainsKey(sessionId)) res.SessionYen[sessionId] = 0;
 
                 if (sChips.Count > i)
@@ -514,18 +514,68 @@
                 }
             }
         }
-
-        // ▼ 変更: MahjongYen ではなく TotalMahjongYen で判定
         var activePlayers = map.Values.Where(p => p.GamesPlayed > 0 || p.TotalMahjongYen != 0).ToList();
         if (activePlayers.Count == 0) return;
-
         double fee = totalFee;
         if (selectedRule == FeeRule.TopPays)
         {
             double maxPt = activePlayers.Max(p => p.TotalPt);
             var topPlayers = activePlayers.Where(p => p.TotalPt == maxPt).ToList();
-            double splitFee = fee / topPlayers.Count; 
+            double splitFee = fee / topPlayers.Count;
             foreach (var p in topPlayers) p.Fee = splitFee;
+        }
+        else if (selectedRule == FeeRule.TopPerGame)
+        {
+            int validGamesCount = 0;
+            var gameTops = new List<List<PlayerResult>>();
+            foreach (var group in selectedSessions)
+            {
+                foreach (var game in group.Games)
+                {
+                    var gPids = game.PlayerIds ?? new();
+                    var gRaws = game.RawScores ?? new();
+                    var gPts = game.Points ?? new();
+                    double maxScore = double.MinValue;
+                    var currentTopPlayers = new List<PlayerResult>();
+                    for (int i = 0; i < gPids.Count; i++)
+                    {
+                        var pId = gPids[i];
+                        if (string.IsNullOrEmpty(pId)) continue;
+                        double? score = null;
+                        if (i < gPts.Count && gPts[i] is { } pt) score = pt;
+                        if (score.HasValue)
+                        {
+                            if (score.Value > maxScore)
+                            {
+                                maxScore = score.Value;
+                                currentTopPlayers.Clear();
+                                if (map.TryGetValue(pId, out var pr)) currentTopPlayers.Add(pr);
+                            }
+                            else if (score.Value == maxScore)
+                            {
+                                if (map.TryGetValue(pId, out var pr)) currentTopPlayers.Add(pr);
+                            }
+                        }
+                    }
+                    if (currentTopPlayers.Count > 0)
+                    {
+                        validGamesCount++;
+                        gameTops.Add(currentTopPlayers);
+                    }
+                }
+            }
+            if (validGamesCount > 0)
+            {
+                double feePerGame = fee / validGamesCount;
+                foreach (var tops in gameTops)
+                {
+                    double splitFee = feePerGame / tops.Count;
+                    foreach (var p in tops)
+                    {
+                        p.Fee += splitFee;
+                    }
+                }
+            }
         }
         else if (selectedRule == FeeRule.SplitEvenly)
         {
@@ -543,7 +593,6 @@
                 }
             }
         }
-
         calculatedResults = activePlayers.OrderByDescending(p => p.FinalAmount).ToList();
     }
 
@@ -608,7 +657,7 @@
         if (isKeypadOpen) return;
         isKeypadOpen = true;
         feeInputBuffer = totalFee == 0 ? "" : totalFee.ToString();
-        StateHasChanged(); 
+        StateHasChanged();
         await Task.Delay(150);
         await JSRuntime.InvokeVoidAsync("scrollToCenter", "fee-input-section");
     }
@@ -623,7 +672,7 @@
     private void OnKeypadPress(string key)
     {
         if (!isKeypadOpen) return;
-        
+
         if (key == "閉じる" || key == "記録")
         {
             CloseKeypad();
@@ -710,7 +759,8 @@
 
     private string GetRuleName(FeeRule rule) => rule switch
     {
-        FeeRule.TopPays => "トップ払い",
+        FeeRule.TopPays => "総額トップ払い",
+        FeeRule.TopPerGame => "各局トップ払い",
         FeeRule.SplitEvenly => "均等割り",
         FeeRule.SplitByGames => "局数割り",
         _ => ""
@@ -760,7 +810,7 @@
         public int GamesPlayed { get; set; }
         public double Fee { get; set; }
         public Dictionary<string, int> SessionYen { get; set; } = new();
-        public int TotalMahjongYen => SessionYen.Values.Sum();        
+        public int TotalMahjongYen => SessionYen.Values.Sum();
         public double FinalAmount => TotalMahjongYen - Fee;
     }
 }
