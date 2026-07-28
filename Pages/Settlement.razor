@@ -145,12 +145,14 @@
                         場代と支払いルール
                     </MudText>
                     <MudGrid Spacing="2">
-                        <MudItem xs="6">
+                        @* 場代総額 *@
+                        <MudItem xs="5">
                             <div id="fee-input-section" @onclick="OpenKeypad" @onclick:stopPropagation="true">
                                 <MudTextField T="string" Value="@(isKeypadOpen ? feeInputBuffer : (totalFee != 0 ? totalFee.ToString("N0") : ""))" Label="場代総額 (円)" Variant="Variant.Outlined" ReadOnly="true" Placeholder="0" Class="@($"fee-input {(isKeypadOpen ? "fee-input-active" : "")}")" Style="cursor: pointer;" />
                             </div>
                         </MudItem>
-                        <MudItem xs="6">
+                        @* 支払いルール *@
+                        <MudItem xs="7">
                             <MudSelect T="FeeRule" @bind-Value="selectedRule" Label="支払いルール" Variant="Variant.Outlined">
                                 <MudSelectItem T="FeeRule" Value="FeeRule.TopPays">総額トップ払い</MudSelectItem>
                                 <MudSelectItem T="FeeRule" Value="FeeRule.TopPerGame">各戦トップ払い</MudSelectItem>

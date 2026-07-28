@@ -138,7 +138,7 @@
                                     </MudItem>
                                     <MudItem xs="12" sm="4">
                                         <MudSelect T="PenaltyDistribution" Label="精算方法" @bind-Value="EditingRules.SinkUmaDistribution" Margin="Margin.Dense">
-                                            <MudSelectItem Value="PenaltyDistribution.WinnerTakeAll">1着総取り</MudSelectItem>
+                                            <MudSelectItem Value="PenaltyDistribution.WinnerTakeAll">トップ総取り</MudSelectItem>
                                             <MudSelectItem Value="PenaltyDistribution.Split">浮きで分配</MudSelectItem>
                                         </MudSelect>
                                     </MudItem>
@@ -162,7 +162,7 @@
                                 <MudGrid Spacing="2">
                                     <MudItem xs="12" sm="6">
                                         <MudSelect T="PenaltyDistribution" Label="精算方法" @bind-Value="EditingRules.YakiDistribution" Margin="Margin.Dense">
-                                            <MudSelectItem Value="PenaltyDistribution.WinnerTakeAll">1着総取り</MudSelectItem>
+                                            <MudSelectItem Value="PenaltyDistribution.WinnerTakeAll">トップ総取り</MudSelectItem>
                                             <MudSelectItem Value="PenaltyDistribution.Split">回避者で分配</MudSelectItem>
                                         </MudSelect>
                                     </MudItem>
@@ -291,7 +291,7 @@
             var result = await DialogService.ShowMessageBoxAsync(
                 "確認",
                 "変更が保存されていません。破棄して閉じますか？",
-                yesText: "破棄する", cancelText: "戻る");
+                yesText: "破棄して閉じる", cancelText: "戻る");
 
             if (result != true) return;
         }
