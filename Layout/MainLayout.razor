@@ -12,8 +12,18 @@
 @* 正負のカラーをアプリ全体に適用するCSS変数 *@
 <style>
     :root {
-        --color-positive: @(_isColorInverted ? "#1e88e5" : "#e53935");
-        --color-negative: @(_isColorInverted ? "#e53935" : "#1e88e5");
+        --color-positive:
+            @(_isColorInverted
+            ?
+"#1e88e5" :
+  "#e53935")
+        ;
+        --color-negative:
+            @(_isColorInverted
+            ?
+"#e53935" :
+ "#1e88e5")
+        ;
     }
 </style>
 
@@ -27,14 +37,9 @@
         <MudText Typo="Typo.h6" Class="ml-3">麻雀集計ツール</MudText>
         <MudSpacer />
         @* 正負カラー切り替えスイッチ *@
-        <MudToggleIconButton Toggled="_isColorInverted"
-                             ToggledChanged="OnColorInvertChanged"
-                             Icon="@Icons.Material.Filled.InvertColors" Color="Color.Error" Title="正負のカラー設定（現在：赤がプラス）"
-                             ToggledIcon="@Icons.Material.Filled.InvertColors" ToggledColor="Color.Info" ToggledTitle="正負のカラー設定（現在：青がプラス）" />
+        <MudToggleIconButton Toggled="_isColorInverted" ToggledChanged="OnColorInvertChanged" Icon="@Icons.Material.Filled.InvertColors" Color="Color.Error" Title="正負のカラー設定（現在：赤がプラス）" ToggledIcon="@Icons.Material.Filled.InvertColors" ToggledColor="Color.Info" ToggledTitle="正負のカラー設定（現在：青がプラス）" />
         @* ダークモード切り替えスイッチ *@
-        <MudToggleIconButton @bind-Toggled="_isDarkMode"
-                             Icon="@Icons.Material.Filled.DarkMode" Color="Color.Inherit" Title="ダークモードへ"
-                             ToggledIcon="@Icons.Material.Filled.LightMode" ToggledColor="Color.Inherit" ToggledTitle="ライトモードへ" />
+        <MudToggleIconButton Toggled="_isDarkMode" ToggledChanged="OnDarkModeChanged" Icon="@Icons.Material.Filled.DarkMode" Color="Color.Inherit" Title="ダークモードへ" />
     </MudAppBar>
 
     @* 左側のメニュー *@
@@ -60,7 +65,7 @@
     protected override void OnInitialized()
     {
         CheckIfSharedPage(NavManager.Uri);
-        NavManager.LocationChanged += (s, e) => 
+        NavManager.LocationChanged += (s, e) =>
         {
             CheckIfSharedPage(e.Location);
             StateHasChanged();
@@ -78,6 +83,8 @@
     {
         _ = StatsCache.InitializeAsync();
         _isColorInverted = await LocalStorage.GetItemAsync<bool>("isColorInverted");
+        var savedDarkMode = await LocalStorage.GetItemAsync<bool?>("isDarkMode");
+        _isDarkMode = savedDarkMode ?? true;
         StateHasChanged();
     }
 
@@ -103,15 +110,21 @@
         await LocalStorage.SetItemAsync("isColorInverted", newValue);
     }
 
+    private async Task OnDarkModeChanged(bool newValue)
+    {
+        _isDarkMode = newValue;
+        await LocalStorage.SetItemAsync("isDarkMode", newValue);
+    }
+
     private MudTheme mahjongTheme = new MudTheme()
     {
         // --- ライトモード設定（以前の設定を維持） ---
         PaletteLight = new PaletteLight()
         {
-            Primary = "#1b5e20",     // 深緑
-            Secondary = "#b71c1c",   // 赤
-            Background = "#2e7d32",  // 鮮やかな緑（雀卓）
-            Surface = "#ffffff",     // 白
+            Primary = "#1b5e20", // 深緑
+            Secondary = "#b71c1c", // 赤
+            Background = "#2e7d32", // 鮮やかな緑（雀卓）
+            Surface = "#ffffff", // 白
             TextPrimary = "#000000",
             AppbarBackground = "#1b5e20",
         },
@@ -119,16 +132,16 @@
         // --- ダークモード設定（シックな黒緑スタイル） ---
         PaletteDark = new PaletteDark()
         {
-            Primary = "#81c784",      // 明るめの緑（ボタン等）
-            Secondary = "#ef5350",    // 明るめの赤（削除ボタン等）
-            Background = "#0d140d",   // 背景：黒に近い深い緑
-            Surface = "#1a261a",      // カード：少しだけ明るい黒緑（雀卓の質感をイメージ）
+            Primary = "#81c784", // 明るめの緑（ボタン等）
+            Secondary = "#ef5350", // 明るめの赤（削除ボタン等）
+            Background = "#0d140d", // 背景：黒に近い深い緑
+            Surface = "#1a261a", // カード：少しだけ明るい黒緑（雀卓の質感をイメージ）
             AppbarBackground = "#081008", // バー：さらに暗い緑
-            TextPrimary = "#e0e0e0",  // 文字：少しグレーがかった白（まぶしさを抑制）
+            TextPrimary = "#e0e0e0", // 文字：少しグレーがかった白（まぶしさを抑制）
             TextSecondary = "#b0b0b0",
             ActionDefault = "#81c784",
             DrawerBackground = "#121d12", // ドロワー：背景に近い深い緑
-            Divider = "#2e3b2e",      // 区切り線
+            Divider = "#2e3b2e", // 区切り線
             TableStriped = "rgba(255,255,255,0.02)"
         }
     };

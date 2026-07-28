@@ -235,13 +235,13 @@
                                                 }
                                                 <td style="padding: 12px 4px; font-size: 0.9rem;">
                                                     <span class="num-box" style="@(res.Fee > 0 ? "color: var(--color-negative);" : (res.Fee < 0 ? "color: var(--color-positive);" : "color: #9e9e9e;"))">
-                                                        @(res.Fee > 0 ? "-" : (res.Fee < 0 ? "+" : ""))@(Math.Abs(res.Fee).ToString("F1"))
+                                                        @(res.Fee > 0 ? "-" : (res.Fee < 0 ? "+" : ""))@(Math.Abs(res.Fee).ToString("N1"))
                                                     </span>
                                                 </td>
                                                 <td style="padding: 12px 4px; font-weight: bold; font-size: 1.05rem; background-color: rgba(255,255,255,0.02);">
                                                     <span class="num-box" style="@GetAmountStyle(res.FinalAmount)">
                                                         @{
-                                                            var parts = res.FinalAmount.ToString("F1").Split('.');
+                                                            var parts = res.FinalAmount.ToString("N1").Split('.');
                                                         }
                                                         @(res.FinalAmount > 0 ? "+" : "")@parts[0]<span style="font-size: 0.9em; font-weight: bold; opacity: 0.8;">.@parts[1]円</span>
                                                     </span>
@@ -320,13 +320,13 @@
                             }
                             <td style="padding: 12px 4px; font-size: 0.9rem;">
                                 <span class="num-box" style="@(res.Fee > 0 ? "color: var(--color-negative);" : (res.Fee < 0 ? "color: var(--color-positive);" : "color: #9e9e9e;"))">
-                                    @(res.Fee > 0 ? "-" : (res.Fee < 0 ? "+" : ""))@(Math.Abs(res.Fee).ToString("F1"))
+                                    @(res.Fee > 0 ? "-" : (res.Fee < 0 ? "+" : ""))@(Math.Abs(res.Fee).ToString("N1"))
                                 </span>
                             </td>
                             <td style="padding: 12px 4px; font-weight: bold; font-size: 1.05rem; background-color: rgba(255,255,255,0.02);">
                                 <span class="num-box" style="@GetAmountStyle(res.FinalAmount)">
                                     @{
-                                        var parts = res.FinalAmount.ToString("F1").Split('.');
+                                        var parts = res.FinalAmount.ToString("N1").Split('.');
                                     }
                                     @(res.FinalAmount > 0 ? "+" : "")@parts[0]<span style="font-size: 0.9em; font-weight: bold; opacity: 0.8;">.@parts[1]円</span>
                                 </span>
