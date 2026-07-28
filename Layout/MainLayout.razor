@@ -16,13 +16,13 @@
             @(_isColorInverted
             ?
 "#1e88e5" :
-  "#e53935")
+"#e53935")
         ;
         --color-negative:
             @(_isColorInverted
             ?
 "#e53935" :
- "#1e88e5")
+"#1e88e5")
         ;
     }
 </style>
@@ -39,7 +39,7 @@
         @* 正負カラー切り替えスイッチ *@
         <MudToggleIconButton Toggled="_isColorInverted" ToggledChanged="OnColorInvertChanged" Icon="@Icons.Material.Filled.InvertColors" Color="Color.Error" Title="正負のカラー設定（現在：赤がプラス）" ToggledIcon="@Icons.Material.Filled.InvertColors" ToggledColor="Color.Info" ToggledTitle="正負のカラー設定（現在：青がプラス）" />
         @* ダークモード切り替えスイッチ *@
-        <MudToggleIconButton Toggled="_isDarkMode" ToggledChanged="OnDarkModeChanged" Icon="@Icons.Material.Filled.DarkMode" Color="Color.Inherit" Title="ダークモードへ" />
+        <MudToggleIconButton Toggled="_isDarkMode" ToggledChanged="OnDarkModeChanged" Icon="@Icons.Material.Filled.DarkMode" Color="Color.Inherit" Title="ダークモードへ" ToggledIcon="@Icons.Material.Filled.LightMode" ToggledColor="Color.Inherit" ToggledTitle="ライトモードへ" />
     </MudAppBar>
 
     @* 左側のメニュー *@
