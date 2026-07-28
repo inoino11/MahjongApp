@@ -159,7 +159,7 @@
         foreach (var stat in stats4)
         {
             _rank4Layout.UpdateDataWidth(0, GetShortName(stat.Name));
-            _rank4Layout.UpdateDataWidth(1, stat.TotalGames.ToString() + " 局");
+            _rank4Layout.UpdateDataWidth(1, stat.TotalGames.ToString() + " 戦");
             _rank4Layout.UpdateDataWidth(2, (stat.TotalPoint > 0 ? "+" : "") + stat.TotalPoint.ToString("F1"));
             _rank4Layout.UpdateDataWidth(3, (stat.TotalYen > 0 ? "+" : "") + stat.TotalYen.ToString("N0") + "円");
             _rank4Layout.UpdateDataWidth(4, (stat.TotalGameYen > 0 ? "+" : "") + stat.TotalGameYen.ToString("N0") + "円");
@@ -171,7 +171,7 @@
         foreach (var stat in stats3)
         {
             _rank3Layout.UpdateDataWidth(0, GetShortName(stat.Name));
-            _rank3Layout.UpdateDataWidth(1, stat.TotalGames.ToString() + " 局");
+            _rank3Layout.UpdateDataWidth(1, stat.TotalGames.ToString() + " 戦");
             _rank3Layout.UpdateDataWidth(2, (stat.TotalPoint > 0 ? "+" : "") + stat.TotalPoint.ToString("F1"));
             _rank3Layout.UpdateDataWidth(3, (stat.TotalYen > 0 ? "+" : "") + stat.TotalYen.ToString("N0") + "円");
             _rank3Layout.UpdateDataWidth(4, (stat.TotalGameYen > 0 ? "+" : "") + stat.TotalGameYen.ToString("N0") + "円");
@@ -183,7 +183,7 @@
         foreach (var stat in matchupStats4)
         {
             _matchupLayout4.UpdateDataWidth(0, GetShortName(stat.OpponentName));
-            _matchupLayout4.UpdateDataWidth(1, stat.GamesTogether + " 局");
+            _matchupLayout4.UpdateDataWidth(1, stat.GamesTogether + " 戦");
             _matchupLayout4.UpdateDataWidth(2, (stat.HeroNetYen > 0 ? "+" : "") + stat.HeroNetYen.ToString("N0") + "円");
             _matchupLayout4.UpdateDataWidth(3, (stat.HeroNetPoint > 0 ? "+" : "") + stat.HeroNetPoint.ToString("F1"));
             _matchupLayout4.UpdateDataWidth(4, stat.HeroWins + " 勝 - " + stat.HeroLosses + " 負");
@@ -192,7 +192,7 @@
         foreach (var stat in matchupStats3)
         {
             _matchupLayout3.UpdateDataWidth(0, GetShortName(stat.OpponentName));
-            _matchupLayout3.UpdateDataWidth(1, stat.GamesTogether + " 局");
+            _matchupLayout3.UpdateDataWidth(1, stat.GamesTogether + " 戦");
             _matchupLayout3.UpdateDataWidth(2, (stat.HeroNetYen > 0 ? "+" : "") + stat.HeroNetYen.ToString("N0") + "円");
             _matchupLayout3.UpdateDataWidth(3, (stat.HeroNetPoint > 0 ? "+" : "") + stat.HeroNetPoint.ToString("F1"));
             _matchupLayout3.UpdateDataWidth(4, stat.HeroWins + " 勝 - " + stat.HeroLosses + " 負");

@@ -360,8 +360,6 @@
                 if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
                         await navigator.share({
-                            title: '麻雀集計ツール バックアップ',
-                            text: '成績データと名簿のバックアップファイルです。',
                             files: [file]
                         });
                         return "SHARED";

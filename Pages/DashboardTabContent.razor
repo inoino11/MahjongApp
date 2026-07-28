@@ -52,7 +52,7 @@ else
             <RowTemplate Context="stat">
                 <MudTd Style="@(RankLayout.GetTdStyle(0))"><span style="font-weight: bold;">@GetShortName(stat.Name)</span></MudTd>
                 <MudTd Style="@(RankLayout.GetTdStyle(1))">
-                    <div style="@(RankLayout.GetDataStyle(1))">@stat.TotalGames 局</div>
+                    <div style="@(RankLayout.GetDataStyle(1))">@stat.TotalGames 戦</div>
                 </MudTd>
                 <MudTd Style="@(RankLayout.GetTdStyle(2, "background-color: rgba(76, 175, 80, 0.05);"))">
                     <div style="@(RankLayout.GetDataStyle(2, stat.TotalPoint >= 0 ? "color:var(--color-positive); font-weight:bold;" : "color:var(--color-negative); font-weight:bold;"))">
@@ -123,7 +123,7 @@ else
                 <RowTemplate Context="mStat">
                     <MudTd Style="@(MatchupLayout.GetTdStyle(0))"><span style="font-weight: bold;">@GetShortName(mStat.OpponentName)</span></MudTd>
                     <MudTd Style="@(MatchupLayout.GetTdStyle(1))">
-                        <div style="@(MatchupLayout.GetDataStyle(1))">@mStat.GamesTogether 局</div>
+                        <div style="@(MatchupLayout.GetDataStyle(1))">@mStat.GamesTogether 戦</div>
                     </MudTd>
                     <MudTd Style="@(MatchupLayout.GetTdStyle(2, mStat.HeroNetPoint >= 0 ? "background-color: rgba(76, 175, 80, 0.05);" : "background-color: rgba(244, 67, 54, 0.05);"))">
                         <div style="@(MatchupLayout.GetDataStyle(2, mStat.HeroNetPoint >= 0 ? "color:var(--color-positive); font-weight:bold;" : "color:var(--color-negative); font-weight:bold;"))">
@@ -162,7 +162,7 @@ else
     [Parameter] public EventCallback<string> OnHeroSelected { get; set; }
     [Parameter] public List<PlayerProfile> AvailablePlayers { get; set; } = new();
 
-    public static readonly string[] RankHeaders = { "名前", "対局数", "総合Pt", "総合収支", "(Pt収支)", "(チップ収支)", "平均順位", "トップ率", "ラス回避率" };
+    public static readonly string[] RankHeaders = { "名前", "対戦数", "総合Pt", "総合収支", "(Pt収支)", "(チップ収支)", "平均順位", "トップ率", "ラス回避率" };
     public static readonly string[] MatchupHeaders = { "相手", "同卓数", "Pt差", "収支差", "直接対決", "先着率" };
 
     private string GetShortName(string? name)

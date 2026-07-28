@@ -172,7 +172,7 @@
     </div>
     @if (!IsReadOnly)
     {
-        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="() => OnResetRequested.InvokeAsync()">記録リセット</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="() => OnResetRequested.InvokeAsync()">入力中の記録をクリア</MudButton>
     }
 </MudStack>
 <div id="result-container">
@@ -450,7 +450,7 @@
             MaxNumYAxisTicks = 20
         };
         int gameCount = History.Count;
-        _xAxisLabels = Enumerable.Range(0, gameCount + 1).Select(i => i == 0 ? "Start" : $"{i}局").ToArray();
+        _xAxisLabels = Enumerable.Range(0, gameCount + 1).Select(i => i == 0 ? "Start" : $"{i}戦").ToArray();
         // グラフの最大値・最小値を求めるための変数
         double maxPt = 0;
         double minPt = 0;

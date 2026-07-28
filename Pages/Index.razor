@@ -161,7 +161,7 @@
                     <MudCardContent Class="pa-2 pa-sm-3 pt-1 mt-2">
                         <MudGrid Spacing="2">
                             <MudItem xs="6" sm="8">
-                                <MudTextField Label="ルール名" @bind-Value="rules.Name" Margin="Margin.Dense" onfocus="this.select();" Class="px-2" @onfocusin="@(() => CloseKeypad())" />
+                                <MudTextField T="string" Label="ルール名" Value="rules.Name" ValueChanged="@((string v) => OnRuleNameChanged(v))" Margin="Margin.Dense" onfocus="this.select();" Class="px-2" @onfocusin="@(() => CloseKeypad())" />
                             </MudItem>
                             <MudItem xs="6" sm="4">
                                 <MudSelect T="int" Label="対局人数" Value="rules.PlayerCount" ValueChanged="OnPlayerCountChanged" Margin="Margin.Dense" Class="px-2">
@@ -217,7 +217,7 @@
                     </MudButton>
                 </div>
                 <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" StartIcon="@Icons.Material.Filled.History" OnClick="CopyPreviousGame" Disabled="@(ActiveHistory.Count == 0)" Style="white-space: nowrap; flex-shrink: 0; padding-left: 4px; padding-right: 4px;">
-                    前局をコピー
+                    前戦をコピー
                 </MudButton>
             </MudStack>
         </div>
@@ -262,11 +262,16 @@
     @* --- セクション3: 集計結果 --- *@
     <MudPaper Class="pa-2 px-sm-4" Elevation="2">
         <ResultTable History="ActiveHistory" Players="TablePlayers" ActiveParticipantCount="TablePlayers.Count" @bind-DisplayMode="displayMode" Rules="rules" SessionChips="TablePlayers.Select(p => ActiveSessionChips.TryGetValue(p, out var v) ? v : 0).ToList()" IsReadOnly="false" ArmedDeleteTarget="armedDeleteTarget" OnDeleteRequested="HandleDeleteRequest" OnResetRequested="ConfirmReset" OnChipChanged="HandleChipChangedCallback" ActiveChipInputIndex="@activeChipInputIndex" ChipInputBuffer="@chipInputBuffer" OnChipInputClicked="OpenChipKeypad" />
-        @* DBへ保存するボタン *@
+        @* 清算遷移 ＆ DBへ保存するボタン *@
         <div class="d-flex justify-center mt-6">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.QueryStats" Disabled="@(ActiveHistory.Count == 0)" OnClick="ConfirmFinalizeSession" Style="width: 100%; max-width: 400px; font-weight: bold; padding: 12px 0;">
-                結果を通算成績に保存
-            </MudButton>
+            <div class="d-flex gap-2" style="width: 100%; max-width: 400px;">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.Payments" Disabled="@(ActiveHistory.Count == 0)" OnClick="NavigateToSettlement" Style="flex: 4; font-weight: bold; padding: 4px 0; white-space: nowrap;">
+                    場代清算
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.QueryStats" Disabled="@(ActiveHistory.Count == 0)" OnClick="ConfirmFinalizeSession" Style="flex: 6; font-weight: bold; padding: 4px 0; white-space: nowrap;">
+                    成績に保存
+                </MudButton>
+            </div>
         </div>
         @* 共有ボタン *@
         <ShareButtonGroup Rules="rules" TablePlayers="TablePlayers" ActiveHistory="ActiveHistory" ActiveSessionChips="ActiveSessionChips" />
@@ -438,7 +443,7 @@
         }
     }
 
-    /// 現在の人数に応じたCustomUmaの値を取得
+    // 現在の人数に応じたCustomUmaの値を取得
     public double[] GetCustomUmaArray()
     {
         if (rules.PlayerCount == 4)
@@ -758,13 +763,13 @@
     private async Task ConfirmReset()
     {
         bool? result = await DialogService.ShowMessageBoxAsync(
-            "記録のリセット",
-            (MarkupString)$"現在の記録とチップをすべてリセットしますか？<br />（この操作は取り消せません）",
-            yesText: "リセットする", cancelText: "キャンセル");
+            "入力中データのクリア",
+            (MarkupString)$"現在入力中の対局記録とチップを破棄しますか？<br /><span style='font-size: 0.85rem; color: var(--mud-palette-text-secondary);'>※通算成績などの保存済みデータは消えません。</span>",
+            yesText: "破棄する", cancelText: "キャンセル");
         if (result == true)
         {
             await SessionState.ClearSessionAsync();
-            Snackbar.Add("記録をリセットしました", Severity.Info);
+            Snackbar.Add("入力中の記録をクリアしました", Severity.Info);
             StateHasChanged();
         }
     }
@@ -1024,6 +1029,19 @@
         }
     }
 
+    @* 場代清算ページへの遷移 *@
+    private void NavigateToSettlement()
+    {
+        NavigationManager.NavigateTo("settlement");
+    }
+
+    @* ルール名変更時の処理 *@
+    private async Task OnRuleNameChanged(string value)
+    {
+        rules.Name = string.IsNullOrEmpty(value) ? " " : value;
+        await SessionState.SaveRulesAsync(rules);
+    }
+
     @* 本日の対局セッションの終了確定確認ダイアログを表示 *@
     private async Task ConfirmFinalizeSession()
     {
@@ -1031,17 +1049,60 @@
         isFinalizing = true;
         try
         {
+            // ルール名の状態をチェック
+            string ruleName = rules.Name;
+            bool isRuleNameEmpty = string.IsNullOrWhiteSpace(ruleName);
+            bool isPresetMatch = false;
+            bool isPresetNameExists = false;
+            if (!isRuleNameEmpty)
+            {
+                var preset = rulePresets.FirstOrDefault(p => p.Name == ruleName);
+                if (preset != null)
+                {
+                    isPresetNameExists = true;
+                    string presetJson = System.Text.Json.JsonSerializer.Serialize(preset);
+                    string currentJson = System.Text.Json.JsonSerializer.Serialize(rules);
+                    isPresetMatch = presetJson == currentJson;
+                }
+            }
+            // ダイアログのメッセージ組み立て
+            bool needsRuleNameChange = false;
+            string msg = "対局結果とチップ枚数を通算成績に記録して<br />現在の入力フォームをリセットしますか？";
+            if (isRuleNameEmpty)
+            {
+                needsRuleNameChange = true;
+                msg = "<span style='color: var(--mud-palette-warning); font-weight: bold;'>ルール名が未入力です。</span><br /><br />ルール名を「<b>未設定</b>」として<br />" + msg;
+            }
+            else if (isPresetNameExists && !isPresetMatch)
+            {
+                needsRuleNameChange = true;
+                msg = $"<span style='color: var(--mud-palette-warning); font-weight: bold;'>ルール名「{ruleName}」はプリセットから<br />内容が変更されています。</span><br /><br />ルール名を「<b>未設定</b>」として<br />" + msg;
+            }
             int chipSum = ActiveSessionChips.Values.Sum();
             bool isChipError = chipSum != 0;
-            string msg = "対局結果とチップ枚数を通算成績に記録して<br />現在の入力フォームをリセットしますか？";
-            if (isChipError) msg += "<br /><span style='color: #ff6b6b; font-weight: bold;'>⚠️チップの合計枚数が" + (chipSum > 0 ? "+" : "") + chipSum + "枚です。</span>";
+            if (isChipError)
+            {
+                msg += "<br /><br /><span style='color: #ff6b6b; font-weight: bold;'>※チップの合計枚数が " + (chipSum > 0 ? "+" : "") + chipSum + "枚です。</span>";
+            }
+            // 確認ダイアログを表示
             bool? result = await DialogService.ShowMessageBoxAsync(
                 "対局セッションの終了確定",
                 (MarkupString)msg,
-                yesText: "記録してリセット",
-                cancelText: "戻る"
+                yesText: needsRuleNameChange ? "「未設定」で記録" : "記録してリセット",
+                cancelText: "キャンセル"
             );
-            if (result == true) await FinalizeAndSaveToDbAsync();
+
+            // 4. 保存が承認された場合
+            if (result == true)
+            {
+                if (needsRuleNameChange)
+                {
+                    rules.Name = "未設定";
+                    // 変更したルール名を状態として保存
+                    await SessionState.SaveRulesAsync(rules);
+                }
+                await FinalizeAndSaveToDbAsync();
+            }
         }
         finally
         {
