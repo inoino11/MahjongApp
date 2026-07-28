@@ -67,7 +67,13 @@
         text-align: center !important;
         font-size: 1.2rem !important;
         font-weight: 500 !important;
-        padding-right: 4px !important;
+    }
+
+    /* 支払いルール選択フィールドのスタイル */
+    .rule-select input {
+        text-align: center !important;
+        font-size: 1.1rem !important;
+        font-weight: 500 !important;
     }
 
     .fee-input-active {
@@ -153,7 +159,7 @@
                         </MudItem>
                         @* 支払いルール *@
                         <MudItem xs="7">
-                            <MudSelect T="FeeRule" @bind-Value="selectedRule" Label="支払いルール" Variant="Variant.Outlined">
+                            <MudSelect T="FeeRule" @bind-Value="selectedRule" Label="支払いルール" Variant="Variant.Outlined" Class="rule-select">
                                 <MudSelectItem T="FeeRule" Value="FeeRule.TopPays">総額トップ払い</MudSelectItem>
                                 <MudSelectItem T="FeeRule" Value="FeeRule.TopPerGame">各戦トップ払い</MudSelectItem>
                                 <MudSelectItem T="FeeRule" Value="FeeRule.SplitByGames">対戦数比払い</MudSelectItem>
@@ -174,7 +180,7 @@
                         @if (selectedSessions.Count == 0)
                         {
                             <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary" Class="py-8">
-                                リストからセッションを選択してください。
+                                セッションを選択してください。
                             </MudText>
                         }
                         else if (calculatedResults.Count == 0)
