@@ -34,7 +34,9 @@
         {
             <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
         }
-        <MudText Typo="Typo.h6" Class="ml-3">麻雀集計ツール</MudText>
+        <MudText Typo="Typo.h6" Class="ml-3" Style="font-weight: bold; letter-spacing: 1px;">
+            TaGAMΣ <span style="font-size: 0.75rem; font-weight: normal; opacity: 0.8; letter-spacing: normal;">- 麻雀集計 -</span>
+        </MudText>
         <MudSpacer />
         @* 正負カラー切り替えスイッチ *@
         <MudToggleIconButton Toggled="_isColorInverted" ToggledChanged="OnColorInvertChanged" Icon="@Icons.Material.Filled.InvertColors" Color="Color.Error" Title="正負のカラー設定（現在：赤がプラス）" ToggledIcon="@Icons.Material.Filled.InvertColors" ToggledColor="Color.Info" ToggledTitle="正負のカラー設定（現在：青がプラス）" />

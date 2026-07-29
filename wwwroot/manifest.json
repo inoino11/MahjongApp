@@ -1,6 +1,6 @@
 {
-  "name": "麻雀集計ツール",
-  "short_name": "麻雀集計",
+  "name": "TaGAMΣ - 麻雀集計ツール",
+  "short_name": "麻雀TaGAMΣ",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#0d140d",
