@@ -2,7 +2,7 @@
 @using System.Collections.Generic
 
 <div style="position: absolute; left: -9999px; top: 0;">
-    <div id="@TargetId" style="width: max-content; min-width: 600px; padding: 40px; background-color: #1a1a27; color: white; border-radius: 12px; font-family: 'Kaisei Decol', sans-serif;">
+    <div id="@TargetId" style="width: @(800 + Math.Max(0, TablePlayers.Count - 4) * 150)px; padding: 40px; background-color: #1a1a27; color: white; border-radius: 12px; font-family: 'Kaisei Decol', sans-serif;">
         <h2 style="text-align: center; margin-bottom: 20px; font-weight: bold; border-bottom: 2px solid #444; padding-bottom: 10px;">
             🀄 対局結果 🀄
         </h2>
@@ -21,7 +21,7 @@
         </div>
 
         @* 成績テーブル *@
-        <table style="width: max-content; margin: 0 auto 20px auto; border-collapse: collapse; text-align: center; font-variant-numeric: tabular-nums;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center; font-variant-numeric: tabular-nums;">
             <thead>
                 <tr style="background-color: rgba(255,255,255,0.1); border-bottom: 2px solid #555;">
                     <th style="padding: 12px; width: 80px; font-size: 0.9rem;">戦</th>
@@ -130,7 +130,7 @@
         if (idx == -1 || idx >= res.RawScores.Count || res.RawScores[idx] == null)
             return "display: inline-block; width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: #9e9e9e;";
         double pt = (idx < res.Points.Count) ? res.Points[idx] : 0;
-        return BuildShareStyle(pt, res.Points, "max-content");
+        return BuildShareStyle(pt, res.Points, "4.5rem");
     }
 
     private string GetShareTotalPointValue(string name)
