@@ -21,12 +21,28 @@
     else
     {
         <MudPaper Class="pa-4" Elevation="2" Style="overflow: hidden; width: 100%;">
-             <ResultTable History="sharedData?.History ?? new()" Players="sharedData?.Players ?? new()" ActiveParticipantCount="sharedData?.Players?.Count ?? 0" @bind-DisplayMode="displayMode" Rules="sharedData?.Rules ?? new()" SessionChips="sharedData?.SessionChips ?? new()" IsReadOnly="true" />
+            <CascadingValue Value="DisplayCurrency">
+                <ResultTable History="sharedData?.History ?? new()" Players="sharedData?.Players ?? new()" ActiveParticipantCount="sharedData?.Players?.Count ?? 0" @bind-DisplayMode="displayMode" Rules="sharedData?.Rules ?? new()" SessionChips="sharedData?.SessionChips ?? new()" IsReadOnly="true" />
+            </CascadingValue>
         </MudPaper>
     }
 </MudContainer>
 
 @code {
+    [CascadingParameter] public CurrencySetting AppCurrency { get; set; } = new();
+    private CurrencySetting DisplayCurrency = new();
+    private CurrencySetting? _lastAppCurrency;
+
+    // アプリバーで単位設定が変更されたことを検知し、表示を上書きする
+    protected override void OnParametersSet()
+    {
+        if (_lastAppCurrency != AppCurrency)
+        {
+            _lastAppCurrency = AppCurrency;
+            DisplayCurrency = AppCurrency;
+        }
+    }
+
     private bool isLoading = true;
     private string? errorMessage;
     private int displayMode = 1;
@@ -53,24 +69,29 @@
                 string decryptionKey = fragment.Substring(1);
 
                 var encData = await Http.GetFromJsonAsync<EncryptedResponse>($"{workerUrl}/{SharedIdParam}");
-                
+
                 if (encData != null && !string.IsNullOrEmpty(encData.EncryptedData))
                 {
                     // --- 変更点: JS側のWeb Crypto APIを利用して復号 ---
                     string decryptedJson = await JSRuntime.InvokeAsync<string>("blazorCrypto.decrypt", encData.EncryptedData, decryptionKey);
-                    
-                    var options = new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+
+                    var options = new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                        PropertyNameCaseInsensitive = true
+                    };
                     var minData = System.Text.Json.JsonSerializer.Deserialize<MinifiedPayload>(decryptedJson, options);
 
                     if (minData != null)
                     {
                         var resolvedPlayers = minData.Players ?? new List<string>();
-                        
+
                         sharedData = new SharedPayload
                         {
                             Rules = minData.Rules,
                             Players = resolvedPlayers,
                             SessionChips = minData.SessionChips,
+                            Currency = minData.Currency,
                             History = minData.History?.Select(m => new GameResult
                             {
                                 Timestamp = new DateTime(m.Ticks),
@@ -86,13 +107,14 @@
                                 Yen = m.Yen ?? new()
                             }).ToList()
                         };
+                        DisplayCurrency = minData.Currency ?? AppCurrency;
                     }
                 }
                 else
                 {
                     errorMessage = "データが存在しないか、形式が異なります。";
                 }
-                
+
                 isLoading = false;
             }
             catch (Microsoft.JSInterop.JSException)
@@ -126,6 +148,7 @@
         public List<string>? Players { get; set; }
         public List<GameResult>? History { get; set; }
         public List<int>? SessionChips { get; set; }
+        public CurrencySetting? Currency { get; set; }
     }
 
     public class MinifiedPayload
@@ -134,6 +157,7 @@
         [JsonPropertyName("p")] public List<string>? Players { get; set; }
         [JsonPropertyName("c")] public List<int>? SessionChips { get; set; }
         [JsonPropertyName("h")] public List<MinifiedGame>? History { get; set; }
+        [JsonPropertyName("cs")] public CurrencySetting? Currency { get; set; }
     }
 
     public class MinifiedGame

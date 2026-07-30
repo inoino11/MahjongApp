@@ -13,10 +13,10 @@
             <div><strong>形式:</strong> @(Rules.PlayerCount)人麻雀</div>
             <div><strong>設定:</strong> @(Rules.StartingPoints)持ち / @(Rules.ReturnPoints)返し</div>
             <div><strong>ウマ:</strong> @(Rules.IsCustomUma ? Rules.GetUmaDisplayText(true) : $"{Rules.Uma1} - {Rules.Uma2}")</div>
-            <div><strong>レート:</strong> @(Rules.Rate)円/1k</div>
+            <div><strong>レート:</strong> @(Rules.Rate)@Currency.Unit/1k</div>
             @if (Rules.ChipRate > 0)
             {
-                <div><strong>チップ:</strong> @(Rules.ChipRate)円/枚</div>
+                <div><strong>チップ:</strong> @(Rules.ChipRate)@Currency.Unit/枚</div>
             }
         </div>
 
@@ -77,10 +77,10 @@
                         }
                     </tr>
                 }
-                @* 円合計行 *@
+                @* 通貨合計行 *@
                 <tr style="background-color: rgba(255, 255, 255, 0.06); font-weight: bold;">
                     <td style="padding: 15px 10px; font-size: 0.9rem; color: #eeeeee; white-space: nowrap;">
-                        円 合計
+                        @(Currency.Unit) 合計
                     </td>
                     @for (int i = 0; i < TablePlayers.Count; i++)
                     {
@@ -99,6 +99,7 @@
 </div>
 
 @code {
+    [CascadingParameter] public CurrencySetting Currency { get; set; } = new();
     [Parameter] public string TargetId { get; set; } = "share-target";
     [Parameter] public RuleSet Rules { get; set; } = new();
     [Parameter] public List<string> TablePlayers { get; set; } = new();
@@ -162,7 +163,7 @@
     private string GetShareTotalYenValue(string name)
     {
         int chips = ActiveSessionChips.TryGetValue(name, out var c) ? c : 0;
-        if (ActiveHistory.Count == 0 && chips == 0) return "0円";
+        if (ActiveHistory.Count == 0 && chips == 0) return Currency.Render(0, false, "N0");
         double totalYen = 0;
         foreach (var h in ActiveHistory)
         {
@@ -170,7 +171,7 @@
             if (idx != -1 && h.Yen.Count > idx) totalYen += h.Yen[idx];
         }
         totalYen += (chips * Rules.ChipRate);
-        return $"{FormatPlus(totalYen, "N0")}円";
+        return Currency.Render(totalYen, true, "N0");
     }
 
     private string GetShareTotalYenStyle(string name)

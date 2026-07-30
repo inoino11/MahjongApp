@@ -154,7 +154,7 @@
                         @* 場代総額 *@
                         <MudItem xs="5">
                             <div id="fee-input-section" @onclick="OpenKeypad" @onclick:stopPropagation="true">
-                                <MudTextField T="string" Value="@(isKeypadOpen ? feeInputBuffer : (totalFee != 0 ? totalFee.ToString("N0") : ""))" Label="場代総額 (円)" Variant="Variant.Outlined" ReadOnly="true" Placeholder="0" Class="@($"fee-input {(isKeypadOpen ? "fee-input-active" : "")}")" Style="cursor: pointer;" />
+                                <MudTextField T="string" Value="@(isKeypadOpen ? feeInputBuffer : (totalFee != 0 ? totalFee.ToString("N0") : ""))" Label="@($"場代総額 ({Currency.Unit})")" Variant="Variant.Outlined" ReadOnly="true" Placeholder="0" Class="@($"fee-input {(isKeypadOpen ? "fee-input-active" : "")}")" Style="cursor: pointer;" />
                             </div>
                         </MudItem>
                         @* 支払いルール *@
@@ -193,7 +193,7 @@
                         {
                             <div style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px; display: flex; justify-content: space-between;">
                                 <span>全 @(selectedSessions.Sum(s => s.Games.Count)) 戦</span>
-                                <span>場代: @totalFee.ToString("N0") 円 (@GetRuleName(selectedRule))</span>
+                                <span>場代: @Currency.Render(totalFee) (@GetRuleName(selectedRule))</span>
                             </div>
                             <div style="overflow-x: auto; overflow-y: auto; max-height: 60vh;">
                                 @{
@@ -249,9 +249,22 @@
                                                 <td style="padding: 12px 4px; font-weight: bold; font-size: 1.05rem; background-color: rgba(255,255,255,0.02);">
                                                     <span class="num-box" style="@GetAmountStyle(res.FinalAmount)">
                                                         @{
-                                                            var parts = res.FinalAmount.ToString("N1").Split('.');
+                                                            var parts = Math.Abs(res.FinalAmount).ToString("N1").Split('.');
+                                                            string sign = res.FinalAmount > 0 ? "+" : (res.FinalAmount < 0 ? "-" : "");
                                                         }
-                                                        @(res.FinalAmount > 0 ? "+" : "")@parts[0]<span style="font-size: 0.9em; font-weight: bold; opacity: 0.8;">.@parts[1]円</span>
+                                                        @if (Currency.IsPrefix)
+                                                        {
+                                                            @sign
+                                                            @Currency.Unit
+                                                            @parts[0]
+                                                            <span style="font-size: 0.9em; font-weight: bold; opacity: 0.8;">.@parts[1]</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            @sign
+                                                            @parts[0]
+                                                            <span style="font-size: 0.9em; font-weight: bold; opacity: 0.8;">.@parts[1]@Currency.Unit</span>
+                                                        }
                                                     </span>
                                                 </td>
                                             </tr>
@@ -282,7 +295,7 @@
         {
             <div style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px; display: flex; justify-content: space-between;">
                 <span>全 @(selectedSessions.Sum(s => s.Games.Count)) 戦</span>
-                <span>場代: @totalFee.ToString("N0") 円 (@GetRuleName(selectedRule))</span>
+                <span>場代: @Currency.Render(totalFee) (@GetRuleName(selectedRule))</span>
             </div>
             var orderedSessions = selectedSessions.OrderBy(s => s.Session.Date).ToList();
             <table class="settlement-table" style="width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums;">
@@ -334,9 +347,22 @@
                             <td style="padding: 12px 4px; font-weight: bold; font-size: 1.05rem; background-color: rgba(255,255,255,0.02);">
                                 <span class="num-box" style="@GetAmountStyle(res.FinalAmount)">
                                     @{
-                                        var parts = res.FinalAmount.ToString("N1").Split('.');
+                                        var parts = Math.Abs(res.FinalAmount).ToString("N1").Split('.');
+                                        string sign = res.FinalAmount > 0 ? "+" : (res.FinalAmount < 0 ? "-" : "");
                                     }
-                                    @(res.FinalAmount > 0 ? "+" : "")@parts[0]<span style="font-size: 0.9em; font-weight: bold; opacity: 0.8;">.@parts[1]円</span>
+                                    @if (Currency.IsPrefix)
+                                    {
+                                        @sign
+                                        @Currency.Unit
+                                        @parts[0]
+                                        <span style="font-size: 0.9em; font-weight: bold; opacity: 0.8;">.@parts[1]</span>
+                                    }
+                                    else
+                                    {
+                                        @sign
+                                        @parts[0]
+                                        <span style="font-size: 0.9em; font-weight: bold; opacity: 0.8;">.@parts[1]@Currency.Unit</span>
+                                    }
                                 </span>
                             </td>
                         </tr>
@@ -354,6 +380,7 @@
 <ScoreKeypad IsOpen="isKeypadOpen" IsTotalCorrect="true" ShowRecordButton="false" OnKeyPress="OnKeypadPress" />
 
 @code {
+    [CascadingParameter] public CurrencySetting Currency { get; set; } = new();
     public enum FeeRule { TopPays, SplitEvenly, TopPerGame, SplitByGames }
     private bool isLoading = true;
     private bool isSharing = false;

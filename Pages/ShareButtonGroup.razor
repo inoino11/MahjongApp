@@ -18,6 +18,7 @@
     TargetId="@targetId" Rules="Rules" TablePlayers="TablePlayers" ActiveHistory="ActiveHistory" ActiveSessionChips="ActiveSessionChips" />
 
 @code {
+    [CascadingParameter] public CurrencySetting Currency { get; set; } = new();
     [Parameter] public RuleSet Rules { get; set; } = new();
     [Parameter] public List<string> TablePlayers { get; set; } = new();
     [Parameter] public List<GameResult> ActiveHistory { get; set; } = new();
@@ -46,6 +47,7 @@
         {
             r = Rules,
             p = TablePlayers,
+            cs = Currency,
             c = TablePlayers.Select(p => ActiveSessionChips.TryGetValue(p, out var v) ? v : 0).ToList(),
             h = ActiveHistory.Select(g => new
             {

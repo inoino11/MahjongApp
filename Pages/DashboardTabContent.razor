@@ -13,11 +13,11 @@ else
             <MudPaper Class="pa-3 d-flex flex-column align-center justify-center" Outlined="true" Style="height: 100%; width: 100%;">
                 <MudText Typo="Typo.body2" Color="Color.Success" Class="mb-1">@(PlayerCount == 4 ? "四麻" : "三麻")トップ (@top.Name)</MudText>
                 <MudText Typo="Typo.h4" Style="@(top.TotalYen >= 0 ? "color: var(--color-positive); font-weight: bold;" : "color: var(--color-negative); font-weight: bold;")">
-                    @(top.TotalYen > 0 ? "+" : "")@top.TotalYen.ToString("N0")<span style="font-size: 1rem;">円</span>
+                    @Currency.Render(top.TotalYen, true)
                 </MudText>
                 <div class="d-flex gap-3 mt-1" style="font-size: 0.75rem; color: var(--mud-palette-text-secondary);">
-                    <span>Pt: @(top.TotalGameYen > 0 ? "+" : "")@top.TotalGameYen.ToString("N0")円</span>
-                    <span>チップ: @(top.TotalChipYen > 0 ? "+" : "")@top.TotalChipYen.ToString("N0")円</span>
+                    <span>Pt: @Currency.Render(top.TotalGameYen, true)</span>
+                    <span>チップ: @Currency.Render(top.TotalChipYen, true)</span>
                 </div>
             </MudPaper>
         </MudItem>
@@ -61,14 +61,14 @@ else
                 </MudTd>
                 <MudTd Style="@(RankLayout.GetTdStyle(3, "background-color: rgba(76, 175, 80, 0.05);"))">
                     <div style="@(RankLayout.GetDataStyle(3, stat.TotalYen >= 0 ? "color:var(--color-positive); font-weight:bold;" : "color:var(--color-negative); font-weight:bold;"))">
-                        @(stat.TotalYen > 0 ? "+" : "")@stat.TotalYen.ToString("N0")円
+                        @Currency.Render(stat.TotalYen, true)
                     </div>
                 </MudTd>
                 <MudTd Style="@(RankLayout.GetTdStyle(4))">
-                    <div style="@(RankLayout.GetDataStyle(4, "color:#aaa; font-size:0.85rem;"))">@(stat.TotalGameYen > 0 ? "+" : "")@stat.TotalGameYen.ToString("N0")円</div>
+                    <div style="@(RankLayout.GetDataStyle(4, "color:#aaa; font-size:0.85rem;"))">@Currency.Render(stat.TotalGameYen, true)</div>
                 </MudTd>
                 <MudTd Style="@(RankLayout.GetTdStyle(5))">
-                    <div style="@(RankLayout.GetDataStyle(5, "color:#aaa; font-size:0.85rem;"))">@(stat.TotalChipYen > 0 ? "+" : "")@stat.TotalChipYen.ToString("N0")円</div>
+                    <div style="@(RankLayout.GetDataStyle(5, "color:#aaa; font-size:0.85rem;"))">@Currency.Render(stat.TotalChipYen, true)</div>
                 </MudTd>
                 <MudTd Style="@(RankLayout.GetTdStyle(6))">
                     <div style="@(RankLayout.GetDataStyle(6))">@stat.AverageRank.ToString("F2")</div>
@@ -132,7 +132,7 @@ else
                     </MudTd>
                     <MudTd Style="@(MatchupLayout.GetTdStyle(3, mStat.HeroNetYen >= 0 ? "background-color: rgba(76, 175, 80, 0.05);" : "background-color: rgba(244, 67, 54, 0.05);"))">
                         <div style="@(MatchupLayout.GetDataStyle(3, mStat.HeroNetYen >= 0 ? "color:var(--color-positive); font-weight:bold;" : "color:var(--color-negative); font-weight:bold;"))">
-                            @(mStat.HeroNetYen > 0 ? "+" : "")@mStat.HeroNetYen.ToString("N0")円
+                            @Currency.Render(mStat.HeroNetYen, true)
                         </div>
                     </MudTd>
                     <MudTd Style="@(MatchupLayout.GetTdStyle(4))">
@@ -152,6 +152,7 @@ else
 }
 
 @code {
+    [CascadingParameter] public CurrencySetting Currency { get; set; } = new();
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public int PlayerCount { get; set; }
     [Parameter] public List<PlayerStats> Stats { get; set; } = new();

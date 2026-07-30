@@ -120,6 +120,7 @@
 </MudContainer>
 
 @code {
+    [CascadingParameter] public CurrencySetting Currency { get; set; } = new();
     private bool isLoading = true;
     private List<PlayerProfile> players = new();
     private List<SavedGameRecord> allGames = new();
@@ -222,7 +223,7 @@
         });
     }
 
-    // 1. ゲーム履歴から「ポイント換算円」のトータルを計算する
+    // 1. ゲーム履歴から「ポイント換算通貨」のトータルを計算する
     private int GetPlayerTotalGameYen(string playerId)
     {
         int totalGameYen = 0;
@@ -234,7 +235,7 @@
         return totalGameYen;
     }
 
-    // 2. セッション履歴から「チップ換算円」のトータルを計算する
+    // 2. セッション履歴から「チップ換算通貨」のトータルを計算する
     private int GetPlayerTotalChipYen(string playerId)
     {
         int totalChipYen = 0;
@@ -247,15 +248,15 @@
         return totalChipYen;
     }
 
-    // 3. 総合収支（ゲーム円 ＋ チップ円）を計算する
+    // 3. 総合収支（ゲーム通貨 ＋ チップ通貨）を計算する
     private int GetPlayerTotalYen(string playerId) => GetPlayerTotalGameYen(playerId) + GetPlayerTotalChipYen(playerId);
 
     // 4. UI表示用のテキストとスタイル（総合収支）
     private string GetTotalYenDisplayText(string playerId)
     {
         int yen = GetPlayerTotalYen(playerId);
-        if (yen == 0) return "0円";
-        return yen > 0 ? $"+{yen:N0}円" : $"{yen:N0}円";
+        if (yen == 0) return Currency.Render(0, false, "N0");
+        return Currency.Render(yen, true, "N0");
     }
 
     private string GetTotalYenStyle(string playerId)
@@ -270,7 +271,7 @@
     {
         int yen = GetPlayerTotalChipYen(playerId);
         string sign = yen > 0 ? "+" : "";
-        return $"(内チップ {sign}{yen:N0}円)";
+        return $"(内チップ {Currency.Render(yen, true, "N0")})";
     }
 
     private void StartEdit(PlayerProfile player)

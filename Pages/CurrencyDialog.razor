@@ -1,0 +1,50 @@
+@using MahjongApp.Models
+@inject IDialogService DialogService
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.ChangeCircle" Class="mr-2" Style="vertical-align: text-bottom;" />
+            表示単位を変更
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-4">
+            アプリ全体で使用する単位を変更します。<br />
+            通貨間の交換レートなどは反映されません。
+        </MudText>
+        <MudTextField @bind-Value="Setting.Unit" Label="単位" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4" />
+        <MudSwitch @bind-Value="Setting.IsPrefix" Color="Color.Primary" Label="単位を数値の前に置く" Class="mb-4" />
+        <MudPaper Class="pa-3" Outlined="true" Style="background-color: rgba(255,255,255,0.02);">
+            <MudText Typo="Typo.caption" Color="Color.Inherit">プレビュー</MudText>
+            <div class="d-flex justify-space-around mt-2" style="font-weight: bold; font-size: 1.2rem;">
+                <span style="color: var(--color-positive);">@Setting.Render(1500, true)</span>
+                <span style="color: var(--color-negative);">@Setting.Render(-500)</span>
+            </div>
+        </MudPaper>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Color="Color.Default">キャンセル</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled">適用する</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public CurrencySetting CurrentSetting { get; set; } = new();
+
+    private CurrencySetting Setting { get; set; } = new();
+
+    protected override void OnInitialized()
+    {
+        Setting = new CurrencySetting
+        {
+            Unit = CurrentSetting.Unit,
+            IsPrefix = CurrentSetting.IsPrefix
+        };
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(Setting));
+}

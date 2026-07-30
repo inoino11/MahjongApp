@@ -218,3 +218,24 @@ public class EnvironmentInfo
     public bool IsWindows { get; set; }
     public bool IsPwa { get; set; }
 }
+
+// --- 通貨・単位設定用モデル ---
+public class CurrencySetting
+{
+    public string Unit { get; set; } = "G";     // 単位
+    public bool IsPrefix { get; set; } = false; // 前置き/後置き
+    // 整数用のフォーマットヘルパー
+    public string Render(int value, bool showPlus = false)
+    {
+        string sign = (showPlus && value > 0) ? "+" : (value < 0 ? "-" : "");
+        string num = Math.Abs(value).ToString("N0");
+        return IsPrefix ? $"{sign}{Unit}{num}" : $"{sign}{num}{Unit}";
+    }
+    // 小数用のフォーマットヘルパー
+    public string Render(double value, bool showPlus = false, string format = "N1")
+    {
+        string sign = (showPlus && value > 0) ? "+" : (value < 0 ? "-" : "");
+        string num = Math.Abs(value).ToString(format);
+        return IsPrefix ? $"{sign}{Unit}{num}" : $"{sign}{num}{Unit}";
+    }
+}

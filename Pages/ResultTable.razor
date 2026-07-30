@@ -1,3 +1,5 @@
+@inject IJSRuntime JSRuntime
+
 <style>
     /* チップ入力欄の文字を中央揃えにする */
     .chip-input input {
@@ -144,7 +146,7 @@
         <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
             <MudButton Variant="@(DisplayMode == 0 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(0)">素点</MudButton>
             <MudButton Variant="@(DisplayMode == 1 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(1)">+/−</MudButton>
-            <MudButton Variant="@(DisplayMode == 2 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(2)">円</MudButton>
+            <MudButton Variant="@(DisplayMode == 2 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(2)">@Currency.Unit</MudButton>
             <MudButton Variant="@(DisplayMode == 7 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(7)">グラフ</MudButton>
         </MudStack>
         @if (Rules?.IsSinkEnabled == true || Rules?.IsYakiEnabled == true || Rules?.IsTobiEnabled == true || Rules?.IsColdEnabled == true ||
@@ -216,7 +218,7 @@
                     <div class="d-flex align-center mb-2 px-3">
                         <MudText Typo="Typo.subtitle2" Class="mr-2">チップ集計</MudText>
                         <span style="color: #9e9e9e; font-size: 0.8rem; font-weight: normal; margin-right: auto;">
-                            @(Rules?.ChipRate ?? 0)円/枚
+                            @(Rules?.ChipRate ?? 0)@Currency.Unit/枚
                         </span>
                         @if (!IsReadOnly)
                         {
@@ -264,7 +266,7 @@
                                                 </MudText>
                                             }
                                             <span style="color: #9e9e9e; font-size: 0.6rem; font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 2px;">
-                                                @(FormatPlus(chip * (Rules?.ChipRate ?? 0), "N0")) 円
+                                                @Currency.Render(chip * (Rules?.ChipRate ?? 0), true)
                                             </span>
                                         </div>
                                     </div>
@@ -362,7 +364,7 @@
 </div>
 
 @code {
-    @inject IJSRuntime JSRuntime
+    [CascadingParameter] public CurrencySetting Currency { get; set; } = new();
     [Parameter] public List<GameResult> History { get; set; } = new();
     [Parameter] public List<string> Players { get; set; } = new();
     [Parameter] public int ActiveParticipantCount { get; set; }
@@ -573,7 +575,7 @@
         {
             0 => (res.RawScores[originalIdx] * 100)?.ToString("N0") ?? "-",
             1 => FormatPlus(res.Points[originalIdx]),
-            2 => $"{FormatPlus(res.Yen[originalIdx], "N0")}円",
+            2 => Currency.Render(res.Yen[originalIdx], true),
             3 => FormatExtra(res.SinkPoints, originalIdx, "📈", "📉"),
             4 => FormatExtra(res.YakiPoints, originalIdx, "🍴", "🍗"),
             5 => FormatExtra(res.TobiPoints, originalIdx, "🚀", "💥"),
@@ -672,7 +674,7 @@
         int chip = SessionChips.Count > idx ? SessionChips[idx] : 0;
         double val = GetTotalNumericValue(idx, mode);
         if (mode == 0) return Math.Round(val).ToString("N0");
-        if (mode == 2) return FormatPlus(val, "N0") + "円";
+        if (mode == 2) return Currency.Render(val, true, "N0");
         return FormatPlus(val, "F1");
     }
 
@@ -739,7 +741,7 @@
             4 => !Rules.IsYakiEnabled && !HasAnyYakiPoints,
             5 => !Rules.IsTobiEnabled && !HasAnyTobiPoints,
             6 => !Rules.IsColdEnabled && !HasAnyColdPoints,
-            _ => false // 素点(0), pt(1), 円(2), グラフ(7)などは常に表示可能とする
+            _ => false // 素点(0), pt(1), 通貨単位(2), グラフ(7)などは常に表示可能とする
         };
         if (isModeInvalid) await SetDisplayMode(1);
         CalculateColumnWidths();

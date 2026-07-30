@@ -176,10 +176,10 @@
                                 <MudNumericField T="int" Label="返し点" Value="rules.ReturnPoints" ValueChanged="OnReturnPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="@(() => CloseKeypad())" />
                             </MudItem>
                             <MudItem xs="6" sm="4">
-                                <MudNumericField Label="レート(円/1k)" @bind-Value="rules.Rate" Step="10" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="@(() => CloseKeypad())" />
+                                <MudNumericField Label="@($"レート ({Currency.Unit}/1k)")" @bind-Value="rules.Rate" Step="10" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="@(() => CloseKeypad())" />
                             </MudItem>
                             <MudItem xs="6" sm="4">
-                                <MudNumericField Label="チップ(円/枚)" @bind-Value="rules.ChipRate" Step="50" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="@(() => CloseKeypad())" />
+                                <MudNumericField Label="@($"チップ ({Currency.Unit}/枚)")" @bind-Value="rules.ChipRate" Step="50" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="@(() => CloseKeypad())" />
                             </MudItem>
                             @if (rules.IsCustomUma)
                             {
@@ -284,6 +284,7 @@
 <ScoreKeypad IsOpen="isKeypadOpen" IsTotalCorrect="IsTotalCorrect" ShowRecordButton="showRecordButton" OnKeyPress="OnKeypadPress" />
 
 @code {
+    [CascadingParameter] public CurrencySetting Currency { get; set; } = new();
     // 画面の入力状態を管理するための内部クラス
     public class PlayerInputState
     {

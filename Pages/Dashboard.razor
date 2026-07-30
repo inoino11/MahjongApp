@@ -1,7 +1,7 @@
 @page "/dashboard"
 @using MahjongApp.Models
 @inject MahjongApp.Services.DatabaseService DatabaseService
-
+@inject MahjongApp.Services.StatsCacheService StatsCache
 
 <style>
     .align-center-select .mud-input-slot {
@@ -97,7 +97,7 @@
 </MudContainer>
 
 @code {
-    @inject MahjongApp.Services.StatsCacheService StatsCache
+    [CascadingParameter] public CurrencySetting Currency { get; set; } = new();
 
     private bool isLoading = true;
     private int _selectedPlayerCount = 4;
@@ -161,9 +161,9 @@
             _rank4Layout.UpdateDataWidth(0, GetShortName(stat.Name));
             _rank4Layout.UpdateDataWidth(1, stat.TotalGames.ToString() + " 戦");
             _rank4Layout.UpdateDataWidth(2, (stat.TotalPoint > 0 ? "+" : "") + stat.TotalPoint.ToString("F1"));
-            _rank4Layout.UpdateDataWidth(3, (stat.TotalYen > 0 ? "+" : "") + stat.TotalYen.ToString("N0") + "円");
-            _rank4Layout.UpdateDataWidth(4, (stat.TotalGameYen > 0 ? "+" : "") + stat.TotalGameYen.ToString("N0") + "円");
-            _rank4Layout.UpdateDataWidth(5, (stat.TotalChipYen > 0 ? "+" : "") + stat.TotalChipYen.ToString("N0") + "円");
+            _rank4Layout.UpdateDataWidth(3, Currency.Render(stat.TotalYen, true));
+            _rank4Layout.UpdateDataWidth(4, Currency.Render(stat.TotalGameYen, true));
+            _rank4Layout.UpdateDataWidth(5, Currency.Render(stat.TotalChipYen, true));
             _rank4Layout.UpdateDataWidth(6, stat.AverageRank.ToString("F2"));
             _rank4Layout.UpdateDataWidth(7, stat.FirstPlaceRate.ToString("F1") + "%");
             _rank4Layout.UpdateDataWidth(8, stat.AvoidLastPlaceRate(4).ToString("F1") + "%");
@@ -173,9 +173,9 @@
             _rank3Layout.UpdateDataWidth(0, GetShortName(stat.Name));
             _rank3Layout.UpdateDataWidth(1, stat.TotalGames.ToString() + " 戦");
             _rank3Layout.UpdateDataWidth(2, (stat.TotalPoint > 0 ? "+" : "") + stat.TotalPoint.ToString("F1"));
-            _rank3Layout.UpdateDataWidth(3, (stat.TotalYen > 0 ? "+" : "") + stat.TotalYen.ToString("N0") + "円");
-            _rank3Layout.UpdateDataWidth(4, (stat.TotalGameYen > 0 ? "+" : "") + stat.TotalGameYen.ToString("N0") + "円");
-            _rank3Layout.UpdateDataWidth(5, (stat.TotalChipYen > 0 ? "+" : "") + stat.TotalChipYen.ToString("N0") + "円");
+            _rank3Layout.UpdateDataWidth(3, Currency.Render(stat.TotalYen, true));
+            _rank3Layout.UpdateDataWidth(4, Currency.Render(stat.TotalGameYen, true));
+            _rank3Layout.UpdateDataWidth(5, Currency.Render(stat.TotalChipYen, true));
             _rank3Layout.UpdateDataWidth(6, stat.AverageRank.ToString("F2"));
             _rank3Layout.UpdateDataWidth(7, stat.FirstPlaceRate.ToString("F1") + "%");
             _rank3Layout.UpdateDataWidth(8, stat.AvoidLastPlaceRate(3).ToString("F1") + "%");
@@ -184,7 +184,7 @@
         {
             _matchupLayout4.UpdateDataWidth(0, GetShortName(stat.OpponentName));
             _matchupLayout4.UpdateDataWidth(1, stat.GamesTogether + " 戦");
-            _matchupLayout4.UpdateDataWidth(2, (stat.HeroNetYen > 0 ? "+" : "") + stat.HeroNetYen.ToString("N0") + "円");
+            _matchupLayout4.UpdateDataWidth(2, Currency.Render(stat.HeroNetYen, true));
             _matchupLayout4.UpdateDataWidth(3, (stat.HeroNetPoint > 0 ? "+" : "") + stat.HeroNetPoint.ToString("F1"));
             _matchupLayout4.UpdateDataWidth(4, stat.HeroWins + " 勝 - " + stat.HeroLosses + " 負");
             _matchupLayout4.UpdateDataWidth(5, stat.DirectWinRate.ToString("F1") + "%");
@@ -193,7 +193,7 @@
         {
             _matchupLayout3.UpdateDataWidth(0, GetShortName(stat.OpponentName));
             _matchupLayout3.UpdateDataWidth(1, stat.GamesTogether + " 戦");
-            _matchupLayout3.UpdateDataWidth(2, (stat.HeroNetYen > 0 ? "+" : "") + stat.HeroNetYen.ToString("N0") + "円");
+            _matchupLayout3.UpdateDataWidth(2, Currency.Render(stat.HeroNetYen, true));
             _matchupLayout3.UpdateDataWidth(3, (stat.HeroNetPoint > 0 ? "+" : "") + stat.HeroNetPoint.ToString("F1"));
             _matchupLayout3.UpdateDataWidth(4, stat.HeroWins + " 勝 - " + stat.HeroLosses + " 負");
             _matchupLayout3.UpdateDataWidth(5, stat.DirectWinRate.ToString("F1") + "%");
