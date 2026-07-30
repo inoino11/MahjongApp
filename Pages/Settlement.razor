@@ -173,8 +173,10 @@
             @* --- 右カラム：結果表示とシェア --- *@
             <MudItem xs="12" md="7">
                 <MudPaper Class="pa-0" Outlined="true" Style="overflow: hidden; background-color: var(--mud-palette-surface);">
-                    <div style="padding: 24px; background-color: #1a1a27; color: white; border-radius: inherit;">
-                        <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-4" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; border-bottom: 1px solid #444; padding-bottom: 8px;">
+                    @* 変更: 背景色と文字色を削除（親の MudPaper に依存させる） *@
+                    <div style="padding: 24px; border-radius: inherit;">
+                        @* 変更: ボーダーを divider 変数に変更 *@
+                        <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-4" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; border-bottom: 1px solid var(--mud-palette-divider); padding-bottom: 8px;">
                             本日の精算結果
                         </MudText>
                         @if (selectedSessions.Count == 0)
@@ -191,7 +193,8 @@
                         }
                         else
                         {
-                            <div style="font-size: 0.85rem; color: #aaa; margin-bottom: 16px; display: flex; justify-content: space-between;">
+                            @* 変更: 文字色を text-secondary 変数に変更 *@
+                            <div style="font-size: 0.85rem; color: var(--mud-palette-text-secondary); margin-bottom: 16px; display: flex; justify-content: space-between;">
                                 <span>全 @(selectedSessions.Sum(s => s.Games.Count)) 戦</span>
                                 <span>場代: @Currency.Render(totalFee) (@GetRuleName(selectedRule))</span>
                             </div>
@@ -202,27 +205,29 @@
                                 }
                                 <table class="settlement-table" style="width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums;">
                                     <thead>
-                                        <tr style="font-size: 0.85rem; color: #bbb;">
-                                            <th style="padding: 8px 4px; position: sticky; top: 0; left: 0; background-color: #1a1a27; z-index: 3; border-bottom: 2px solid #555;">名前</th>
-                                            <th style="padding: 8px 4px; position: sticky; top: 0; background-color: #1a1a27; z-index: 2; border-bottom: 2px solid #555;"><span class="num-box">対戦数</span></th>
+                                        @* 変更: 色をすべて CSS 変数に置き換え *@
+                                        <tr style="font-size: 0.85rem; color: var(--mud-palette-text-secondary);">
+                                            <th style="padding: 8px 4px; position: sticky; top: 0; left: 0; background-color: var(--mud-palette-surface); z-index: 3; border-bottom: 2px solid var(--mud-palette-divider);">名前</th>
+                                            <th style="padding: 8px 4px; position: sticky; top: 0; background-color: var(--mud-palette-surface); z-index: 2; border-bottom: 2px solid var(--mud-palette-divider);"><span class="num-box">対戦数</span></th>
                                             @for (int i = 0; i < orderedSessions.Count; i++)
                                             {
-                                                <th style="padding: 8px 4px; position: sticky; top: 0; background-color: #1a1a27; z-index: 2; border-bottom: 2px solid #555;">
+                                                <th style="padding: 8px 4px; position: sticky; top: 0; background-color: var(--mud-palette-surface); z-index: 2; border-bottom: 2px solid var(--mud-palette-divider);">
                                                     <span class="num-box">
                                                         @(orderedSessions.Count == 1 ? "収支" : $"収支{GetCircledNumber(i + 1)}")
                                                     </span>
                                                 </th>
                                             }
-                                            <th style="padding: 8px 4px; position: sticky; top: 0; background-color: #1a1a27; z-index: 2; border-bottom: 2px solid #555;"><span class="num-box">場代</span></th>
-                                            <th style="padding: 8px 4px; font-size: 0.95rem; color: white; position: sticky; top: 0; background-color: #1a1a27; z-index: 2; border-bottom: 2px solid #555;"><span class="num-box">最終収支</span></th>
+                                            <th style="padding: 8px 4px; position: sticky; top: 0; background-color: var(--mud-palette-surface); z-index: 2; border-bottom: 2px solid var(--mud-palette-divider);"><span class="num-box">場代</span></th>
+                                            <th style="padding: 8px 4px; font-size: 0.95rem; color: var(--mud-palette-text-primary); position: sticky; top: 0; background-color: var(--mud-palette-surface); z-index: 2; border-bottom: 2px solid var(--mud-palette-divider);"><span class="num-box">最終収支</span></th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach (var res in calculatedResults)
                                         {
-                                            <tr style="border-bottom: 1px solid #333;">
-                                                <td style="padding: 12px 4px; font-weight: bold; font-size: 1.05rem; position: sticky; left: 0; background-color: #1a1a27; z-index: 1;">@res.Name</td>
-                                                <td style="padding: 12px 4px; color: #aaa; font-size: 0.8rem;">
+                                            @* 変更: 枠線色、背景色、文字色を対応 *@
+                                            <tr style="border-bottom: 1px solid var(--mud-palette-divider);">
+                                                <td style="padding: 12px 4px; font-weight: bold; font-size: 1.05rem; position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1;">@res.Name</td>
+                                                <td style="padding: 12px 4px; color: var(--mud-palette-text-secondary); font-size: 0.8rem;">
                                                     <span class="num-box">@res.GamesPlayed 戦</span>
                                                 </td>
                                                 @foreach (var os in orderedSessions)
@@ -237,7 +242,7 @@
                                                         }
                                                         else
                                                         {
-                                                            <span class="num-box" style="color: #555;">-</span>
+                                                            <span class="num-box" style="color: var(--mud-palette-text-disabled);">-</span>
                                                         }
                                                     </td>
                                                 }
@@ -246,7 +251,7 @@
                                                         @(res.Fee > 0 ? "-" : (res.Fee < 0 ? "+" : ""))@(Math.Abs(res.Fee).ToString("N1"))
                                                     </span>
                                                 </td>
-                                                <td style="padding: 12px 4px; font-weight: bold; font-size: 1.05rem; background-color: rgba(255,255,255,0.02);">
+                                                <td style="padding: 12px 4px; font-weight: bold; font-size: 1.05rem; background-color: rgba(128,128,128,0.05);">
                                                     <span class="num-box" style="@GetAmountStyle(res.FinalAmount)">
                                                         @{
                                                             var parts = Math.Abs(res.FinalAmount).ToString("N1").Split('.');
