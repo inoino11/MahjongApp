@@ -177,7 +177,7 @@
     private string GetShareTotalYenStyle(string name)
     {
         int chips = ActiveSessionChips.TryGetValue(name, out var c) ? c : 0;
-        if (ActiveHistory.Count == 0 && chips == 0) return "display: inline-block; width: 6.0rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
+        if (ActiveHistory.Count == 0 && chips == 0) return "display: inline-block; min-width: 6.0rem; width: max-content; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
         var allTotalYen = TablePlayers.Select(p =>
         {
             double yen = ActiveHistory.Sum(h =>
@@ -189,7 +189,7 @@
             return yen + (chipCount * Rules.ChipRate);
         }).ToList();
         int pIdx = TablePlayers.IndexOf(name);
-        if (pIdx == -1) return "display: inline-block; width: 6.0rem; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
-        return BuildShareStyle(allTotalYen[pIdx], allTotalYen, "6.0rem");
+        if (pIdx == -1) return "display: inline-block; min-width: 6.0rem; width: max-content; text-align: right; font-variant-numeric: tabular-nums; color: #ffffff;";
+        return BuildShareStyle(allTotalYen[pIdx], allTotalYen, "max-content; min-width: 6.0rem");
     }
 }
