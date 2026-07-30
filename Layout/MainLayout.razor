@@ -40,9 +40,11 @@
                 TaGAMΣ <span style="font-size: 0.75rem; font-weight: normal; opacity: 0.8; letter-spacing: normal;">- 麻雀集計 -</span>
             </MudText>
             <MudSpacer />
-            <MudIconButton Icon="@Icons.Material.Filled.ChangeCircle" Color="Color.Inherit" Title="単位設定" OnClick="OpenCurrencyDialog" />            
-            <MudToggleIconButton Toggled="_isColorInverted" ToggledChanged="OnColorInvertChanged" Icon="@Icons.Material.Filled.InvertColors" Color="Color.Error" Title="正負のカラー設定" ToggledIcon="@Icons.Material.Filled.InvertColors" ToggledColor="Color.Info" ToggledTitle="正負のカラー設定" />
-            <MudToggleIconButton Toggled="_isDarkMode" ToggledChanged="OnDarkModeChanged" Icon="@Icons.Material.Filled.DarkMode" Color="Color.Inherit" Title="ダークモードへ" ToggledIcon="@Icons.Material.Filled.LightMode" ToggledColor="Color.Inherit" ToggledTitle="ライトモードへ" />
+            <div class="d-flex align-center gap-2">
+                <MudIconButton Class="mx-n1" Style="padding: 8px;" Icon="@Icons.Material.Filled.ChangeCircle" Color="Color.Inherit" Title="単位設定" OnClick="OpenCurrencyDialog" />            
+                <MudToggleIconButton Class="mx-n1" Style="padding: 8px;" Toggled="_isColorInverted" ToggledChanged="OnColorInvertChanged" Icon="@Icons.Material.Filled.InvertColors" Color="Color.Error" Title="正負のカラー設定" ToggledIcon="@Icons.Material.Filled.InvertColors" ToggledColor="Color.Info" ToggledTitle="正負のカラー設定" />
+                <MudToggleIconButton Class="mx-n1" Style="padding: 8px;" Toggled="_isDarkMode" ToggledChanged="OnDarkModeChanged" Icon="@Icons.Material.Filled.DarkMode" Color="Color.Inherit" Title="ダークモードへ" ToggledIcon="@Icons.Material.Filled.LightMode" ToggledColor="Color.Inherit" ToggledTitle="ライトモードへ" />
+            </div>
         </MudAppBar>
         @if (!IsSharedPage)
         {
