@@ -529,7 +529,7 @@
             if (playerMaxCh > absoluteMaxCh) absoluteMaxCh = playerMaxCh;
         }
         // 幅が広すぎる場合はここで調整
-        double uniformColumnWidth = absoluteMaxCh * 0.95; 
+        double uniformColumnWidth = absoluteMaxCh * 0.65;
         for (int i = 0; i < ActiveParticipantCount; i++)
             _columnWidths[i] = $"{uniformColumnWidth}ch";
     }

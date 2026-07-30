@@ -21,7 +21,7 @@
         </div>
 
         @* 成績テーブル *@
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center; font-variant-numeric: tabular-nums;">
+        <table style="width: max-content; margin: 0 auto 20px auto; border-collapse: collapse; text-align: center; font-variant-numeric: tabular-nums;">
             <thead>
                 <tr style="background-color: rgba(255,255,255,0.1); border-bottom: 2px solid #555;">
                     <th style="padding: 12px; width: 80px; font-size: 0.9rem;">戦</th>
@@ -130,7 +130,7 @@
         if (idx == -1 || idx >= res.RawScores.Count || res.RawScores[idx] == null)
             return "display: inline-block; width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: #9e9e9e;";
         double pt = (idx < res.Points.Count) ? res.Points[idx] : 0;
-        return BuildShareStyle(pt, res.Points, "4.5rem");
+        return BuildShareStyle(pt, res.Points, "max-content");
     }
 
     private string GetShareTotalPointValue(string name)
