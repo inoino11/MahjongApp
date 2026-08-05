@@ -148,7 +148,7 @@
                         <CardHeaderContent>
                             <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                                 <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
-                                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Settings" OnClick="OpenCustomRuleDialog">
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Settings" OnClick="OpenCustomRuleDialog">
                                         カスタム<span class="d-none d-sm-inline">ルール</span>
                                     </MudButton>
                                     <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Save" OnClick="SavePreset">
@@ -905,7 +905,7 @@
         (rules.StartingPoints, rules.ReturnPoints, rules.Uma1, rules.Uma2) = val switch
         {
             4 => (25000, 30000, 10, 20),
-            3 => (30000, 35000, 10, 20),
+            3 => (35000, 40000, 10, 20),
             _ => (rules.StartingPoints, rules.ReturnPoints, rules.Uma1, rules.Uma2)
         };
         // 人数変更時にもカスタムウマ側にデータを同期させる

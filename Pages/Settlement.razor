@@ -478,7 +478,15 @@
             var activePlayerNames = SessionStateService.CurrentPlayerNames
                 .Where(n => !string.IsNullOrWhiteSpace(n))
                 .ToList();
-
+            var activePlayerIds = new List<string>();
+            foreach (var name in activePlayerNames)
+            {
+                // DBに同名のプレイヤーが存在するかチェック
+                var kv = playerMap.FirstOrDefault(x => x.Value == name);
+                string id = kv.Key ?? name;
+                activePlayerIds.Add(id);
+                if (kv.Key == null) playerMap[name] = name;
+            }
             var activeChips = new List<int>();
             foreach (var name in activePlayerNames)
             {
@@ -492,7 +500,6 @@
                     activeChips.Add(0);
                 }
             }
-
             var activeSessionGroup = new SettlementSessionGroup
             {
                 Session = new SavedSessionRecord
@@ -500,30 +507,27 @@
                     SessionId = "ACTIVE_UNSAVED",
                     Date = DateTime.Now,
                     Rules = SessionStateService.Rules,
-                    ParticipantPlayerIds = activePlayerNames,
+                    ParticipantPlayerIds = activePlayerIds,
                     SettledChips = activeChips
                 },
                 Games = SessionStateService.ActiveHistory.Select(g => new SavedGameRecord
                 {
                     SessionId = "ACTIVE_UNSAVED",
-                    PlayerIds = activePlayerNames.Cast<string?>().ToList(),
+                    PlayerIds = g.PlayerNames.Select(name =>
+                    {
+                        var kv = playerMap.FirstOrDefault(x => x.Value == name);
+                        return kv.Key ?? name;
+                    }).Cast<string?>().ToList(),
                     Points = g.Points?.ToList() ?? new(),
                     Yen = g.Yen?.ToList() ?? new(),
                     RawScores = g.RawScores?.ToList() ?? new()
                 }).ToList(),
                 IsUnsaved = true
             };
-
-            foreach (var name in activePlayerNames)
-            {
-                playerMap[name] = name;
-            }
-
             activeSessionGroup.Session = AggregateSessionDuplicates(activeSessionGroup.Session);
             allSessions.Insert(0, activeSessionGroup);
             _selectedSessions.Add(activeSessionGroup);
         }
-
         isLoading = false;
     }
 
