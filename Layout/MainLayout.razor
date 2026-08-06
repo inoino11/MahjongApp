@@ -41,7 +41,7 @@
             </MudText>
             <MudSpacer />
             <div class="d-flex align-center gap-2">
-                <MudIconButton Class="mx-n1" Style="padding: 8px;" Icon="@Icons.Material.Filled.ChangeCircle" Color="Color.Inherit" Title="単位設定" OnClick="OpenCurrencyDialog" />            
+                <MudIconButton Class="mx-n1" Style="padding: 8px;" Icon="@Icons.Material.Filled.ChangeCircle" Color="Color.Inherit" Title="単位設定" OnClick="OpenCurrencyDialog" />
                 <MudToggleIconButton Class="mx-n1" Style="padding: 8px;" Toggled="_isColorInverted" ToggledChanged="OnColorInvertChanged" Icon="@Icons.Material.Filled.InvertColors" Color="Color.Error" Title="正負のカラー設定" ToggledIcon="@Icons.Material.Filled.InvertColors" ToggledColor="Color.Info" ToggledTitle="正負のカラー設定" />
                 <MudToggleIconButton Class="mx-n1" Style="padding: 8px;" Toggled="_isDarkMode" ToggledChanged="OnDarkModeChanged" Icon="@Icons.Material.Filled.DarkMode" Color="Color.Inherit" Title="ダークモードへ" ToggledIcon="@Icons.Material.Filled.LightMode" ToggledColor="Color.Inherit" ToggledTitle="ライトモードへ" />
             </div>
@@ -62,7 +62,7 @@
     bool _drawerOpen = false;
     bool _isDarkMode = true;
     bool IsSharedPage = false;
-    bool _isColorInverted = true;
+    bool _isColorInverted = false;
     private CurrencySetting _currencySetting = new();
 
     protected override void OnInitialized()
@@ -85,7 +85,8 @@
     protected override async Task OnInitializedAsync()
     {
         _ = StatsCache.InitializeAsync();
-        _isColorInverted = await LocalStorage.GetItemAsync<bool>("isColorInverted");
+        var savedColorInverted = await LocalStorage.GetItemAsync<bool?>("isColorInverted");
+        _isColorInverted = savedColorInverted ?? true;
         var savedDarkMode = await LocalStorage.GetItemAsync<bool?>("isDarkMode");
         _isDarkMode = savedDarkMode ?? true;
         var savedCurrency = await LocalStorage.GetItemAsync<CurrencySetting>("currencySetting");
