@@ -1,3 +1,5 @@
+namespace MahjongApp;
+
 public static class StorageKeys
 {
     public const string Rules = "rules";
