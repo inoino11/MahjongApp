@@ -892,7 +892,7 @@
             if (!string.IsNullOrWhiteSpace(name))
             {
                 ActiveSessionChips[name] = args.Value;
-                await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
+                await LocalStorage.SetItemAsync(StorageKeys.ActiveSessionChips, ActiveSessionChips);
             }
         }
     }
@@ -911,7 +911,7 @@
         // 人数変更時にもカスタムウマ側にデータを同期させる
         SyncNormalToCustomUma();
         ResetInputForms();
-        await LocalStorage.RemoveItemAsync("backup_score_buffers");
+        await LocalStorage.RemoveItemAsync(StorageKeys.BackupScoreBuffers);
         await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
         await LocalStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, activeParticipantCount);
         ValidateDisplayMode();
@@ -1180,8 +1180,8 @@
             await DatabaseService.SaveSessionAsync(playersToUpdate, sessionRecord, gameRecordsToSave);
             ActiveHistory.Clear();
             ActiveSessionChips.Clear();
-            await LocalStorage.SetItemAsync("ActiveHistory", ActiveHistory);
-            await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
+            await LocalStorage.SetItemAsync(StorageKeys.ActiveHistory, ActiveHistory);
+            await LocalStorage.SetItemAsync(StorageKeys.ActiveSessionChips, ActiveSessionChips);
             ResetInputForms();
             Snackbar.Add("対局結果を通算成績に保存しました！", Severity.Success);
             _ = StatsCache.InitializeAsync(forceReload: true);
@@ -1231,7 +1231,7 @@
             var name = TablePlayers[activeChipInputIndex.Value];
             ActiveSessionChips[name] = finalChip ?? 0;
             if (saveToStorage)
-                await LocalStorage.SetItemAsync("ActiveSessionChips", ActiveSessionChips);
+                await LocalStorage.SetItemAsync(StorageKeys.ActiveSessionChips, ActiveSessionChips);
             chipInputBuffer = "";
         }
         activeScoreInputIndex = null;

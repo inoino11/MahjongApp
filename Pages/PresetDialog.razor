@@ -136,7 +136,7 @@
     private async Task DeletePreset(RuleSet preset)
     {
         Presets.Remove(preset);
-        await LocalStorage.SetItemAsync("rulePresets", Presets);
+        await LocalStorage.SetItemAsync(StorageKeys.RulePresets, Presets);
         Snackbar.Add($"設定「{preset.Name}」を削除しました", Severity.Info);
         StateHasChanged(); // UIを更新
     }
@@ -165,7 +165,7 @@
         {
             Presets.RemoveAt(index);
             Presets.Insert(newIndex, preset);
-            await LocalStorage.SetItemAsync("rulePresets", Presets);
+            await LocalStorage.SetItemAsync(StorageKeys.RulePresets, Presets);
             flashingPresets.Add(preset);
             StateHasChanged();
             _ = Task.Run(async () =>

@@ -21,16 +21,6 @@ public class SessionStateService
     public int TemporaryTotalFee { get; private set; } = 0;
     public int TemporaryFeeRule { get; private set; } = 1;
 
-    // 内部で使用するキーの定数管理（タイポ防止）
-    private const string KeyRules = "rules";
-    private const string KeyCurrentPlayers = "currentPlayers";
-    private const string KeyActiveCount = "activeParticipantCount";
-    private const string KeyHistory = "ActiveHistory";
-    private const string KeyChips = "ActiveSessionChips";
-    private const string KeyBackupBuffers = "backup_score_buffers";
-    private const string KeyTempFee = "temp_total_fee";
-    private const string KeyTempFeeRule = "temp_fee_rule";
-
     public SessionStateService(ILocalStorageService localStorage)
     {
         _localStorage = localStorage;
@@ -42,15 +32,15 @@ public class SessionStateService
     public async Task InitializeStateAsync()
     {
         // 1. ルールの復元
-        var savedRules = await _localStorage.GetItemAsync<RuleSet>(KeyRules);
+        var savedRules = await _localStorage.GetItemAsync<RuleSet>(StorageKeys.Rules);
         if (savedRules != null) Rules = savedRules;
 
         // 2. 参加人数の復元
-        var savedActiveCount = await _localStorage.GetItemAsync<int?>(KeyActiveCount);
+        var savedActiveCount = await _localStorage.GetItemAsync<int?>(StorageKeys.ActiveParticipantCount);
         ActiveParticipantCount = savedActiveCount ?? Rules.PlayerCount;
 
         // 3. プレイヤー名の復元
-        var savedPlayers = await _localStorage.GetItemAsync<List<string>>(KeyCurrentPlayers);
+        var savedPlayers = await _localStorage.GetItemAsync<List<string>>(StorageKeys.CurrentPlayers);
         if (savedPlayers != null)
         {
             for (int i = 0; i < savedPlayers.Count && i < 7; i++)
@@ -60,20 +50,20 @@ public class SessionStateService
         }
 
         // 4. 局履歴の復元
-        var savedHistory = await _localStorage.GetItemAsync<List<GameResult>>(KeyHistory);
+        var savedHistory = await _localStorage.GetItemAsync<List<GameResult>>(StorageKeys.ActiveHistory);
         if (savedHistory != null) ActiveHistory = savedHistory;
 
         // 5. チップ情報の復元（古いList型形式からの救済ロジックも内包）
         try
         {
-            var savedChipsDict = await _localStorage.GetItemAsync<Dictionary<string, int>>(KeyChips);
+            var savedChipsDict = await _localStorage.GetItemAsync<Dictionary<string, int>>(StorageKeys.ActiveSessionChips);
             if (savedChipsDict != null)
             {
                 ActiveSessionChips = savedChipsDict;
             }
             else
             {
-                var savedChipsList = await _localStorage.GetItemAsync<List<int>>(KeyChips);
+                var savedChipsList = await _localStorage.GetItemAsync<List<int>>(StorageKeys.ActiveSessionChips);
                 if (savedChipsList != null)
                 {
                     ActiveSessionChips = new Dictionary<string, int>();
@@ -91,7 +81,7 @@ public class SessionStateService
         }
 
         // 6. 入力バッファの復元
-        var backupBuffers = await _localStorage.GetItemAsync<string[]>(KeyBackupBuffers);
+        var backupBuffers = await _localStorage.GetItemAsync<string[]>(StorageKeys.BackupScoreBuffers);
         if (backupBuffers != null && backupBuffers.Length == 7)
         {
             if (backupBuffers.Any(b => !string.IsNullOrEmpty(b)))
@@ -101,11 +91,11 @@ public class SessionStateService
         }
 
         // 7. 一時場代の復元
-        var savedTempFee = await _localStorage.GetItemAsync<int?>(KeyTempFee);
+        var savedTempFee = await _localStorage.GetItemAsync<int?>(StorageKeys.TempTotalFee);
         if (savedTempFee.HasValue) TemporaryTotalFee = savedTempFee.Value;
 
         // 8. 一時支払いルールの復元
-        var savedTempRule = await _localStorage.GetItemAsync<int?>(KeyTempFeeRule);
+        var savedTempRule = await _localStorage.GetItemAsync<int?>(StorageKeys.TempFeeRule);
         if (savedTempRule.HasValue) TemporaryFeeRule = savedTempRule.Value;
     }
 
@@ -114,13 +104,13 @@ public class SessionStateService
     public async Task SaveRulesAsync(RuleSet newRules)
     {
         Rules = newRules;
-        await _localStorage.SetItemAsync(KeyRules, Rules);
+        await _localStorage.SetItemAsync(StorageKeys.Rules, Rules);
     }
 
     public async Task SaveActiveParticipantCountAsync(int count)
     {
         ActiveParticipantCount = count;
-        await _localStorage.SetItemAsync(KeyActiveCount, ActiveParticipantCount);
+        await _localStorage.SetItemAsync(StorageKeys.ActiveParticipantCount, ActiveParticipantCount);
     }
 
     public async Task UpdatePlayerNameAsync(int index, string name)
@@ -128,20 +118,20 @@ public class SessionStateService
         if (index >= 0 && index < 7)
         {
             CurrentPlayerNames[index] = name;
-            await _localStorage.SetItemAsync(KeyCurrentPlayers, CurrentPlayerNames);
+            await _localStorage.SetItemAsync(StorageKeys.CurrentPlayers, CurrentPlayerNames);
         }
     }
 
     public async Task AddGameResultAsync(GameResult result)
     {
         ActiveHistory.Add(result);
-        await _localStorage.SetItemAsync(KeyHistory, ActiveHistory);
+        await _localStorage.SetItemAsync(StorageKeys.ActiveHistory, ActiveHistory);
     }
 
     public async Task RemoveGameResultAsync(GameResult result)
     {
         ActiveHistory.Remove(result);
-        await _localStorage.SetItemAsync(KeyHistory, ActiveHistory);
+        await _localStorage.SetItemAsync(StorageKeys.ActiveHistory, ActiveHistory);
     }
 
     public async Task UpdateChipValueAsync(string name, int value)
@@ -149,32 +139,32 @@ public class SessionStateService
         if (!string.IsNullOrWhiteSpace(name))
         {
             ActiveSessionChips[name] = value;
-            await _localStorage.SetItemAsync(KeyChips, ActiveSessionChips);
+            await _localStorage.SetItemAsync(StorageKeys.ActiveSessionChips, ActiveSessionChips);
         }
     }
 
     public async Task SaveScoreBuffersAsync(string[] buffers)
     {
         ScoreInputBuffers = buffers;
-        await _localStorage.SetItemAsync(KeyBackupBuffers, ScoreInputBuffers);
+        await _localStorage.SetItemAsync(StorageKeys.BackupScoreBuffers, ScoreInputBuffers);
     }
 
     public async Task ClearScoreBuffersAsync()
     {
         ScoreInputBuffers = Enumerable.Repeat(string.Empty, 7).ToArray();
-        await _localStorage.RemoveItemAsync(KeyBackupBuffers);
+        await _localStorage.RemoveItemAsync(StorageKeys.BackupScoreBuffers);
     }
 
     public async Task SaveTemporaryFeeAsync(int fee)
     {
         TemporaryTotalFee = fee;
-        await _localStorage.SetItemAsync(KeyTempFee, TemporaryTotalFee);
+        await _localStorage.SetItemAsync(StorageKeys.TempTotalFee, TemporaryTotalFee);
     }
 
     public async Task SaveTemporaryFeeRuleAsync(int rule)
     {
         TemporaryFeeRule = rule;
-        await _localStorage.SetItemAsync(KeyTempFeeRule, TemporaryFeeRule);
+        await _localStorage.SetItemAsync(StorageKeys.TempFeeRule, TemporaryFeeRule);
     }
 
     /// <summary>
@@ -186,8 +176,8 @@ public class SessionStateService
         ActiveSessionChips.Clear();
         ScoreInputBuffers = Enumerable.Repeat(string.Empty, 7).ToArray();
 
-        await _localStorage.SetItemAsync(KeyHistory, ActiveHistory);
-        await _localStorage.SetItemAsync(KeyChips, ActiveSessionChips);
-        await _localStorage.RemoveItemAsync(KeyBackupBuffers);
+        await _localStorage.SetItemAsync(StorageKeys.ActiveHistory, ActiveHistory);
+        await _localStorage.SetItemAsync(StorageKeys.ActiveSessionChips, ActiveSessionChips);
+        await _localStorage.RemoveItemAsync(StorageKeys.BackupScoreBuffers);
     }
 }

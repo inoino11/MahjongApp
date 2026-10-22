@@ -85,11 +85,11 @@
     protected override async Task OnInitializedAsync()
     {
         _ = StatsCache.InitializeAsync();
-        var savedColorInverted = await LocalStorage.GetItemAsync<bool?>("isColorInverted");
+        var savedColorInverted = await LocalStorage.GetItemAsync<bool?>(StorageKeys.IsColorInverted);
         _isColorInverted = savedColorInverted ?? true;
-        var savedDarkMode = await LocalStorage.GetItemAsync<bool?>("isDarkMode");
+        var savedDarkMode = await LocalStorage.GetItemAsync<bool?>(StorageKeys.IsDarkMode);
         _isDarkMode = savedDarkMode ?? true;
-        var savedCurrency = await LocalStorage.GetItemAsync<CurrencySetting>("currencySetting");
+        var savedCurrency = await LocalStorage.GetItemAsync<CurrencySetting>(StorageKeys.CurrencySetting);
         if (savedCurrency != null) _currencySetting = savedCurrency;
         StateHasChanged();
     }
@@ -103,7 +103,7 @@
         if (result is not null && !result.Canceled && result.Data is CurrencySetting newSetting)
         {
             _currencySetting = newSetting;
-            await LocalStorage.SetItemAsync("currencySetting", _currencySetting);
+            await LocalStorage.SetItemAsync(StorageKeys.CurrencySetting, _currencySetting);
             StateHasChanged(); // アプリ全体を再レンダリング
         }
     }
@@ -127,13 +127,13 @@
     private async Task OnColorInvertChanged(bool newValue)
     {
         _isColorInverted = newValue;
-        await LocalStorage.SetItemAsync("isColorInverted", newValue);
+        await LocalStorage.SetItemAsync(StorageKeys.IsColorInverted, newValue);
     }
 
     private async Task OnDarkModeChanged(bool newValue)
     {
         _isDarkMode = newValue;
-        await LocalStorage.SetItemAsync("isDarkMode", newValue);
+        await LocalStorage.SetItemAsync(StorageKeys.IsDarkMode, newValue);
     }
 
     private MudTheme mahjongTheme = new MudTheme()

@@ -186,7 +186,7 @@
                     activeChips[resolvedName] += chipValue;
                 else
                     activeChips[resolvedName] = chipValue;
-                await LocalStorage.SetItemAsync("ActiveSessionChips", activeChips);
+                await LocalStorage.SetItemAsync(StorageKeys.ActiveSessionChips, activeChips);
             }
             // 3. 既に記録された今セッションの局履歴（ActiveHistory）内の名前も更新
             var activeHistory = await LocalStorage.GetItemAsync<List<GameResult>>("ActiveHistory");
@@ -202,7 +202,7 @@
                                 isModified = true;
                             }
                 if (isModified)
-                    await LocalStorage.SetItemAsync("ActiveHistory", activeHistory);
+                    await LocalStorage.SetItemAsync(StorageKeys.ActiveHistory, activeHistory);
             }
         }
         catch { /* ローカルストレージ未初期化時などのエラーは無視 */ }
