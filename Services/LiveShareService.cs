@@ -8,8 +8,8 @@ using Microsoft.JSInterop;
 namespace MahjongApp.Services;
 
 /// <summary>
-/// 観戦URLの発行・自動更新・終了を担当します。
-/// 対局データは端末内で暗号化して送り、暗号鍵はURLの # 以降にだけ含めます（サーバーには送らない）
+/// 観戦URLの発行・自動更新・終了を担当する。
+/// 対局データは端末内で暗号化して送り、暗号鍵はURLの # 以降にだけ含める（サーバーには送らない）
 /// </summary>
 public class LiveShareService
 {
@@ -32,7 +32,7 @@ public class LiveShareService
     public bool HasError { get; private set; }
     public string? ShareUrl => _info == null ? null : $"{_navigationManager.BaseUri}shared?live={_info.Id}#{_info.Key}";
 
-    // 配信状態・エラー状態が変わったときの通知（ボタン表示の更新用）
+    // 配信状態・エラー状態が変わったときの通知（ボタン表示の更新に使う）
     public event Action? OnChanged;
 
     // 端末に保存する配信情報（アプリを再起動しても同じURLを更新し続けるため）
@@ -78,7 +78,7 @@ public class LiveShareService
     }
 
     /// <summary>
-    /// 観戦URLを発行します（発行済みならそのURLを返します）
+    /// 観戦URLを発行する（発行済みならそのURLを返す）
     /// </summary>
     public async Task<string> StartAsync(string payloadJson)
     {
@@ -102,7 +102,7 @@ public class LiveShareService
     }
 
     /// <summary>
-    /// 表示内容が変わっていれば、少し待ってからまとめて送信します（連続した変更は最後の1回だけ送る）
+    /// 表示内容が変わっていれば、少し待ってからまとめて送る（連続した変更は最後の1回だけ送る）
     /// </summary>
     public void ScheduleUpdate(string payloadJson)
     {
@@ -127,7 +127,7 @@ public class LiveShareService
     }
 
     /// <summary>
-    /// 未送信の変更（なければ最後に送った内容）をすぐに送信します
+    /// 未送信の変更（なければ最後に送った内容）をすぐに送る
     /// </summary>
     public async Task<bool> UpdateNowAsync()
     {
@@ -143,7 +143,7 @@ public class LiveShareService
     }
 
     /// <summary>
-    /// 配信を終了します（finished: 確定 / stopped: 停止 / discarded: 記録の破棄）。終了後は端末の配信情報を消します
+    /// 配信を終了する（finished: 確定 / stopped: 停止 / discarded: 記録の破棄）。終了後は端末の配信情報を消す
     /// </summary>
     public async Task EndAsync(string status, string? payloadJson)
     {

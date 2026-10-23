@@ -10,7 +10,7 @@
 <MudSnackbarProvider />
 <MudPopoverProvider />
 
-@* 正負のカラーをアプリ全体に適用するCSS変数 *@
+@* 正負の色（反転設定に従う）をアプリ全体の CSS 変数にする *@
 <style>
     :root {
         --color-positive:
@@ -87,7 +87,7 @@
         NavManager.LocationChanged += (s, e) =>
         {
             CheckIfSharedPage(e.Location);
-            _errorBoundary?.Recover(); // 画面遷移したらエラー表示を解除
+            _errorBoundary?.Recover(); // 画面を移動したらエラー表示を解除する
             StateHasChanged();
         };
     }
@@ -102,13 +102,13 @@
 
     private void ReloadApp() => NavManager.NavigateTo(NavManager.Uri, forceLoad: true);
 
-    // URLに "/shared" が含まれているか判定
+    // 共有・観戦ページ（/shared）ではメニューを出さない
     private void CheckIfSharedPage(string uri)
     {
         IsSharedPage = uri.Contains("/shared");
     }
 
-    // 起動直後に裏で中間構造体を作成
+    // 成績の集計は起動直後から裏で始めておく
     protected override async Task OnInitializedAsync()
     {
         _ = StatsCache.InitializeAsync();
@@ -135,7 +135,6 @@
         }
     }
 
-    // ダイアログを開き、設定を保存する処理
     private async Task OpenCurrencyDialog()
     {
         var parameters = new DialogParameters { ["CurrentSetting"] = _currencySetting };
@@ -145,7 +144,7 @@
         {
             _currencySetting = newSetting;
             await LocalStorage.SetItemAsync(StorageKeys.CurrencySetting, _currencySetting);
-            StateHasChanged(); // アプリ全体を再レンダリング
+            StateHasChanged(); // CascadingValue 経由でアプリ全体の表示を更新する
         }
     }
 
@@ -154,7 +153,7 @@
         _drawerOpen = !_drawerOpen;
     }
 
-    // 既存の動きに合わせて少し待機してからロード画面を消す
+    // 初回描画後、少し待ってからローディング画面を消す（描画途中の画面が見えないように）
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -164,7 +163,6 @@
         }
     }
 
-    // ボタンが押された時の処理
     private async Task OnColorInvertChanged(bool newValue)
     {
         _isColorInverted = newValue;
@@ -179,33 +177,33 @@
 
     private MudTheme mahjongTheme = new MudTheme()
     {
-        // --- ライトモード設定（以前の設定を維持） ---
+        // --- ライトモード（雀卓の緑） ---
         PaletteLight = new PaletteLight()
         {
-            Primary = "#1b5e20", // 深緑
-            Secondary = "#b71c1c", // 赤
-            Background = "#2e7d32", // 鮮やかな緑（雀卓）
-            Surface = "#ffffff", // 白
+            Primary = "#1b5e20",
+            Secondary = "#b71c1c",
+            Background = "#2e7d32",
+            Surface = "#ffffff",
             TextPrimary = "#000000",
             AppbarBackground = "#1b5e20",
             Success = "#2e7d32", // 白背景上の文字・白文字ボタンでも読める濃さ
         },
 
-        // --- ダークモード設定（シックな黒緑スタイル） ---
+        // --- ダークモード（黒に近い緑） ---
         PaletteDark = new PaletteDark()
         {
-            Primary = "#81c784", // 明るめの緑（ボタン等）
+            Primary = "#81c784",
             PrimaryContrastText = "#0d140d", // 明るい緑の塗りボタン上は濃い文字にする
             SuccessContrastText = "#0d140d",
-            Secondary = "#ef5350", // 明るめの赤（削除ボタン等）
-            Background = "#0d140d", // 背景：黒に近い深い緑
-            Surface = "#1a261a", // カード：少しだけ明るい黒緑（雀卓の質感をイメージ）
-            AppbarBackground = "#081008", // バー：さらに暗い緑
-            TextPrimary = "#e0e0e0", // 文字：少しグレーがかった白（まぶしさを抑制）
+            Secondary = "#ef5350",
+            Background = "#0d140d",
+            Surface = "#1a261a",
+            AppbarBackground = "#081008",
+            TextPrimary = "#e0e0e0", // 真っ白はまぶしいので少し落とす
             TextSecondary = "#b0b0b0",
             ActionDefault = "#81c784",
-            DrawerBackground = "#121d12", // ドロワー：背景に近い深い緑
-            Divider = "#2e3b2e", // 区切り線
+            DrawerBackground = "#121d12",
+            Divider = "#2e3b2e",
             TableStriped = "rgba(255,255,255,0.02)"
         }
     };

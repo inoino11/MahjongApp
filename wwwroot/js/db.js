@@ -1,28 +1,27 @@
 window.mahjongDb = {
     db: null,
     _opening: null,
-    // データベースの初期化（無ければ作成、あれば開く）。接続済み・接続中なら同じ結果を返す
+    // データベースを開く（無ければ作成する）。接続済み・接続中なら同じ結果を返す
     init: function () {
         if (this.db) return Promise.resolve(true);
         if (this._opening) return this._opening;
         this._opening = new Promise((resolve, reject) => {
-            // 第2引数はデータベースのバージョン。将来構造を変える時はここを上げます
+            // 第2引数はスキーマのバージョン。ストアやインデックスを変えるときに上げる
             const request = indexedDB.open("MahjongScoreDb", 1);
-            // 初回起動時、またはバージョンが上がった時に実行されるスキーマ定義
+            // 初回、またはバージョンが上がったときだけ実行される
             request.onupgradeneeded = (e) => {
                 const db = e.target.result;
-                // 1. プレイヤー名簿ストア
+                // 名簿
                 if (!db.objectStoreNames.contains('players')) {
                     db.createObjectStore('players', { keyPath: 'id' });
                 }
-                // 2. セッション総括ストア
+                // セッション（1日分の対局のまとめ）
                 if (!db.objectStoreNames.contains('sessions')) {
                     db.createObjectStore('sessions', { keyPath: 'sessionId' });
                 }
-                // 3. 局ごとの成績ストア
+                // 局ごとの成績
                 if (!db.objectStoreNames.contains('games')) {
                     const gameStore = db.createObjectStore('games', { keyPath: 'id' });
-                    // セッション単位で高速検索するためのインデックス
                     gameStore.createIndex('by_session', 'sessionId', { unique: false });
                 }
             };
@@ -42,7 +41,7 @@ window.mahjongDb = {
         return this._opening;
     },
     // 接続を確保してから処理を実行する。接続が閉じていた（InvalidStateError）場合は1回だけ開き直して再試行する
-    // ※トランザクションは処理(fn)の中で同期的に作ること（await を挟むと自動コミットされるため）
+    // トランザクションは fn の中で同期的に作ること（await を挟むと自動コミットされるため）
     _run: async function (fn) {
         await this.init();
         try {
@@ -54,10 +53,9 @@ window.mahjongDb = {
             return await fn(this.db);
         }
     },
-    // セッションデータの安全な一括保存（トランザクション処理）
+    // セッションの確定保存。名簿・セッション・各局を1つのトランザクションでまとめて書き込む
     saveSession: function (playersToUpdate, sessionRecord, gameRecords) {
         return this._run(db => new Promise((resolve, reject) => {
-            // 3つのテーブルにまたがるトランザクションを開始
             const tx = db.transaction(['players', 'sessions', 'games'], 'readwrite');
             tx.oncomplete = () => resolve(true);
             tx.onerror = (e) => reject(e.target.error);
@@ -65,19 +63,16 @@ window.mahjongDb = {
             const playerStore = tx.objectStore('players');
             const sessionStore = tx.objectStore('sessions');
             const gameStore = tx.objectStore('games');
-            // 1. プレイヤー名簿の追加・更新（既存データは上書き）
             playersToUpdate.forEach(player => {
                 playerStore.put(player);
             });
-            // 2. セッション記録の保存
             sessionStore.put(sessionRecord);
-            // 3. 各局の成績の保存
             gameRecords.forEach(game => {
                 gameStore.put(game);
             });
         }));
     },
-    // ダッシュボード用の全データ読み込み
+    // 全データの読み込み（成績集計・履歴・名簿で使う）
     getAllData: function () {
         return this._run(db => new Promise((resolve, reject) => {
             const tx = db.transaction(['players', 'sessions', 'games'], 'readonly');
@@ -97,7 +92,7 @@ window.mahjongDb = {
             tx.onabort = () => reject(tx.error || new Error("Transaction aborted"));
         }));
     },
-    // プレイヤー名の変更やチップの直接修正
+    // 名簿の追加・更新
     updatePlayer: function (player) {
         return this._run(db => new Promise((resolve, reject) => {
             const tx = db.transaction(['players'], 'readwrite');
@@ -107,7 +102,7 @@ window.mahjongDb = {
             tx.onabort = () => reject(tx.error || new Error("Transaction aborted"));
         }));
     },
-    // プレイヤーの削除（※対局履歴がない場合のみC#側から呼ばれる想定）
+    // 名簿から削除する（対局履歴がない人だけが対象。履歴がある人は mergePlayers で「削除済み」に統合する）
     deletePlayer: function (playerId) {
         return this._run(db => new Promise((resolve, reject) => {
             const tx = db.transaction(['players'], 'readwrite');
@@ -117,7 +112,7 @@ window.mahjongDb = {
             tx.onabort = () => reject(tx.error || new Error("Transaction aborted"));
         }));
     },
-    // プレイヤーの統合
+    // sourceId の人を targetId の人に統合する（チップを合算し、全履歴のIDを付け替える）
     mergePlayers: function (sourceId, targetId) {
         return this._run(db => new Promise((resolve, reject) => {
             const tx = db.transaction(['players', 'sessions', 'games'], 'readwrite');
@@ -127,7 +122,6 @@ window.mahjongDb = {
             const pStore = tx.objectStore('players');
             const sStore = tx.objectStore('sessions');
             const gStore = tx.objectStore('games');
-            // チップの合算と元データの削除
             pStore.get(targetId).onsuccess = (e) => {
                 let targetPlayer = e.target.result;
                 pStore.get(sourceId).onsuccess = (e2) => {
@@ -139,7 +133,6 @@ window.mahjongDb = {
                     }
                 };
             };
-            // レコードIDすげ替え
             gStore.getAll().onsuccess = (e) => {
                 e.target.result.forEach(game => {
                     let changed = false;
@@ -153,7 +146,6 @@ window.mahjongDb = {
                     if (changed) gStore.put(game);
                 });
             };
-            // セッションIDすげ替え
             sStore.getAll().onsuccess = (e) => {
                 e.target.result.forEach(session => {
                     let changed = false;
@@ -169,7 +161,7 @@ window.mahjongDb = {
             };
         }));
     },
-    // 全データの完全初期化
+    // 全データを消去する
     clearAllData: function () {
         return this._run(db => new Promise((resolve, reject) => {
             const tx = db.transaction(['players', 'sessions', 'games'], 'readwrite');
@@ -181,7 +173,7 @@ window.mahjongDb = {
             tx.objectStore('games').clear();
         }));
     },
-    // JSONファイルをブラウザからダウンロードさせる処理
+    // ファイルをダウンロードさせる
     downloadFile: function (filename, contentType, content) {
         const file = new File([content], filename, { type: contentType });
         const exportUrl = URL.createObjectURL(file);
@@ -193,7 +185,7 @@ window.mahjongDb = {
         URL.revokeObjectURL(exportUrl);
         a.remove();
     },
-    // 読み込んだJSONデータでデータベースをまるごと復元または統合する処理
+    // バックアップJSONで復元する（isMerge が false なら既存データを消してから入れる）
     restoreData: function (jsonData, isMerge) {
         return this._run(db => new Promise((resolve, reject) => {
             let tx = null;
@@ -222,16 +214,15 @@ window.mahjongDb = {
             }
         }));
     },
-    // セッションと、それに紐づく全対局履歴をまとめて削除する処理
+    // セッションと、その局をまとめて削除する
     deleteSession: function(sessionId) {
         return this._run(db => new Promise((resolve, reject) => {
             const tx = db.transaction(['sessions', 'games'], 'readwrite');
             tx.oncomplete = () => resolve(true);
             tx.onerror = (e) => reject(e.target.error);
             tx.onabort = () => reject(tx.error || new Error("Transaction aborted"));
-            // 1. セッション本体を削除
             tx.objectStore('sessions').delete(sessionId);
-            // 2. このセッションIDを持つ対局(games)を探して全て削除
+            // 古いデータはキーが SessionId（大文字始まり）のことがあるため両方見る
             const gameStore = tx.objectStore('games');
             gameStore.openCursor().onsuccess = (e) => {
                 const cursor = e.target.result;

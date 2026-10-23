@@ -28,7 +28,7 @@
 
     private List<int> SelectedIndices = new();
 
-    // 選択状態を切り替え
+    // 起家から順に全員を押すと、その並び（席順）を返して閉じる
     private void TogglePlayerSelection(int index)
     {
         if (SelectedIndices.Contains(index))

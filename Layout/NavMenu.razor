@@ -14,7 +14,7 @@
         <MudNavLink Href="settings" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">データ管理</MudNavLink>
     </MudNavMenu>
     <div style="margin-top: auto;">
-        @* Android / PC 用インストールボタン *@
+        @* Android・PC: ブラウザのインストール案内を出すボタン *@
         @if (canInstall)
         {
             <div class="px-4 mb-2">
@@ -23,7 +23,7 @@
                 </MudButton>
             </div>
         }
-        @* iOS Webブラウザ用 警告＆案内メッセージ *@
+        @* iOS の Safari: インストール案内が出ないため、手順を表示する *@
         @if (envInfo.IsIOS && !envInfo.IsPwa)
         {
             <div class="px-3 mb-2">
@@ -33,7 +33,7 @@
                 </div>
             </div>
         }
-        @* バージョン表示 *@
+        @* バージョン表示（押すと更新を確認する） *@
         <MudButton Variant="Variant.Text" OnClick="CheckForUpdateAsync" Style="color: var(--mud-palette-text-disabled); font-family: monospace; text-transform: none; padding: 4px 8px; min-width: 0; font-size: 0.8rem;" Disabled="@isChecking">
             @if (isChecking)
             {
@@ -73,7 +73,7 @@
         }
     }
 
-    // JSから呼び出されるメソッド（インストール可能時）
+    // インストール可能になったとき（wwwroot/js/pwa.js から呼ばれる）
     [JSInvokable]
     public void OnInstallAvailable()
     {
@@ -81,7 +81,7 @@
         StateHasChanged();
     }
 
-    // JSから呼び出されるメソッド（インストール完了時）
+    // インストールが完了したとき（wwwroot/js/pwa.js から呼ばれる）
     [JSInvokable]
     public void OnInstalled()
     {
@@ -90,16 +90,13 @@
         Snackbar.Add("アプリがインストールされました", Severity.Success);
     }
 
-    // インストールボタンが押された時の処理
     private async Task InstallPwaAsync()
     {
         try
         {
-            // JS側のプロンプト表示関数を呼び出す
             var accepted = await JSRuntime.InvokeAsync<bool>("pwaInstall.prompt");
             if (accepted)
             {
-                // 承認されたらボタンを消す
                 canInstall = false;
                 StateHasChanged();
             }
@@ -110,7 +107,6 @@
         }
     }
 
-    // メモリリーク防止のための破棄処理
     public void Dispose()
     {
         objRef?.Dispose();
@@ -123,7 +119,7 @@
 
         try
         {
-            // 少しだけ待機して、ボタンが押された感（UX）を出す
+            // すぐ結果が出ても、確認した感触が伝わるよう少し待つ
             await Task.Delay(500);
             var result = await JSRuntime.InvokeAsync<string>("checkForUpdate");
             if (result == "CHECKED")

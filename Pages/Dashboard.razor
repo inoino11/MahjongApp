@@ -116,10 +116,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // キャッシュが未初期化なら初期化されるまで待機（通常は起動時に済んでいるため一瞬で終わります）
+        // 集計は通常、起動時に済んでいるのですぐに終わる
         await StatsCache.InitializeAsync();
 
-        // キャッシュからデータをもらうだけ
         stats4 = StatsCache.Stats4;
         stats3 = StatsCache.Stats3;
         availablePlayers = StatsCache.AvailablePlayers;
@@ -149,7 +148,7 @@
         matchupStats3 = string.IsNullOrEmpty(selectedHeroId) ? new() : StatsCache.CalculateMatchups(selectedHeroId, 3);
     }
 
-    // --- 各列の幅計算ロジック ---
+    // 各表の列幅を、中身の最大幅に合わせる
     private void CalculateDashboardWidths()
     {
         _rank4Layout = new TableLayoutManager(9);

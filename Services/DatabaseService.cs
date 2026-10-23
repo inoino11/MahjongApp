@@ -5,6 +5,9 @@ using Blazored.LocalStorage;
 
 namespace MahjongApp.Services;
 
+/// <summary>
+/// 確定済みの成績（名簿・セッション・各局）を IndexedDB に読み書きする。実処理は wwwroot/js/db.js
+/// </summary>
 public class DatabaseService
 {
     private readonly IJSRuntime _jsRuntime;
@@ -16,7 +19,7 @@ public class DatabaseService
         _localStorage = localStorage;
     }
 
-    /// データベースの初期化を保証する内部メソッド
+    // 初回の呼び出し時に一度だけデータベースを開く
     private async Task EnsureInitializedAsync()
     {
         if (!_isInitialized)
@@ -26,15 +29,18 @@ public class DatabaseService
         }
     }
 
-    /// その日の対局（セッション）を保存
+    /// <summary>
+    /// セッションを確定保存する。名簿・セッション・各局を1つのトランザクションで書き込む
+    /// </summary>
     public async Task SaveSessionAsync(List<PlayerProfile> playersToUpdate, SavedSessionRecord sessionRecord, List<SavedGameRecord> gameRecords)
     {
         await EnsureInitializedAsync();
-        // JSの saveSession 関数にデータを丸ごと渡す
         await _jsRuntime.InvokeVoidAsync("mahjongDb.saveSession", playersToUpdate, sessionRecord, gameRecords);
     }
 
-    /// 成績ダッシュボード表示用に、データベースの全データを一括取得
+    /// <summary>
+    /// 全データを一括で読み込む
+    /// </summary>
     public async Task<AllDbData> GetAllDataAsync()
     {
         await EnsureInitializedAsync();
@@ -94,7 +100,7 @@ public class DatabaseService
                     var currentPresets = await _localStorage.GetItemAsync<List<RuleSet>>(StorageKeys.RulePresets) ?? new List<RuleSet>();
                     foreach (var preset in importedData.RulePresets)
                     {
-                        // 同名のプリセットが既に存在するかチェック
+                        // 同名のプリセットがあれば「名前_連番」にして両方残す
                         if (currentPresets.Any(p => p.Name == preset.Name))
                         {
                             string baseName = preset.Name;
@@ -113,14 +119,13 @@ public class DatabaseService
                 }
                 else
                 {
-                    // 完全上書きモード
                     await _localStorage.SetItemAsync(StorageKeys.RulePresets, importedData.RulePresets);
                 }
             }
         }
         catch
         {
-            // JSONのパースエラー時はDBの復元だけで抜ける
+            // プリセット部分が読めなくても、DBの復元は済んでいるのでそのまま終える
         }
     }
 
@@ -131,7 +136,9 @@ public class DatabaseService
     }
 }
 
-/// ダッシュボード読み込み用のデータ受け皿クラス
+/// <summary>
+/// 全データの受け皿（バックアップファイルの形式も兼ねる）
+/// </summary>
 public class AllDbData
 {
     public List<PlayerProfile> Players { get; set; } = new();

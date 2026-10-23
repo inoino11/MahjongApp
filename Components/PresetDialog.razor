@@ -17,7 +17,7 @@
         animation: flash-highlight 0.7s ease-out;
     }
 
-    /* バッジの余白と文字サイズを削ってコンパクト化 */
+    /* ルール名のバッジを小さくする */
     .rule-badge {
         display: inline-flex;
         align-items: center;
@@ -91,7 +91,7 @@
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
     [Parameter] public List<RuleSet> Presets { get; set; } = new();
 
-    // 削除待機状態のプリセットを保持
+    // 削除は2回押しで確定する（1回目で警告表示にしたプリセット）
     private RuleSet? armedDeletePreset = null;
 
     private bool CheckAndDisarm()
@@ -138,7 +138,7 @@
         Presets.Remove(preset);
         await LocalStorage.SetItemAsync(StorageKeys.RulePresets, Presets);
         Snackbar.Add($"設定「{preset.Name}」を削除しました", Severity.Info);
-        StateHasChanged(); // UIを更新
+        StateHasChanged();
     }
 
     private bool IsCustomApplied(RuleSet p)
@@ -151,10 +151,10 @@
                p.TieBreaker != TieBreakerRule.Kamicha;
     }
 
-    // 複数の発光状態を独立して管理するリスト
+    // 並べ替えた直後に光らせるプリセット（複数同時に光らせられるようリストで持つ）
     private List<RuleSet> flashingPresets = new();
 
-    // 新しい位置に挿入
+    // 1つ上（direction = -1）または下（+1）に移動する
     private async Task MovePreset(RuleSet preset, int direction)
     {
         if (CheckAndDisarm()) return;
@@ -176,6 +176,6 @@
         }
     }
 
-    // 開いたごみ箱のSVG
+    // 削除の警告表示中に出す、開いたごみ箱のアイコン
     private const string DeleteEmpty = "<path d=\"M20.37,8.91L19.37,10.64L7.24,3.64L8.24,1.91L11.28,3.66L12.64,3.29L16.97,5.79L17.34,7.16L20.37,8.91M6,19V7H11.07L18,11V19A2,2 0 0,1 16,21H8A2,2 0 0,1 6,19Z\"/>";
 }

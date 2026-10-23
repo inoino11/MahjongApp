@@ -60,7 +60,7 @@
 
     public void Dispose() => LiveShare.OnChanged -= HandleLiveChanged;
 
-    // ===== 観戦URL =====
+    // --- 観戦URL ---
     private async Task StartLiveAsync()
     {
         isSharing = true;
@@ -162,10 +162,9 @@
 
             string rawJson = System.Text.Json.JsonSerializer.Serialize(CreatePayloadObject());
 
-            // --- 変更点: JSのWeb Crypto APIを呼び出して暗号化 ---
             var cryptoRes = await JSRuntime.InvokeAsync<CryptoResult>("blazorCrypto.encrypt", rawJson);
 
-            // 暗号文だけをサーバーに送る
+            // サーバーには暗号文だけを送り、鍵はURLの # 以降に付ける
             var postPayload = new { encryptedData = cryptoRes.CombinedBase64 };
             
             var response = await Http.PostAsJsonAsync(workerUrl, postPayload);
@@ -174,7 +173,6 @@
                 var result = await response.Content.ReadFromJsonAsync<WorkerResponse>();
                 if (result != null && !string.IsNullOrEmpty(result.Id))
                 {
-                    // URLに鍵(フラグメント)を付与して結合
                     cachedShareUrl = $"{NavigationManager.BaseUri}shared?id={result.Id}#{cryptoRes.KeyUrlSafeBase64}";
                     
                     string shareResult = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 対局結果", cachedShareUrl);
@@ -198,7 +196,7 @@
         }
     }
 
-    // JSから受け取る暗号化結果の型
+    // blazorCrypto.encrypt の戻り値
     public class CryptoResult
     {
         public string CombinedBase64 { get; set; } = "";

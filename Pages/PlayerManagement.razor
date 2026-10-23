@@ -47,7 +47,7 @@
                     <MudTd Style="padding: 4px 12px 12px 12px !important; border-bottom: 1px solid var(--mud-palette-divider);">
                         @if (editTargetId == player.Id)
                         {
-                            @* --- 編集モード --- *@
+                            @* 名前の変更中 *@
                             <div class="d-flex flex-column gap-3 py-2">
                                 <MudTextField @bind-Value="editName" Margin="Margin.Dense" AutoFocus="true" Label="新しい名前" Variant="Variant.Outlined" Style="background-color: rgba(0,0,0,0.2);" />
                                 <div class="d-flex justify-end gap-2">
@@ -58,7 +58,7 @@
                         }
                         else if (mergeTargetId == player.Id)
                         {
-                            @* --- 統合モード --- *@
+                            @* 統合先の選択中 *@
                             <div class="d-flex flex-column gap-3 py-2">
                                 <MudText Color="Color.Warning" Typo="Typo.body2" Style="font-weight:bold;">
                                     統合する名前を選択してください
@@ -77,9 +77,9 @@
                         }
                         else
                         {
-                            @* --- 通常表示モード --- *@
+                            @* 通常表示 *@
                             <div class="d-flex flex-column gap-0">
-                                @* 1行目: 名前と操作メニュー *@
+                                @* 名前と操作メニュー *@
                                 <div class="d-flex justify-space-between align-center">
                                     <strong style="font-size: 1.15rem; letter-spacing: 0.5px;">@player.Name</strong>
                                     <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Medium" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Style="color: #aaaaaa;">
@@ -88,7 +88,7 @@
                                         <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error" OnClick="@(() => ConfirmDelete(player))">削除</MudMenuItem>
                                     </MudMenu>
                                 </div>
-                                @* 2行目: 収支データ・対局数・登録日 *@
+                                @* 収支・対局数・登録日 *@
                                 <div class="d-flex justify-space-between align-end">
                                     <div class="d-flex flex-column gap-1">
                                         <div class="d-flex align-baseline gap-2">
@@ -157,14 +157,14 @@
         StateHasChanged();
     }
 
-    // 素点入力欄に古い名前が残っていた場合、新しい名前に書き換える
+    // 入力中のセッション（入力欄・チップ・局履歴）に残っている古い名前を、新しい名前に書き換える
     private async Task SyncActiveSessionNames(string oldName, string newName)
     {
         try
         {
-            // 完全削除（newNameが空）であっても、進行中のセッション履歴がある場合は「削除済み」にフォールバックする
+            // 削除（newName が空）の場合、局履歴とチップは「削除済み」に付け替える
             string resolvedName = string.IsNullOrEmpty(newName) ? "削除済み" : newName;
-            // 1. 素点入力枠の名前リストを更新
+            // 1. 入力欄の名前
             var currentPlayers = await LocalStorage.GetItemAsync<List<string>>(StorageKeys.CurrentPlayers);
             if (currentPlayers != null && currentPlayers.Contains(oldName))
             {
@@ -175,20 +175,20 @@
                 }
                 await LocalStorage.SetItemAsync(StorageKeys.CurrentPlayers, currentPlayers);
             }
-            // 2. 入力中チップ（Dictionary）の名前キーを更新
+            // 2. チップ（名前がキー）
             var activeChips = await LocalStorage.GetItemAsync<Dictionary<string, int>>("ActiveSessionChips");
             if (activeChips != null && activeChips.ContainsKey(oldName))
             {
                 int chipValue = activeChips[oldName];
                 activeChips.Remove(oldName);
-                // 統合などで既に新しい名前がチップ枠を持っている場合は合算する
+                // 統合先にもチップがあれば合算する
                 if (activeChips.ContainsKey(resolvedName))
                     activeChips[resolvedName] += chipValue;
                 else
                     activeChips[resolvedName] = chipValue;
                 await LocalStorage.SetItemAsync(StorageKeys.ActiveSessionChips, activeChips);
             }
-            // 3. 既に記録された今セッションの局履歴（ActiveHistory）内の名前も更新
+            // 3. 記録済みの局
             var activeHistory = await LocalStorage.GetItemAsync<List<GameResult>>("ActiveHistory");
             if (activeHistory != null)
             {
@@ -223,7 +223,7 @@
         });
     }
 
-    // 1. ゲーム履歴から「ポイント換算通貨」のトータルを計算する
+    // --- 通算収支（局の収支 + チップの収支） ---
     private int GetPlayerTotalGameYen(string playerId)
     {
         int totalGameYen = 0;
@@ -235,7 +235,6 @@
         return totalGameYen;
     }
 
-    // 2. セッション履歴から「チップ換算通貨」のトータルを計算する
     private int GetPlayerTotalChipYen(string playerId)
     {
         int totalChipYen = 0;
@@ -248,10 +247,8 @@
         return totalChipYen;
     }
 
-    // 3. 総合収支（ゲーム通貨 ＋ チップ通貨）を計算する
     private int GetPlayerTotalYen(string playerId) => GetPlayerTotalGameYen(playerId) + GetPlayerTotalChipYen(playerId);
 
-    // 4. UI表示用のテキストとスタイル（総合収支）
     private string GetTotalYenDisplayText(string playerId)
     {
         int yen = GetPlayerTotalYen(playerId);
@@ -266,7 +263,6 @@
         return yen > 0 ? "color:var(--color-positive);font-weight:bold;" : "color:var(--color-negative);font-weight:bold;";
     }
 
-    // 5. UI表示用のテキスト（内チップ）
     private string GetChipYenDetailText(string playerId)
     {
         int yen = GetPlayerTotalChipYen(playerId);
@@ -303,7 +299,7 @@
 
     private void StartMerge(string playerId)
     {
-        // 統合候補が存在するか（自分以外 ＆ 同卓履歴がない）を事前にチェック
+        // 同卓したことがある人同士は統合できない（同じ局に同一人物が2人いることになるため）
         bool hasCandidates = players.Any(p => p.Id != playerId && !HasPlayedTogether(playerId, p.Id));
         if (!hasCandidates)
         {
@@ -321,7 +317,6 @@
         mergeSourceId = null;
     }
 
-    // 2人のプレイヤーが実際に同卓したことがあるかを判定する
     private bool HasPlayedTogether(string playerId1, string playerId2)
     {
         return allGames.Any(g =>

@@ -36,7 +36,7 @@
         text-align: left;
     }
 
-    /* 追加：数値を揃えるための固定幅ブロック */
+    /* 数値の桁を揃えるための固定幅ブロック */
     .num-box {
         display: inline-block;
         text-align: right;
@@ -84,7 +84,7 @@
         border-radius: 4px;
     }
 
-    /* ラベルと枠線の重なりを解消 */
+    /* 枠付き入力欄のラベルが枠線と重ならないよう、背景で線を隠す */
     .mud-input-label-outlined {
         background-color: var(--mud-palette-surface) !important;
         padding: 0 4px !important;
@@ -97,7 +97,7 @@
         場代清算
     </MudText>
 
-    @* --- ロード中は全体を隠してスピナーを表示 --- *@
+    @* 読み込み中は全体を隠してスピナーを出す *@
     @if (isLoading)
     {
         <div class="d-flex flex-column justify-center align-center" style="height: 50vh; opacity: 0.8;">
@@ -108,6 +108,7 @@
     else
     {
         <MudGrid Class="fade-in-content">
+            @* --- 左カラム: セッションの選択と場代の入力 --- *@
             <MudItem xs="12" md="5">
                 <MudPaper Class="pa-4 mb-4" Outlined="true">
                     <MudText Typo="Typo.subtitle1" Class="mb-2" Style="font-weight: bold;">
@@ -145,20 +146,17 @@
                     }
                 </MudPaper>
 
-                @* ステップ2：場代とルールの入力 *@
                 <MudPaper Class="pa-4" Outlined="true">
                     <MudText Typo="Typo.subtitle1" Class="mb-3" Style="font-weight: bold;">
                         <MudIcon Icon="@Icons.Material.Filled.Filter2" Size="Size.Small" Class="mr-1" />
                         場代と支払いルール
                     </MudText>
                     <MudGrid Spacing="2">
-                        @* 場代総額 *@
                         <MudItem xs="5">
                             <div id="fee-input-section" @onclick="OpenKeypad" @onclick:stopPropagation="true">
                                 <MudTextField T="string" Value="@(isKeypadOpen ? feeInputBuffer : (totalFee != 0 ? totalFee.ToString("N0") : ""))" Label="@($"場代総額 ({Currency.Unit})")" Variant="Variant.Outlined" ReadOnly="true" Placeholder="0" Class="@($"fee-input {(isKeypadOpen ? "fee-input-active" : "")}")" Style="cursor: pointer;" />
                             </div>
                         </MudItem>
-                        @* 支払いルール *@
                         <MudItem xs="7">
                             <MudSelect T="FeeRule" @bind-Value="selectedRule" Label="支払いルール" Variant="Variant.Outlined" Class="rule-select">
                                 <MudSelectItem T="FeeRule" Value="FeeRule.TopPays">総額トップ払い</MudSelectItem>
@@ -171,12 +169,10 @@
                 </MudPaper>
             </MudItem>
 
-            @* --- 右カラム：結果表示とシェア --- *@
+            @* --- 右カラム: 精算結果とシェア --- *@
             <MudItem xs="12" md="7">
                 <MudPaper Class="pa-0" Outlined="true" Style="overflow: hidden; background-color: var(--mud-palette-surface);">
-                    @* 変更: 背景色と文字色を削除（親の MudPaper に依存させる） *@
                     <div style="padding: 24px; border-radius: inherit;">
-                        @* 変更: ボーダーを divider 変数に変更 *@
                         <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-4" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; border-bottom: 1px solid var(--mud-palette-divider); padding-bottom: 8px;">
                             本日の精算結果
                         </MudText>
@@ -194,19 +190,17 @@
                         }
                         else
                         {
-                            @* 変更: 文字色を text-secondary 変数に変更 *@
                             <div style="font-size: 0.85rem; color: var(--mud-palette-text-secondary); margin-bottom: 16px; display: flex; justify-content: space-between;">
                                 <span>全 @(selectedSessions.Sum(s => s.Games.Count)) 戦</span>
                                 <span>場代: @Currency.Render(totalFee) (@GetRuleName(selectedRule))</span>
                             </div>
                             <div style="overflow-x: auto; overflow-y: auto; max-height: 60vh;">
                                 @{
-                                    // セッションを日付順に並び替えて列を固定
+                                    // 列はセッションの日付順にする
                                     var orderedSessions = selectedSessions.OrderBy(s => s.Session.Date).ToList();
                                 }
                                 <table class="settlement-table" style="width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums;">
                                     <thead>
-                                        @* 変更: 色をすべて CSS 変数に置き換え *@
                                         <tr style="font-size: 0.85rem; color: var(--mud-palette-text-secondary);">
                                             <th style="padding: 8px 4px; position: sticky; top: 0; left: 0; background-color: var(--mud-palette-surface); z-index: 3; border-bottom: 2px solid var(--mud-palette-divider);">名前</th>
                                             <th style="padding: 8px 4px; position: sticky; top: 0; background-color: var(--mud-palette-surface); z-index: 2; border-bottom: 2px solid var(--mud-palette-divider);"><span class="num-box">対戦数</span></th>
@@ -225,7 +219,6 @@
                                     <tbody>
                                         @foreach (var res in calculatedResults)
                                         {
-                                            @* 変更: 枠線色、背景色、文字色を対応 *@
                                             <tr style="border-bottom: 1px solid var(--mud-palette-divider);">
                                                 <td style="padding: 12px 4px; font-weight: bold; font-size: 1.05rem; position: sticky; left: 0; background-color: var(--mud-palette-surface); z-index: 1;">@res.Name</td>
                                                 <td style="padding: 12px 4px; color: var(--mud-palette-text-secondary); font-size: 0.8rem;">
@@ -291,7 +284,7 @@
     }
 </MudContainer>
 
-@* --- 追加: 画像シェア用の隠し要素（画面のレイアウト崩れを防止するため、画面外で展開） --- *@
+@* 画像シェア用の精算表（画面のレイアウトに影響しないよう画面外に置く） *@
 <div style="position: absolute; left: -9999px; top: 0;">
     <div id="@shareTargetId" style="padding: 24px; background-color: #1a1a27; color: white; border-radius: 12px; width: max-content; min-width: 100%;">
         <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-4" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; border-bottom: 1px solid #444; padding-bottom: 8px;">
@@ -379,10 +372,9 @@
     </div>
 </div>
 
-@* 外部からテンキーを閉じるための隠しボタン *@
+@* テンキーの外を触ったときに JS から押す隠しボタン（wwwroot/js/keypad.js） *@
 <button id="hidden-close-keypad-btn" style="display: none;" @onclick="CloseKeypadOutside"></button>
 
-@* 自作テンキーコンポーネント *@
 <ScoreKeypad IsOpen="isKeypadOpen" IsTotalCorrect="true" ShowRecordButton="false" OnKeyPress="OnKeypadPress" />
 
 @code {
@@ -432,7 +424,7 @@
     private Dictionary<string, string> playerMap = new();
     private List<PlayerResult> calculatedResults = new();
 
-    // --- テンキー制御用の変数 ---
+    // --- テンキー ---
     private bool isKeypadOpen = false;
     private string feeInputBuffer = "";
 
@@ -477,7 +469,7 @@
 
         if (SessionStateService.ActiveHistory != null && SessionStateService.ActiveHistory.Count > 0)
         {
-            // 参加者は対局履歴で素点が記録された名前から集める（途中で入れ替わった人のチップも漏らさない。確定保存時と同じ規則）
+            // 参加者は、局履歴で素点が記録された名前から集める（途中で入れ替わった人のチップも漏らさない。確定保存時と同じ規則）
             var activePlayerNames = new List<string>();
             foreach (var game in SessionStateService.ActiveHistory)
                 for (int i = 0; i < game.PlayerNames.Count; i++)
@@ -489,7 +481,7 @@
             var activePlayerIds = new List<string>();
             foreach (var name in activePlayerNames)
             {
-                // DBに同名のプレイヤーが存在するかチェック
+                // 名簿にない名前は、名前そのものを仮のIDにする
                 var kv = playerMap.FirstOrDefault(x => x.Value == name);
                 string id = kv.Key ?? name;
                 activePlayerIds.Add(id);
@@ -549,7 +541,7 @@
         foreach (var group in selectedSessions)
         {
             var session = group.Session;
-            var sessionId = session.SessionId; // 収支を紐付けるためのキー
+            var sessionId = session.SessionId;
             var rules = session.Rules;
             var pIds = session.ParticipantPlayerIds ?? new();
             var sChips = session.SettledChips ?? new();
@@ -675,7 +667,7 @@
         calculatedResults = activePlayers.OrderByDescending(p => p.FinalAmount).ToList();
     }
 
-    // 数字を丸数字に変換
+    // 1〜20 は丸数字（①〜⑳）にする
     private string GetCircledNumber(int number)
     {
         if (number >= 1 && number <= 20)
@@ -722,7 +714,7 @@
         }
     }
 
-    // --- テンキー制御ロジック ---
+    // --- テンキー操作 ---
 
     private void OnContainerClick()
     {
@@ -754,7 +746,7 @@
     private void CloseKeypad()
     {
         isKeypadOpen = false;
-        // 閉じたタイミングで計算結果の数値をバッファに戻す（例：「1000-500」→「500」に確定）
+        // 閉じたら式を計算結果に置き換える（例: 「1000-500」→「500」）
         feeInputBuffer = totalFee == 0 ? "" : totalFee.ToString();
     }
 
@@ -778,7 +770,7 @@
         }
         else if (key == "+" || key == "-")
         {
-            // 連続する符号や、末尾の符号を上書きする処理
+            // 符号が続いたら、後から押した符号で置き換える
             if (feeInputBuffer.EndsWith('+') || feeInputBuffer.EndsWith('-'))
             {
                 feeInputBuffer = feeInputBuffer[..^1];
@@ -787,17 +779,16 @@
         }
         else
         {
-            // 数字の入力（先頭の無駄な0を削除）
+            // 数字の先頭の余分な0は消す
             feeInputBuffer += key;
             feeInputBuffer = System.Text.RegularExpressions.Regex.Replace(feeInputBuffer, @"(^|[-+])0+(?=[0-9])", "$1");
         }
 
-        // 入力式をリアルタイム計算
         int? parsed = EvaluateScoreExpression(feeInputBuffer);
-        totalFee = parsed ?? 0; // 値の変更に伴い、CalculateSettlement() が自動発火
+        totalFee = parsed ?? 0; // setter で精算結果も再計算される
     }
 
-    // 文字列の計算式（+ / -）を評価して整数を返すメソッド
+    // 足し算・引き算の式を計算する。式として読めなければ null
     private int? EvaluateScoreExpression(string input)
     {
         if (string.IsNullOrWhiteSpace(input)) return null;
@@ -844,7 +835,7 @@
         }
     }
 
-    // --- ヘルパーメソッド ---
+    // --- 表示用 ---
 
     private string GetRuleName(FeeRule rule) => rule switch
     {
@@ -885,7 +876,7 @@
         };
     }
 
-    // --- ローカルクラス ---
+    // --- 画面内で使う型 ---
 
     public class SettlementSessionGroup
     {

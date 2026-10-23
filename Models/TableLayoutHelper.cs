@@ -3,9 +3,12 @@ using System.Globalization;
 
 namespace MahjongApp.Models;
 
+/// <summary>
+/// 表の列幅を、中身の文字幅（ch）から計算する
+/// </summary>
 public static class TableLayoutHelper
 {
-    // 全ページ共通の文字幅(ch)計算ロジック
+    // 表示幅を ch 単位で見積もる（実際のフォントの描画幅に近づけた係数）
     public static double CalculateWidthInCh(string s)
     {
         if (string.IsNullOrEmpty(s)) return 0;
@@ -14,28 +17,27 @@ public static class TableLayoutHelper
         {
             if (c == '\uFE0F' || c == '\uFE0E' || c == '\u200D') continue;
             
-            // 【修正】文字ごとの幅見積もりを実態（フォントの描画幅）に近づけました
             if (c == '.') width += 0.4;
-            else if (c == ',' || c == ' ') width += 0.4;   // 半角スペースやカンマは狭く見積もる
-            else if (c == '+' || c == '-') width += 0.6;   // ハイフンや符号も1chより狭い
+            else if (c == ',' || c == ' ') width += 0.4;
+            else if (c == '+' || c == '-') width += 0.6;
             else if (c == '%') width += 1.2;
-            else if (char.IsDigit(c)) width += 1.0;        // 数字はtabular-numsで1ch
-            else if (c >= 0x00 && c <= 0x7F) width += 0.8; // その他の半角英字なども少し細めに見積もる
+            else if (char.IsDigit(c)) width += 1.0;        // 数字は tabular-nums で 1ch
+            else if (c >= 0x00 && c <= 0x7F) width += 0.8; // その他の半角文字
             else if (char.IsSurrogate(c)) width += 1.0;
-            else width += 2.0;                             // 漢字などの全角文字
+            else width += 2.0;                             // 全角文字
         }
         return width;
     }
 
-    // Td/Th（セル全体と中央揃え）用のスタイル生成
+    // セル（td/th）のスタイル
     public static string GetTdStyle(double widthCh, string extraStyle = "")
     {
         string w = widthCh.ToString("F2", CultureInfo.InvariantCulture);
-        // 【修正】MudTableのデフォルト左揃えを確実に上書きするため text-align: center !important; を付与
+        // MudTable の既定の左揃えを上書きするため !important を付ける
         return $"text-align: center !important; min-width: {w}ch; padding-left: 0 !important; padding-right: 0 !important; box-sizing: border-box; {extraStyle}";
     }
 
-    // 内部データ（右揃えとResultTable準拠の文字縮小）用のスタイル生成
+    // セル内の数値のスタイル（右揃え。文字サイズは ResultTable に合わせる）
     public static string GetDataStyle(double widthCh, string extraStyle = "")
     {
         string w = widthCh.ToString("F2", CultureInfo.InvariantCulture);
@@ -43,7 +45,9 @@ public static class TableLayoutHelper
     }
 }
 
-// テーブルの列幅状態を管理するクラス（他ページでも流用可能）
+/// <summary>
+/// 1つの表の列幅を管理する。各列の最大幅を記録し、セルのスタイルを返す
+/// </summary>
 public class TableLayoutManager
 {
     private readonly double[] _colWidths;
@@ -55,7 +59,7 @@ public class TableLayoutManager
         _dataWidths = new double[columnCount];
     }
 
-    // データの最大幅を更新（同時に列全体の幅も更新）
+    // データの幅を記録する（列全体の幅にも反映する）
     public void UpdateDataWidth(int colIndex, string text)
     {
         double w = TableLayoutHelper.CalculateWidthInCh(text);
@@ -63,20 +67,18 @@ public class TableLayoutManager
         if (w > _colWidths[colIndex]) _colWidths[colIndex] = w;
     }
 
-    // ヘッダーの幅を更新（列全体の幅のみ更新）
+    // 見出しの幅を記録する（列全体の幅だけに反映する）
     public void UpdateHeaderWidth(int colIndex, string text)
     {
         double w = TableLayoutHelper.CalculateWidthInCh(text);
         if (w > _colWidths[colIndex]) _colWidths[colIndex] = w;
     }
 
-    // Td/Th用のスタイルを取得
     public string GetTdStyle(int colIndex, string extraStyle = "")
     {
         return TableLayoutHelper.GetTdStyle(_colWidths[colIndex], extraStyle);
     }
 
-    // 数値データ用のスタイルを取得
     public string GetDataStyle(int colIndex, string extraStyle = "")
     {
         return TableLayoutHelper.GetDataStyle(_dataWidths[colIndex], extraStyle);

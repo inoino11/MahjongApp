@@ -16,8 +16,8 @@ builder.Services.AddMudServices(config =>
     config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomCenter;
     config.SnackbarConfiguration.PreventDuplicates = false;
     config.SnackbarConfiguration.NewestOnTop = true;
-    config.SnackbarConfiguration.ShowCloseIcon = false;         // ×ボタン撤廃
-    config.SnackbarConfiguration.VisibleStateDuration = 1500;   // 生存時間
+    config.SnackbarConfiguration.ShowCloseIcon = false;         // 閉じるボタンの代わりにスワイプで消す（wwwroot/js/snackbar.js）
+    config.SnackbarConfiguration.VisibleStateDuration = 1500;   // 表示時間（ミリ秒）
     config.SnackbarConfiguration.HideTransitionDuration = 200;
     config.SnackbarConfiguration.ShowTransitionDuration = 200;
 });

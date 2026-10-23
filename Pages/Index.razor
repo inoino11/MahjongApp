@@ -11,15 +11,13 @@
 @inject MahjongApp.Services.MahjongCalculatorService Calculator
 @inject MahjongApp.Services.LiveShareService LiveShare
 
-@* 素点入力欄のスタイル *@
 <style>
-    /* 名前入力欄 */
     .player-name-input input {
         text-align: center !important;
         letter-spacing: 1px;
     }
 
-    /* フォーカスされていない時は下線を極限まで薄くする */
+    /* 入力中でない名前欄は控えめに表示する */
     .player-name-input:not(:focus-within) {
         opacity: 0.85;
     }
@@ -56,7 +54,7 @@
         user-select: none;
     }
 
-    /* 自動入力アイコン追加時に文字が上に浮く現象を修正 */
+    /* 自動入力のアイコンが付いても、文字の高さがずれないようにする */
     .score-input .mud-input {
         align-items: baseline !important;
     }
@@ -67,34 +65,33 @@
         margin-top: 0 !important;
     }
 
-    /* スコア入力欄がテンキー選択中の時のハイライト */
+    /* テンキーで入力中の素点欄 */
     .score-input-active {
         border: 1px solid #81c784 !important;
         box-shadow: 0 0 6px rgba(129, 199, 132, 0.5);
         background-color: rgba(76, 175, 80, 0.05) !important;
     }
 
-    /* アプローチ1: 他の枠を入力中、自動入力（補完）枠を仮状態として半透明・斜体にする */
+    /* 他の欄を入力している間、自動入力の欄は仮の値として半透明・斜体にする */
     .score-input-auto-filling input {
         opacity: 0.4 !important;
         transition: opacity 0.15s ease;
     }
 
-    /* テンキーが開いている時だけ、画面の一番下にテンキー分の大きな余白を作る */
+    /* テンキーが開いている間は、テンキー分の余白を下に取って最後の行まで見えるようにする */
     .keypad-open-padding {
         padding-bottom: 320px !important;
     }
 
-    /* ▽アイコンの幅に合わせて左側を押し込む */
+    /* ▽アイコンの分だけ左に余白を取り、名前を中央に見せる */
     .balanced-center-select input {
         text-align: center !important;
         padding-left: 10px !important;
     }
 
-    /* ルール設定プレビューのフェードイン */
+    /* ルール設定を閉じたとき、見出しの右側にルール名を出す */
     .rule-name-preview {
         margin-left: auto;
-        /* 右（折り畳みアイコン側）に寄せる */
         margin-right: 8px;
         color: var(--mud-palette-text-secondary);
         font-size: 0.85rem;
@@ -102,11 +99,9 @@
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        /* 長い場合は「...」にする */
         max-width: 55%;
-        /* 長すぎないように幅を制限 */
         opacity: 0;
-        /* 0.25秒待ってから、0.4秒かけて少し下からフワッと浮かび上がる */
+        /* パネルが閉じ終わる頃に、少し下からふわっと出す */
         animation: fadeInRuleName 0.4s ease-out 0.25s forwards;
     }
 
@@ -129,7 +124,7 @@
         素点集計
     </MudText>
 
-    @* --- セクション1: 設定 (折りたたみ可) --- *@
+    @* --- ルール設定（折りたたみ可） --- *@
     <MudExpansionPanels Class="mb-6">
         <MudExpansionPanel @bind-Expanded="isSettingsExpanded">
             <TitleContent>
@@ -205,7 +200,7 @@
         </MudExpansionPanel>
     </MudExpansionPanels>
 
-    @* --- セクション2: 対局者＆素点入力 --- *@
+    @* --- 対局者と素点の入力 --- *@
     <MudPaper id="score-input-section" Class="pa-2 pa-sm-4 mb-6" Elevation="2">
         @if (isEditing)
         {
@@ -242,7 +237,7 @@
                 bool isSitOut = currentSitOuts[index];
                 <MudItem xs="12" sm="6">
                     <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center justify-space-between px-2 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
-                        @* 左ブロック: 名前入力 *@
+                        @* 名前 *@
                         <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" SearchFunc="@SearchRegisteredPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" ShowOnFocus="true" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input balanced-center-select" Style="font-weight: bold; font-size: 0.95rem; width: 9.5em;" Disabled="@(isSitOut || isEditing)" onfocus="this.select();" @onfocusin="@(() => CloseKeypad())" />
                         <div class="d-flex align-center justify-center flex-grow-1">
                             @* 抜け番 *@
@@ -255,13 +250,13 @@
                             {
                                 <MudToggleIconButton @bind-Toggled="currentYaki[index]" Icon="@Icons.Material.Filled.NoMeals" Color="Color.Default" Title="焼き鳥ではありません" ToggledIcon="@YakiIcon" ToggledColor="Color.Warning" ToggledTitle="🍗 焼き鳥です" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
                             }
-                            @* トビ *@
+                            @* トビ賞 *@
                             @if (rules.IsTobiEnabled)
                             {
                                 <MudToggleIconButton @bind-Toggled="currentTobiBonus[index]" Icon="@Icons.Material.Filled.Rocket" Color="Color.Default" Title="トビ賞を獲得しません" ToggledIcon="@Icons.Material.Filled.RocketLaunch" ToggledColor="Color.Error" ToggledTitle="🚀 トビ賞を獲得します" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
                             }
                         </div>
-                        @* 右ブロック: 素点入力 *@
+                        @* 素点（百点単位で入力し、下2桁の「00」は表示だけ） *@
                         <div id="score-input-@index" class="d-flex align-baseline" @onclick="@(async () => await OpenKeypad(index))" @onclick:stopPropagation="true">
                             <MudTextField T="string" Value="@scoreInputBuffers[index]" ReadOnly="true" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == autoFilledIndex ? "auto-filled" : "")} {(activeScoreInputIndex == index ? "score-input-active" : "")} {(activeScoreInputIndex.HasValue && index == autoFilledIndex ? "score-input-auto-filling" : "")}")" Style="width: 77px; cursor: pointer;" Disabled="isSitOut" Adornment="@(index == autoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
                             <span class="score-zeros" style="cursor: pointer;">00</span>
@@ -273,10 +268,9 @@
         <MudButton Variant="Variant.Filled" Color="Color.Warning" FullWidth="true" Class="mt-2 py-3" Disabled="@(!IsTotalCorrect)" OnClick="CalculateAndRecordGame">@(isEditing ? "修正を保存" : "結果を記録する")</MudButton>
     </MudPaper>
 
-    @* --- セクション3: 集計結果 --- *@
+    @* --- 結果表 --- *@
     <MudPaper Class="pa-2 px-sm-4" Elevation="2">
         <ResultTable History="ActiveHistory" Players="TablePlayers" ActiveParticipantCount="TablePlayers.Count" @bind-DisplayMode="displayMode" Rules="rules" SessionChips="TablePlayers.Select(p => ActiveSessionChips.TryGetValue(p, out var v) ? v : 0).ToList()" IsReadOnly="false" ArmedDeleteTarget="armedDeleteTarget" OnDeleteRequested="HandleDeleteRequest" OnResetRequested="ConfirmReset" OnChipChanged="HandleChipChangedCallback" ActiveChipInputIndex="@activeChipInputIndex" ChipInputBuffer="@chipInputBuffer" OnChipInputClicked="OpenChipKeypad" OnRowClicked="StartEditGameAsync" EditingTarget="editingGame" IsEditing="isEditing" />
-        @* 清算遷移 ＆ DBへ保存するボタン *@
         <div class="d-flex justify-center mt-6">
             <div class="d-flex gap-2" style="width: 100%; max-width: 400px;">
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.Payments" Disabled="@(ActiveHistory.Count == 0 || isEditing)" OnClick="NavigateToSettlement" Style="flex: 4; font-weight: bold; padding: 4px 0; white-space: nowrap;">
@@ -287,22 +281,20 @@
                 </MudButton>
             </div>
         </div>
-        @* 共有ボタン *@
         <ShareButtonGroup Rules="rules" TablePlayers="TablePlayers" ActiveHistory="ActiveHistory" ActiveSessionChips="ActiveSessionChips" />
     </MudPaper>
 </MudContainer>
 
-@* 外部からテンキーを閉じるための隠しボタン *@
+@* テンキーの外を触ったときに JS から押す隠しボタン（wwwroot/js/keypad.js） *@
 <button id="hidden-close-keypad-btn" style="display: none;" @onclick="CloseKeypadOutside"></button>
-@* テンキー *@
 <ScoreKeypad IsOpen="isKeypadOpen" IsTotalCorrect="IsTotalCorrect" ShowRecordButton="showRecordButton" RecordLabel="@(isEditing ? "保存" : "記録")" OnKeyPress="OnKeypadPress" />
 
 @code {
     [CascadingParameter] public CurrencySetting Currency { get; set; } = new();
-    // 画面の入力状態を管理するための内部クラス
+    // 入力欄の対局者
     public class PlayerInputState
     {
-        public string? Id { get; set; } // 登録済みの場合はID、新規手入力の場合はnull
+        public string? Id { get; set; } // 名簿にある人はそのID、新しい名前なら null
         public string Name { get; set; } = string.Empty;
     }
     private RuleSet rules => SessionState.Rules;
@@ -311,7 +303,7 @@
     private int activeParticipantCount
     {
         get => SessionState.ActiveParticipantCount;
-        set => _ = SessionState.SaveActiveParticipantCountAsync(value); // 簡易書き換え用
+        set => _ = SessionState.SaveActiveParticipantCountAsync(value);
     }
     private List<PlayerInputState> currentPlayers = Enumerable.Range(0, 7).Select(_ => new PlayerInputState()).ToList();
     private List<PlayerProfile> playerMaster = new();
@@ -347,14 +339,13 @@
         set => _ = SessionState.SaveScoreBuffersAsync(value);
     }
 
-    @* ローカルストレージからのデータ復元と初期化 *@
     protected override async Task OnInitializedAsync()
     {
         locationChangingRegistration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
         await LiveShare.EnsureLoadedAsync();
-        // 1. すべての状態の復元をサービスに委譲
+        // 1. 入力中のセッションの状態
         await SessionState.InitializeStateAsync();
-        // 2. データベース（名簿マスター）の読み込み
+        // 2. 名簿（名前の候補とIDの対応に使う）
         try
         {
             var dbData = await DatabaseService.GetAllDataAsync();
@@ -362,9 +353,8 @@
         }
         catch
         {
-            // 初回起動時などでDBが存在しない場合は空のまま
         }
-        // 3. 画面表示用のプレイヤー名・IDマッピング（サービスからIndex側の一時変数へ）
+        // 3. 入力欄の名前に、名簿のIDを対応づける
         for (int i = 0; i < 7; i++)
         {
             string savedName = SessionState.CurrentPlayerNames[i];
@@ -375,7 +365,7 @@
                 if (matched != null) currentPlayers[i].Id = matched.Id;
             }
         }
-        // 4. ルールプリセットの初期化（初回のみ）
+        // 4. ルールのプリセット（初回はよく使うものを用意する）
         List<RuleSet>? savedPresets;
         bool isPresetsUnreadable = false;
         try
@@ -391,7 +381,6 @@
         }
         if (savedPresets == null || savedPresets.Count == 0)
         {
-            // 初回起動時のデフォルトプリセット
             rulePresets = new List<RuleSet>
             {
                 new RuleSet
@@ -433,10 +422,10 @@
             rulePresets = savedPresets;
         }
         ResetInputForms(clearBuffers: false); // 復元した入力途中の素点は消さない
-        EvaluateAutoFill(); // 自動計算枠などを再評価
+        EvaluateAutoFill();
     }
 
-    @* 持ち点の処理 *@
+    // 持ち点を変えたら、オカ（返し点との差）を保ったまま返し点も動かす
     private async Task OnStartingPointsChanged(int val)
     {
         int currentOka = Math.Max(0, rules.ReturnPoints - rules.StartingPoints);
@@ -446,7 +435,7 @@
         await SessionState.SaveRulesAsync(rules);
     }
 
-    @* 返し点の処理 *@
+    // 返し点は持ち点より下にしない
     private async Task OnReturnPointsChanged(int val)
     {
         rules.ReturnPoints = val;
@@ -455,7 +444,7 @@
         await SessionState.SaveRulesAsync(rules);
     }
 
-    @* レート・チップ・ウマの変更（画面遷移や再起動で元に戻らないよう即保存） *@
+    // レート・チップ・ウマは変えたらすぐ保存する（画面の移動や再起動で元に戻らないように）
     private async Task OnRateChanged(int val)
     {
         rules.Rate = val;
@@ -476,27 +465,28 @@
         await SessionState.SaveRulesAsync(rules);
     }
 
-    // 通常のウマ設定(Uma1, Uma2)をCustomUmaに反映
+    // 通常のウマ（Uma1/Uma2）を、計算に使う順位ごとのウマ（CustomUma*）に反映する
     public void SyncNormalToCustomUma()
     {
-        // カスタムウマモードがONのときは、ユーザーの手入力を上書きしないよう同期をスキップ
+        // 個別設定中は、手入力した値を上書きしない
         if (rules.IsCustomUma) return;
         if (rules.PlayerCount == 4)
         {
-            rules.CustomUma4_1 = rules.Uma2; // 1位ウマ
-            rules.CustomUma4_2 = rules.Uma1; // 2位ウマ
-            rules.CustomUma4_3 = -rules.Uma1; // 3位ウマ
-            rules.CustomUma4_4 = -rules.Uma2; // 4位ウマ
+            rules.CustomUma4_1 = rules.Uma2;
+            rules.CustomUma4_2 = rules.Uma1;
+            rules.CustomUma4_3 = -rules.Uma1;
+            rules.CustomUma4_4 = -rules.Uma2;
         }
         else if (rules.PlayerCount == 3)
         {
-            rules.CustomUma3_1 = rules.Uma1 + rules.Uma2; // 1位ウマ
-            rules.CustomUma3_2 = -rules.Uma1; // 2位ウマ
-            rules.CustomUma3_3 = -rules.Uma2; // 3位ウマ
+            // 三麻は2位・3位の両方から1位が受け取る
+            rules.CustomUma3_1 = rules.Uma1 + rules.Uma2;
+            rules.CustomUma3_2 = -rules.Uma1;
+            rules.CustomUma3_3 = -rules.Uma2;
         }
     }
 
-    // 現在の人数に応じたCustomUmaの値を取得
+    // 現在の人数の、順位ごとのウマ
     public double[] GetCustomUmaArray()
     {
         if (rules.PlayerCount == 4)
@@ -509,7 +499,7 @@
         }
     }
 
-    @* 最後の1人の素点自動入力（数式対応） *@
+    // 素点の文字列（式を含む）が変わったとき
     private async Task HandleScoreStringInput(int index, string val)
     {
         int? parsedVal = EvaluateScoreExpression(val);
@@ -525,7 +515,7 @@
         EvaluateAutoFill();
     }
 
-    @* 文字列の数式（+ / -）を計算して整数を返す *@
+    // 足し算・引き算の式を計算する（例: 「300-50」→ 250）。式として読めなければ null
     private int? EvaluateScoreExpression(string input)
     {
         if (string.IsNullOrWhiteSpace(input)) return null;
@@ -540,7 +530,7 @@
                 char c = input[i];
                 if (c == '+' || c == '-')
                 {
-                    // 先頭が符号の場合の処理
+                    // 数字の前の符号（先頭のマイナスなど）
                     if (string.IsNullOrEmpty(currentNumber))
                     {
                         currentOp = c == '-' && currentOp == '+' ? '-' : c;
@@ -560,7 +550,6 @@
                     return null;
                 }
             }
-            // 最後の数字を加減
             if (!string.IsNullOrEmpty(currentNumber))
             {
                 int val = int.Parse(currentNumber);
@@ -570,11 +559,11 @@
         }
         catch
         {
-            return null; // パースに失敗した場合は空欄に戻す
+            return null; // 桁あふれなどで読めない場合
         }
     }
 
-    @* ユーザーの入力文字からサジェストを検索するメソッド *@
+    // 名前の入力候補（名簿から部分一致で探す）
     private Task<IEnumerable<string>> SearchRegisteredPlayers(string value, CancellationToken token)
     {
         if (string.IsNullOrEmpty(value))
@@ -585,7 +574,7 @@
         return Task.FromResult(result);
     }
 
-    @* 対局者名が変更された時の処理 *@
+    // 名前を変えたら、名簿にある人ならIDを対応づける（「削除済み」は予約名なので使えない）
     private async Task OnPlayerNameChanged(int index, string value)
     {
         if (value == "削除済み")
@@ -602,7 +591,6 @@
         await SessionState.UpdatePlayerNameAsync(index, value);
     }
 
-    @* チップ数を保存 *@
     private async Task OnChipChanged(int index, int value)
     {
         if (index >= 0 && index < TablePlayers.Count)
@@ -612,7 +600,7 @@
         }
     }
 
-    @* ルールプリセットを適用 *@
+    // プリセットを読み込む（人数が変わる場合は入力欄もリセットする）
     private async Task OpenPresetDialog()
     {
         var parameters = new DialogParameters { ["Presets"] = rulePresets };
@@ -635,7 +623,7 @@
         SyncNormalToCustomUma();
     }
 
-    @* ルールプリセットに保存 *@
+    // 今のルールをプリセットに保存する（同じ名前があれば、上書きか両方残すかを選ぶ）
     private async Task SavePreset()
     {
         var existingPreset = rulePresets.FirstOrDefault(p => p.Name == rules.Name);
@@ -682,7 +670,6 @@
         StateHasChanged();
     }
 
-    @* カスタムルールを開く *@
     private async Task OpenCustomRuleDialog()
     {
         var parameters = new DialogParameters { ["OriginalRules"] = rules };
@@ -712,7 +699,6 @@
         SyncNormalToCustomUma();
     }
 
-    @* 順位ウマの個別設定を解除 *@
     private async Task DisableCustomUma()
     {
         rules.IsCustomUma = false;
@@ -721,7 +707,7 @@
         StateHasChanged();
     }
 
-    @* 各局の結果を保存（保存完了前の連打による二重記録を防止） *@
+    // 局の結果を記録する（保存が終わる前の連打で二重に記録しないようにする）
     private bool isRecording = false;
     private async Task CalculateAndRecordGame()
     {
@@ -748,7 +734,7 @@
         var activePlayers = activeIndices.Select(i => currentPlayers[i].Name).ToList();
         var activeYaki = activeIndices.Select(i => currentYaki[i]).ToList();
         var activeTobiBonus = activeIndices.Select(i => currentTobiBonus[i]).ToList();
-        // 1. バリデーションチェック (UI・データ検証)
+        // 1. 入力のチェック
         if (activePlayers.Any(string.IsNullOrWhiteSpace))
         {
             Snackbar.Add("対局者の名前を入力してください", Severity.Error);
@@ -777,15 +763,15 @@
                 return;
             }
         }
-        // 2. タイブレーカー（ダイアログ）の要否確認
+        // 2. 同点で席順が結果に影響するなら、席順を入力してもらう
         bool needsTieBreaker = Calculator.CheckIfTieBreakerNeeded(rules, activeScores, activeYaki, activeTobiBonus);
         Dictionary<int, int>? priority = needsTieBreaker
             ? await OpenTieBreakerIfNeeded(activeScores, activePlayers)
             : Enumerable.Range(0, pCount).ToDictionary(i => i, i => i);
-        if (priority == null) return; // ダイアログがキャンセルされた場合は中断
-        // 3. 計算サービスを呼び出して、クリーンに計算結果を取得
+        if (priority == null) return; // 席順の入力がキャンセルされた
+        // 3. 計算
         var calcResult = Calculator.Calculate(rules, activeScores, activeYaki, activeTobiBonus, priority);
-        // 4. 計算結果を元の全参加枠インデックスに正しくマッピング
+        // 4. 参加者だけで計算した結果を、抜け番を含む入力欄の並びに戻す
         List<int?> finalRawScores = Enumerable.Repeat((int?)null, activeParticipantCount).ToList();
         List<double> finalPoints = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
         List<double> finalSinkPts = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
@@ -806,7 +792,7 @@
             finalYen[originalIdx] = calcResult.Yen[i];
             finalTobiPlayers[originalIdx] = calcResult.TobiPlayers[i];
         }
-        // 5. データの構築と保存
+        // 5. 保存（修正中なら、その局を置き換える）
         var newGameResult = new GameResult
         {
             Timestamp = DateTime.Now,
@@ -836,7 +822,7 @@
         await SessionState.ClearScoreBuffersAsync();
     }
 
-    @* 全スコアリセット *@
+    // 入力中の記録をすべて消す（確定済みの成績は消えない）
     private async Task ConfirmReset()
     {
         bool? result = await DialogService.ShowMessageBoxAsync(
@@ -852,7 +838,7 @@
         }
     }
 
-    @* 各局のスコア消去 *@
+    // 局の削除は2回押しで確定する（1回目は警告表示）
     private async Task HandleDeleteRequest(GameResult item)
     {
         if (armedDeleteTarget == item)
@@ -866,7 +852,6 @@
         }
     }
 
-    @* 各局のスコア消去待機状態解除 *@
     private void CancelDelete()
     {
         if (armedDeleteTarget != null)
@@ -876,7 +861,7 @@
         }
     }
 
-    @* 直前の局の素点・焼き鳥・トビ賞を再現 *@
+    // 直前の局の素点・焼き鳥・トビ賞を入力欄に写す
     private async Task CopyPreviousGame()
     {
         if (ActiveHistory.Count == 0) return;
@@ -897,15 +882,15 @@
         await SessionState.SaveScoreBuffersAsync(scoreInputBuffers);
     }
 
-    // 表に表示する対局者リストを動的に構築するプロパティ
+    // 結果表の列（対局者）
     private List<string> TablePlayers
     {
         get
         {
-            // 0局目の時は、現在の入力欄の対局者（空欄含む）をそのまま仮ヘッダーとして表示
+            // まだ1局もなければ、入力欄の名前（空欄を含む）を仮の列にする
             if (ActiveHistory.Count == 0)
                 return currentPlayers.Take(activeParticipantCount).Select(p => p.Name).ToList();
-            // 1局目以降は、履歴から実際にスコアが記録されたユニークなプレイヤー名を抽出
+            // 局があれば、素点が記録された名前を出てきた順に並べる
             var players = new List<string>();
             foreach (var game in ActiveHistory)
                 for (int i = 0; i < game.PlayerNames.Count; i++)
@@ -918,7 +903,7 @@
         }
     }
 
-    @* 素点入力欄を初期化 *@
+    // 入力欄をリセットする（clearBuffers が false なら素点の入力は残す）
     private void ResetInputForms(bool clearBuffers = true)
     {
         previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
@@ -930,7 +915,7 @@
             scoreInputBuffers = Enumerable.Repeat(string.Empty, MaxParticipants).ToArray();
     }
 
-    @* 特殊ルールOFF時のスコア表示モード切替 *@
+    // 特殊ルールをオフにしたら、その内訳の表示からポイント表示に戻す
     private void ValidateDisplayMode()
     {
         displayMode = displayMode switch
@@ -943,11 +928,10 @@
         };
     }
 
-    @* 席順入力 *@
+    // 席順を入力してもらう。戻り値は各参加者の同点時の順位（キャンセルなら null）
     private async Task<Dictionary<int, int>?> OpenTieBreakerIfNeeded(List<int> scores, List<string> players)
     {
         var priority = new Dictionary<int, int>();
-        // 全員の点数がバラバラならダイアログは不要
         if (scores.Distinct().Count() == scores.Count)
         {
             for (int i = 0; i < scores.Count; i++) priority[i] = i;
@@ -961,7 +945,6 @@
         return priority;
     }
 
-    @* コンポーネントからのチップ変更イベントを受け取るヘルパー *@
     private async Task HandleChipChangedCallback((int Index, int Value) args)
     {
         if (args.Index >= 0 && args.Index < TablePlayers.Count)
@@ -975,7 +958,7 @@
         }
     }
 
-    @* 対局人数変更時の処理 *@
+    // 対局人数を変えたら、持ち点などを人数に合った初期値にして入力欄をリセットする
     private async Task OnPlayerCountChanged(int val)
     {
         rules.PlayerCount = val;
@@ -986,7 +969,6 @@
             3 => (35000, 40000, 10, 20),
             _ => (rules.StartingPoints, rules.ReturnPoints, rules.Uma1, rules.Uma2)
         };
-        // 人数変更時にもカスタムウマ側にデータを同期させる
         SyncNormalToCustomUma();
         ResetInputForms();
         await LocalStorage.RemoveItemAsync(StorageKeys.BackupScoreBuffers);
@@ -996,7 +978,7 @@
         StateHasChanged();
     }
 
-    @* 参加者枠を増やす *@
+    // 参加者の枠を増やす（5人以上で抜け番を使えるようになる）
     private async Task AddParticipant()
     {
         if (activeParticipantCount < MaxParticipants)
@@ -1008,7 +990,7 @@
         }
     }
 
-    @* 参加者枠を減らす *@
+    // 参加者の枠を減らす。最後の枠を消し、抜け番が不要になれば全員を参加に戻す
     private async Task RemoveParticipant()
     {
         if (activeParticipantCount > rules.PlayerCount)
@@ -1030,14 +1012,13 @@
                             previousScores[i] = null;
                         }
                     }
-            // スコアバッファの変更を確定させ、カウントを減らして保存
             await SessionState.SaveScoreBuffersAsync(scoreInputBuffers);
             await SessionState.SaveActiveParticipantCountAsync(activeParticipantCount - 1);
             EvaluateAutoFill();
         }
     }
 
-    @* 抜け番状態の変更処理 *@
+    // 抜け番にしたら素点を退避し、参加に戻したら元に戻す
     private void OnSitOutChanged(int index, bool isSitOut)
     {
         currentSitOuts[index] = isSitOut;
@@ -1061,7 +1042,7 @@
         EvaluateAutoFill();
     }
 
-    // ===== 記録済みの局の修正 =====
+    // --- 記録済みの局の修正 ---
     private GameResult? editingGame = null;
     private bool isEditing => editingGame != null;
     private EditStash? editStash = null;
@@ -1081,7 +1062,7 @@
         public int? AutoFilledIndex { get; init; }
     }
 
-    @* 結果表の行タップで、その局を入力欄に読み込んで修正モードにする *@
+    // 結果表の行をタップしたら、その局を入力欄に読み込んで修正を始める
     private async Task StartEditGameAsync(GameResult game)
     {
         if (ReferenceEquals(game, editingGame)) return;
@@ -1129,7 +1110,7 @@
         await JSRuntime.InvokeVoidAsync("scrollToInput", "score-input-section");
     }
 
-    @* 修正をやめ、修正前の途中入力を元に戻す（保存後・画面移動時もこれで戻す） *@
+    // 修正をやめて、修正前の途中入力を元に戻す（保存後・画面移動時もこれで戻す）
     private async Task CancelEditAsync()
     {
         if (editStash == null) return;
@@ -1161,7 +1142,7 @@
 
     public void Dispose() => locationChangingRegistration?.Dispose();
 
-    // ===== 観戦URL =====
+    // --- 観戦URL ---
     private string BuildSharePayloadJson() => SharePayloadBuilder.BuildJson(rules, TablePlayers, ActiveHistory, ActiveSessionChips, Currency);
 
     // 記録・削除・修正・チップ・ルール変更はいずれも再描画を伴うため、描画後に内容の変化を検知して送る
@@ -1170,10 +1151,10 @@
         if (LiveShare.IsActive) LiveShare.ScheduleUpdate(BuildSharePayloadJson());
     }
 
-    // 自動入力された枠のインデックスを保持
-    private int? autoFilledIndex = null;
+    // --- 最後の1人の素点の自動入力 ---
+    private int? autoFilledIndex = null; // 自動入力した欄（なければ null）
 
-    // 状態を評価し、矛盾を正すコアメソッド
+    // 1人だけ空欄なら合計が合うように自動入力し、条件を満たさなくなったら自動入力を消す
     private void EvaluateAutoFill()
     {
         var activeIndices = Enumerable.Range(0, activeParticipantCount).Where(i => !currentSitOuts[i]).ToList();
@@ -1217,27 +1198,25 @@
         }
     }
 
-    @* 場代清算ページへの遷移 *@
     private void NavigateToSettlement()
     {
         NavigationManager.NavigateTo("settlement");
     }
 
-    @* ルール名変更時の処理 *@
     private async Task OnRuleNameChanged(string value)
     {
         rules.Name = string.IsNullOrEmpty(value) ? " " : value;
         await SessionState.SaveRulesAsync(rules);
     }
 
-    @* 本日の対局セッションの終了確定確認ダイアログを表示 *@
+    // セッションを確定して成績に保存する前の確認
     private async Task ConfirmFinalizeSession()
     {
         if (isFinalizing) return;
         isFinalizing = true;
         try
         {
-            // ルール名の状態をチェック
+            // ルール名が空、またはプリセットから内容を変えているなら、ルール名を「未設定」にして記録する
             string ruleName = rules.Name;
             bool isRuleNameEmpty = string.IsNullOrWhiteSpace(ruleName);
             bool isPresetMatch = false;
@@ -1253,7 +1232,6 @@
                     isPresetMatch = presetJson == currentJson;
                 }
             }
-            // ダイアログのメッセージ組み立て
             bool needsRuleNameChange = false;
             string msg = "対局結果とチップ枚数を通算成績に記録して<br />現在の入力フォームをリセットしますか？";
             if (isRuleNameEmpty)
@@ -1272,7 +1250,6 @@
             {
                 msg += "<br /><br /><span style='color: #ff6b6b; font-weight: bold;'>※チップの合計枚数が " + (chipSum > 0 ? "+" : "") + chipSum + "枚です。</span>";
             }
-            // 確認ダイアログを表示
             bool? result = await DialogService.ShowMessageBoxAsync(
                 "対局セッションの終了確定",
                 (MarkupString)msg,
@@ -1280,13 +1257,11 @@
                 cancelText: "キャンセル"
             );
 
-            // 4. 保存が承認された場合
             if (result == true)
             {
                 if (needsRuleNameChange)
                 {
                     rules.Name = "未設定";
-                    // 変更したルール名を状態として保存
                     await SessionState.SaveRulesAsync(rules);
                 }
                 await FinalizeAndSaveToDbAsync();
@@ -1298,7 +1273,7 @@
         }
     }
 
-    @* データを成形して長期成績DB（IndexedDBを想定）へ一括保存し、卓を片付けるコアロジック *@
+    // セッションを確定して成績（IndexedDB）に保存し、入力中の記録を片付ける
     private async Task FinalizeAndSaveToDbAsync()
     {
         try
@@ -1378,7 +1353,8 @@
         catch (Exception ex) { Snackbar.Add("保存中にエラーが発生しました:\n" + ex.Message, Severity.Error); }
     }
 
-    // 素点用にテンキーを開く
+    // --- テンキー ---
+    // 素点の入力でテンキーを開く
     private async Task OpenKeypad(int index)
     {
         if (currentSitOuts[index]) return;
@@ -1397,7 +1373,7 @@
         }
     }
 
-    // チップ用にテンキーを開く
+    // チップの入力でテンキーを開く
     private async Task OpenChipKeypad(int index)
     {
         if (activeScoreInputIndex.HasValue) await CloseKeypad();
@@ -1427,14 +1403,14 @@
         StateHasChanged();
     }
 
-    // 画面外をタップした時の統合ハンドラー
+    // 画面の他の場所を押したら、削除の警告表示を解除してテンキーを閉じる
     private async Task OnContainerClick()
     {
         CancelDelete();
         await CloseKeypad();
     }
 
-    // テンキーのボタンが押された時のコアロジック
+    // テンキーのキーを押したとき
     private async Task OnKeypadPress(string key)
     {
         if (!activeChipInputIndex.HasValue && !activeScoreInputIndex.HasValue) return;
@@ -1473,7 +1449,7 @@
         }
     }
 
-    // 指定したインデックスの入力内容を計算・確定するヘルパーメソッド
+    // 入力した式を計算結果に確定する
     private async Task CommitScoreBuffer(int idx, bool saveToStorage = true)
     {
         int? finalScore = EvaluateScoreExpression(scoreInputBuffers[idx]);
@@ -1492,7 +1468,7 @@
         }
     }
 
-    // 外部のメニューなどをタップした際にテンキーを閉じる処理
+    // メニューなど入力エリアの外を触ったとき（wwwroot/js/keypad.js から隠しボタン経由で呼ばれる）
     private async Task CloseKeypadOutside()
     {
         if (activeScoreInputIndex.HasValue)

@@ -7,11 +7,13 @@ using System.Threading.Tasks;
 
 namespace MahjongApp.Services;
 
+/// <summary>
+/// 入力中（未確定）のセッションの状態。画面をまたいで保持し、変更のたびに localStorage へ保存する
+/// </summary>
 public class SessionStateService
 {
     private readonly ILocalStorageService _localStorage;
 
-    // --- 管理する状態（プロパティ） ---
     public RuleSet Rules { get; private set; } = new();
     public int ActiveParticipantCount { get; private set; } = 4;
     public List<string> CurrentPlayerNames { get; private set; } = Enumerable.Repeat(string.Empty, 7).ToList();
@@ -27,19 +29,16 @@ public class SessionStateService
     }
 
     /// <summary>
-    /// ローカルストレージから最新の状態をメモリ上に読み込みます
+    /// localStorage から状態を読み込む
     /// </summary>
     public async Task InitializeStateAsync()
     {
-        // 1. ルールの復元
         var savedRules = await SafeGetAsync<RuleSet>(StorageKeys.Rules);
         if (savedRules != null) Rules = savedRules;
 
-        // 2. 参加人数の復元
         var savedActiveCount = await SafeGetAsync<int?>(StorageKeys.ActiveParticipantCount);
         ActiveParticipantCount = Math.Clamp(savedActiveCount ?? Rules.PlayerCount, 3, 7);
 
-        // 3. プレイヤー名の復元
         var savedPlayers = await SafeGetAsync<List<string>>(StorageKeys.CurrentPlayers);
         if (savedPlayers != null)
         {
@@ -49,11 +48,10 @@ public class SessionStateService
             }
         }
 
-        // 4. 局履歴の復元
         var savedHistory = await SafeGetAsync<List<GameResult>>(StorageKeys.ActiveHistory);
         if (savedHistory != null) ActiveHistory = savedHistory;
 
-        // 5. チップ情報の復元（古いList型形式からの救済ロジックも内包）
+        // チップは以前 List<int> 形式で保存していたため、読めなければ旧形式として読み直す
         try
         {
             var savedChipsDict = await SafeGetAsync<Dictionary<string, int>>(StorageKeys.ActiveSessionChips);
@@ -80,7 +78,6 @@ public class SessionStateService
             ActiveSessionChips = new Dictionary<string, int>();
         }
 
-        // 6. 入力バッファの復元
         var backupBuffers = await SafeGetAsync<string[]>(StorageKeys.BackupScoreBuffers);
         if (backupBuffers != null && backupBuffers.Length == 7)
         {
@@ -90,17 +87,15 @@ public class SessionStateService
             }
         }
 
-        // 7. 一時場代の復元
         var savedTempFee = await SafeGetAsync<int?>(StorageKeys.TempTotalFee);
         if (savedTempFee.HasValue) TemporaryTotalFee = savedTempFee.Value;
 
-        // 8. 一時支払いルールの復元
         var savedTempRule = await SafeGetAsync<int?>(StorageKeys.TempFeeRule);
         if (savedTempRule.HasValue) TemporaryFeeRule = savedTempRule.Value;
     }
 
-    // 読み込みに失敗した値（保存形式の変更・破損など）は初期値扱いにして、起動を止めない。
-    // 救済できる可能性を残すため、読めなかったキーは削除しない。
+    // 読めない値（保存形式の変更・破損など）は初期値扱いにして起動を続ける。
+    // 後で救済できるよう、読めなかったキーは削除しない
     private async Task<T?> SafeGetAsync<T>(string key)
     {
         try
@@ -114,7 +109,7 @@ public class SessionStateService
         }
     }
 
-    // --- 状態変更 兼 永続化メソッド群 ---
+    // --- 状態の変更（メモリと localStorage を同時に更新する） ---
 
     public async Task SaveRulesAsync(RuleSet newRules)
     {
@@ -192,7 +187,7 @@ public class SessionStateService
     }
 
     /// <summary>
-    /// 記録の完全リセット
+    /// 入力中の記録（局・チップ・入力途中の素点）を消す
     /// </summary>
     public async Task ClearSessionAsync()
     {

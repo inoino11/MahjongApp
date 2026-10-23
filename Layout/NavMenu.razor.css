@@ -71,12 +71,12 @@
     }
 
     .collapse {
-        /* Never collapse the sidebar for wide screens */
+        /* 広い画面ではメニューを常に表示する */
         display: block;
     }
 
     .nav-scrollable {
-        /* Allow sidebar to scroll for tall menus */
+        /* 項目が多いときはメニュー内でスクロールさせる */
         height: calc(100vh - 3.5rem);
         overflow-y: auto;
     }

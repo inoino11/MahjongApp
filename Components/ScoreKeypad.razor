@@ -1,5 +1,5 @@
 <style>
-    /* オリジナルテンキーの固定コンテナ */
+    /* 画面下に固定し、閉じているときは画面外へ下げておく */
     .custom-keypad-container {
         position: fixed;
         bottom: 0;
@@ -44,7 +44,7 @@
         justify-content: center;
         touch-action: manipulation;
         white-space: nowrap;
-        /* iOS: タップ時のハイライト・長押しでの文字選択／メニューを抑止 */
+        /* iOS: タップ時のハイライト・長押しでの文字選択やメニューを出さない */
         -webkit-tap-highlight-color: transparent;
         -webkit-user-select: none;
         user-select: none;
@@ -99,9 +99,9 @@
     }
 </style>
 
-@* iOSはclick時に指の接地範囲で最寄りのボタンへ補正するため下のキーが反応しやすい。
-   補正のないpointerdownで入力し、touchendのpreventDefaultで後続のclickを抑止する。
-   ontouchstart="" はiOSで:activeを効かせるためのもの *@
+@* iOS は click のときに指の接地範囲で最寄りのボタンへ補正するため、下のキーが反応しやすい。
+   補正のない pointerdown で入力し、touchend の preventDefault で後に来る click を止める。
+   ontouchstart="" は iOS で :active を効かせるためのもの *@
 <div class="@($"custom-keypad-container {(IsOpen ? "open" : "")}")" @onclick:stopPropagation="true" @ontouchend:preventDefault="true" ontouchstart="">
     <table class="keypad-table">
         <tr>
@@ -146,7 +146,7 @@
     [Parameter] public string RecordLabel { get; set; } = "記録"; // 表示のみ。送るキーは常に "記録"
     [Parameter] public EventCallback<string> OnKeyPress { get; set; }
 
-    // 左クリック／タッチのみ受け付ける（右クリックは無視）
+    // 左クリックとタッチだけ受け付ける（右クリックは無視する）
     private Task Press(PointerEventArgs e, string key)
         => e.Button == 0 ? OnKeyPress.InvokeAsync(key) : Task.CompletedTask;
 }

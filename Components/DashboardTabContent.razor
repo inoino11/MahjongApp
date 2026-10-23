@@ -8,7 +8,7 @@
 else
 {
     var top = Stats.First();
-    @* --- トッププレイヤーメトリクス --- *@
+    @* --- トップの人の成績 --- *@
     <MudGrid Spacing="3" Class="mb-4">
         <MudItem xs="12" sm="6">
             <MudPaper Class="pa-3 d-flex flex-column align-center justify-center" Outlined="true" Style="height: 100%; width: 100%;">
@@ -30,7 +30,7 @@ else
         </MudItem>
     </MudGrid>
 
-    @* --- ランキングテーブル --- *@
+    @* --- ランキング --- *@
     <MudPaper Class="pa-4 mt-2" Outlined="true">
         <MudText Typo="Typo.h6" Class="d-flex align-center gap-2 mb-4">
             <MudIcon Icon="@Icons.Material.Filled.Leaderboard" />
@@ -86,7 +86,7 @@ else
         </div>
     </MudPaper>
 
-    @* --- 相性分析エリア --- *@
+    @* --- 相性分析 --- *@
     <MudPaper Class="pa-4 mt-6" Outlined="true">
         <MudText Typo="Typo.h6" Class="d-flex align-center gap-2 mb-4">
             <MudIcon Icon="@Icons.Material.Filled.Handshake" />
@@ -173,7 +173,7 @@ else
     private string RankingHintId => $"ranking-hint-{_uid}";
     private string MatchupHintId => $"matchup-hint-{_uid}";
 
-    // 横スクロールできる表に「続きがある」影を出す（表の表示切替で要素が作り直されても再登録される）
+    // 横スクロールの続きを示す影を付ける（表が作り直されたときのため、描画のたびに呼ぶ）
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await JSRuntime.InvokeVoidAsync("attachScrollHint", RankingHintId, ".mud-table-container");

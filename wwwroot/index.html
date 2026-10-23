@@ -21,13 +21,13 @@
     <meta name="twitter:image" content="https://inoino11.github.io/MahjongApp/ogp-image.jpg" />
 
     <script>
+        // ローカル開発時はルート、GitHub Pages ではリポジトリ名のパスを基準にする
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             document.write('<base href="/" />');
         } else {
             document.write('<base href="/MahjongApp/" />');
         }
     </script>
-    <!-- <base href="/" /> -->
 
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="icon-518.png" />
@@ -105,12 +105,12 @@
             font-family: 'Roboto', 'Zen Kaku Gothic Antique', sans-serif;
         }
 
-        /* トースト通知内の改行\nを有効化 */
+        /* トースト通知内の改行（\n）を有効にする */
         .mud-snackbar-content-message {
             white-space: pre-wrap !important;
         }
 
-        /* スマホ向け：スナックバーの究極小型化（カプセル型） */
+        /* スマホではトースト通知を小さなカプセル型にする */
         @media (max-width: 599.98px) {
 
             .mud-snackbar-location-bottom-center,
@@ -120,9 +120,9 @@
                 width: 100% !important;
                 padding: 0 16px !important;
                 pointer-events: none;
+                /* 中央に寄せてスワイプで消しやすくする */
                 display: flex !important;
                 justify-content: center !important;
-                /* 中央揃えに変更してフリックしやすく */
             }
 
             .mud-snackbar {
@@ -130,14 +130,13 @@
                 min-width: 0 !important;
                 max-width: 90% !important;
                 margin: 8px auto !important;
+                /* 閉じるボタンを非表示にした分、左右に余白を取る */
                 padding: 2px 16px !important;
-                /* ボタンが消えた分、少し左右の余白を確保 */
                 border-radius: 50px !important;
                 pointer-events: auto;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
-                /* ▼ スワイプのための追加設定 */
+                /* スワイプで消すため、ブラウザ標準のスクロールを無効にする */
                 touch-action: none;
-                /* ブラウザのデフォルトスクロールを防止 */
                 will-change: transform, opacity;
             }
 
@@ -160,7 +159,14 @@
 </head>
 
 <body>
-    <!-- このツールは大いにAIの手を借りています。恥ずかしいからじっくり読まないでね(/ω＼) -->
+    <!--
+
+         ▐▛███▜▌
+        ▝▜█████▛▘     覗きに来たね？ いらっしゃい。
+          ▘▘ ▝▝       このツールは Claude の手を大いに借りて作っています。
+                      恥ずかしいからじっくり読まないでね(/ω＼)
+
+    -->
     <div id="mahjong-loader" class="mahjong-loading-container" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; transition: opacity 0.6s ease; opacity: 1;">
         <div class="loading-tile">🀄</div>
         <div class="loading-text">雀卓準備中...</div>
@@ -184,7 +190,7 @@
     <script src="js/crypto.js"></script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js" autostart="false"></script>
     <script>
-        // PWAのキャッシュとService Workerを破棄して再起動する復旧用関数
+        // 起動に失敗したときの復旧処理: Service Worker とキャッシュを破棄して再読み込みする
         window.recoverPwaAndReload = async function () {
             const btn = document.getElementById('recovery-btn');
             if (btn) {
@@ -204,7 +210,7 @@
                 }
             }
 
-            // 2. ブラウザの Cache Storage を全消去（古いDLLやアセットを消す）
+            // 2. Cache Storage を全消去（古いDLLやアセットを消す）
             if ('caches' in window) {
                 try {
                     const keys = await caches.keys();
@@ -220,15 +226,14 @@
             window.location.reload(true);
         };
 
-        // Blazorの手動起動とエラーハンドリング
+        // Blazor を手動で起動し、失敗したらローディング画面を復旧ボタンに差し替える
         Blazor.start().then(() => {
-            // 起動成功時：ローディング画面をフェードアウト
             const loader = document.getElementById('mahjong-loader');
             if (loader) {
-                // 起動成功時は何もしない（C#側からの合図を待つ）
+                // 成功時のローディング画面の消去は、初回描画後に C# 側（MainLayout）から hideMahjongLoader で行う
             }
         }).catch((error) => {
-            // 起動失敗時（クラッシュ）
+            // 起動に失敗した場合
             console.error("Blazor起動エラー:", error);
             const loader = document.getElementById('mahjong-loader');
             if (loader) {
@@ -246,13 +251,13 @@
                     </button>
                 `;
             }
-            // 画面下部に出るBlazor標準の黄色いエラーバー（blazor-error-ui）は独自の全画面エラーと被るので非表示にする
+            // Blazor 標準のエラーバー（blazor-error-ui）は、独自の全画面エラーと重なるので隠す
             const errorUi = document.getElementById('blazor-error-ui');
             if (errorUi) {
                 errorUi.style.display = 'none';
             }
         });
-        // 既存の Service Worker 更新検知ロジックはそのまま残す
+        // 新しいバージョンを検知したら、確認のうえ切り替えて再読み込みする
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js').then(registration => {
                 registration.onupdatefound = () => {

@@ -1,37 +1,33 @@
-// PWAインストール制御用のグローバルオブジェクト
+// 「アプリとして追加」ボタン用。ブラウザのインストール案内を後から出せるよう保持する
 window.pwaInstall = {
     deferredPrompt: null,
     dotNetHelper: null,
-    // Blazorコンポーネントからの参照を受け取る
     init: function (helper) {
         this.dotNetHelper = helper;
-        // 既にイベントが発火して待機状態であれば、Blazor側に通知
+        // 先にインストール可能になっていた場合も通知する
         if (this.deferredPrompt) {
             this.dotNetHelper.invokeMethodAsync('OnInstallAvailable');
         }
     },
-    // インストールプロンプトを表示
+    // インストール案内を表示し、追加されたら true を返す
     prompt: async function () {
         if (!this.deferredPrompt) {
             return false;
         }
-        // ダイアログを表示
         this.deferredPrompt.prompt();
-        // ユーザーの選択結果（インストールしたか、キャンセルしたか）を待つ
         const { outcome } = await this.deferredPrompt.userChoice;
         this.deferredPrompt = null;
         return outcome === 'accepted';
     }
 };
-// OSとPWAを判定
+// OS と、ホーム画面から起動しているか（PWA）を判定する
 window.pwaHelper = {
     getEnvironmentInfo: function () {
         const ua = window.navigator.userAgent;
-        // OS判定
+        // iPadOS はデスクトップの Mac として名乗るため、タッチ対応かどうかで見分ける
         const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         const isAndroid = /Android/.test(ua);
         const isWindows = /Windows/.test(ua);
-        // PWA判定
         const isPwa = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
         return {
             isIOS: isIOS,
@@ -41,18 +37,16 @@ window.pwaHelper = {
         };
     }
 };
-// ブラウザが「インストール可能」と判定した時に発火するイベント
+// ブラウザがインストール可能と判定したとき
 window.addEventListener('beforeinstallprompt', (e) => {
-    // デフォルトのミニインフォバー表示を防止
+    // 標準の案内バーは出さず、アプリのボタンから prompt() を呼べるよう保持する
     e.preventDefault();
-    // イベントを保存しておく（後でprompt()を呼ぶため）
     window.pwaInstall.deferredPrompt = e;
-    // Blazor側へ「インストール可能になった」ことを通知
     if (window.pwaInstall.dotNetHelper) {
         window.pwaInstall.dotNetHelper.invokeMethodAsync('OnInstallAvailable');
     }
 });
-// インストールが完了した時に発火するイベント
+// インストールが完了したとき
 window.addEventListener('appinstalled', () => {
     window.pwaInstall.deferredPrompt = null;
     if (window.pwaInstall.dotNetHelper) {
@@ -60,7 +54,7 @@ window.addEventListener('appinstalled', () => {
     }
 });
 
-// PWAの手動アップデートチェック関数
+// 新しいバージョンがないか手動で確認する（見つかれば index.html の更新処理が動く）
 window.checkForUpdate = async function () {
     if ('serviceWorker' in navigator) {
         try {

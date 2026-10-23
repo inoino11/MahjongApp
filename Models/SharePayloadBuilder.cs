@@ -1,6 +1,8 @@
 namespace MahjongApp.Models;
 
-// URL共有・観戦URLで送る対局データ（キーを短縮した形式。共有ページの MinifiedPayload と対応）
+/// <summary>
+/// URL共有・観戦URLで送る対局データを組み立てる（キーを短縮した形式。共有ページの MinifiedPayload と対応）
+/// </summary>
 public static class SharePayloadBuilder
 {
     public static object Build(RuleSet rules, List<string> tablePlayers, List<GameResult> history, Dictionary<string, int> sessionChips, CurrencySetting currency)

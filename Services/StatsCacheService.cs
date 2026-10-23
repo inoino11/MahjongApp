@@ -7,6 +7,9 @@ using MahjongApp.Models;
 
 namespace MahjongApp.Services;
 
+/// <summary>
+/// 確定済みの成績から集計したランキングをメモリに保持する。成績が変わったら InitializeAsync(forceReload: true) で作り直す
+/// </summary>
 public class StatsCacheService
 {
     private readonly DatabaseService _databaseService;
@@ -28,7 +31,6 @@ public class StatsCacheService
         {
             if (IsInitialized && !forceReload) return;
             var dbData = await _databaseService.GetAllDataAsync();
-            // データ自体がnullの場合、メモリ上のリストをクリア
             if (dbData == null)
             {
                 Stats4.Clear();
@@ -38,11 +40,10 @@ public class StatsCacheService
                 IsInitialized = true;
                 return;
             }
-            // Listがnullの場合、空のリストを割り当ててNRE(NullReferenceException)を防ぐ
+            // 古いデータや取り込んだデータでリストが null のことがある
             var safePlayers = dbData.Players ?? new List<PlayerProfile>();
             var safeGames = dbData.Games ?? new List<SavedGameRecord>();
             var safeSessions = dbData.Sessions ?? new List<SavedSessionRecord>();
-            // データが空の場合、メモリ上のリストをクリア
             if (!safePlayers.Any() || !safeGames.Any())
             {
                 Stats4.Clear();
@@ -53,15 +54,13 @@ public class StatsCacheService
                 return;
             }
             AllGames = safeGames;
-            // p != null のチェックを追加し、不正なプレイヤーデータを除外
             AvailablePlayers = safePlayers.Where(p => p != null && p.Id != "deleted").OrderBy(p => p.Name).ToList();
             var statsMap4 = safePlayers.Where(p => p != null).ToDictionary(p => p.Id, p => new PlayerStats { Id = p.Id, Name = p.Name ?? "不明" });
             var statsMap3 = safePlayers.Where(p => p != null).ToDictionary(p => p.Id, p => new PlayerStats { Id = p.Id, Name = p.Name ?? "不明" });
-            // 1. 局データの集計
+            // 1. 局ごとの順位・ポイント・収支
             foreach (var game in safeGames)
             {
                 if (game == null) continue;
-                // 内部リストのnullチェック
                 var playerIds = game.PlayerIds ?? new List<string?>();
                 var rawScores = game.RawScores ?? new List<int?>();
                 var points = game.Points ?? new List<double>();
@@ -90,7 +89,7 @@ public class StatsCacheService
                     }
                 }
             }
-            // 2. セッション記録からのチップ集計
+            // 2. セッションごとのチップ
             foreach (var session in safeSessions)
             {
                 if (session == null) continue;
@@ -115,15 +114,17 @@ public class StatsCacheService
         catch (Exception ex)
         {
             Console.WriteLine($"StatsCacheService Initialization Error: {ex.Message}");
-            IsInitialized = true; // エラー時もフラグを立てて、無限リトライによるフリーズを防ぐ
+            IsInitialized = true; // 失敗しても再試行し続けて固まらないよう、初期化済みにする
         }
         finally
         {
-            // 成功・失敗に関わらず、必ずロックを解放する
             _initLock.Release();
         }
     }
 
+    /// <summary>
+    /// heroId の人から見た、同卓した相手ごとの成績を計算する
+    /// </summary>
     public List<MatchupStat> CalculateMatchups(string heroId, int playerCount)
     {
         var result = new List<MatchupStat>();

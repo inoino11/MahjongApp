@@ -48,7 +48,7 @@
     private CurrencySetting DisplayCurrency = new();
     private CurrencySetting? _lastAppCurrency;
 
-    // アプリバーで単位設定が変更されたことを検知し、表示を上書きする
+    // 閲覧者がアプリバーで単位を変えたら、共有元の単位より優先する
     protected override void OnParametersSet()
     {
         if (_lastAppCurrency != AppCurrency)
@@ -106,7 +106,6 @@
             }
             catch (Microsoft.JSInterop.JSException)
             {
-                // JavaScript側での復号（crypto.subtle.decrypt）に失敗した場合
                 errorMessage = "データの復号に失敗しました。URLが欠損しているか、鍵が間違っています。";
             }
             catch (Exception)

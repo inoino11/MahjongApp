@@ -1,4 +1,4 @@
-// Blazorが自動生成するファイルリストを読み込む
+// ビルド時に自動生成されるファイル一覧（ハッシュ付き）を読み込む
 self.importScripts('./service-worker-assets.js');
 
 self.addEventListener('install', event => event.waitUntil(onInstall(event)));

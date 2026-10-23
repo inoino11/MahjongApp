@@ -1,3 +1,4 @@
+// 入力欄がテンキーに隠れないよう、テンキーのすぐ上までスクロールする
 window.scrollToInput = (elementId) => {
     const el = document.getElementById(elementId);
     const keypad = document.querySelector('.custom-keypad-container');
@@ -13,7 +14,7 @@ window.scrollToInput = (elementId) => {
         });
     }
 };
-// 要素をテンキー上部の安全なエリアの中央にスクロールする関数
+// 要素を、テンキーより上の見える範囲の中央にスクロールする
 window.scrollToCenter = (elementId) => {
     const el = document.getElementById(elementId);
     const keypad = document.querySelector('.custom-keypad-container');
@@ -31,19 +32,17 @@ window.scrollToCenter = (elementId) => {
     }
 };
 
-// ハンバーガーメニューなど、入力エリア外を触った時にテンキーを閉じる
+// メニューなど入力エリアの外を触ったらテンキーを閉じる（Blazor 側の閉じる処理は隠しボタン経由で呼ぶ）
 ['click', 'touchstart'].forEach(eventType => {
     document.addEventListener(eventType, (e) => {
         const keypad = document.querySelector('.custom-keypad-container.open');
         if (keypad) {
-            // タップされた場所が「テンキーの中」か「スコア入力枠（追加・削除ボタン含む）の中」か判定
             const clickedInsideKeypad = e.target.closest('.custom-keypad-container');
             const clickedInsideInput = e.target.closest('#score-input-section');
-            // どちらでもない場所（上部のAppバーやメニュー等）を触った場合
             if (!clickedInsideKeypad && !clickedInsideInput) {
                 const btn = document.getElementById('hidden-close-keypad-btn');
                 if (btn && !btn.disabled) {
-                    btn.disabled = true; // タッチとクリックの連続発火による二重処理を防止
+                    btn.disabled = true; // touchstart と click が続けて来ても1回だけ処理する
                     btn.click();
                     setTimeout(() => btn.disabled = false, 300);
                 }

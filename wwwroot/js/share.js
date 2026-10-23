@@ -1,4 +1,5 @@
-// 画像シェア機能
+// 要素を画像にして共有する。スマホは共有シート → PC はクリップボード → どちらも無理ならダウンロード
+// 戻り値: SHARED / COPIED / DOWNLOADED / ERROR: 〜
 window.exportAndShareResult = async (elementId) => {
     const element = document.getElementById(elementId);
     if (!element) return "ERROR: Element not found";
@@ -16,7 +17,6 @@ window.exportAndShareResult = async (elementId) => {
                 }
                 const file = new File([blob], 'mahjong_result.png', { type: 'image/png' });
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                // 2. 【スマホ向け】モバイル端末 ＆ Web Share APIが使える場合
                 if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
                     navigator.share({
                         files: [file]
@@ -24,7 +24,6 @@ window.exportAndShareResult = async (elementId) => {
                     resolve("SHARED");
                     return;
                 }
-                // 3. 【PC向け】クリップボードに画像を直接コピー
                 try {
                     if (navigator.clipboard && window.ClipboardItem) {
                         await navigator.clipboard.write([
@@ -36,7 +35,6 @@ window.exportAndShareResult = async (elementId) => {
                 } catch (e) {
                     console.log("Clipboard error fallback", e);
                 }
-                // 4. 【最終手段】未対応ブラウザの場合はダウンロード
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -53,10 +51,10 @@ window.exportAndShareResult = async (elementId) => {
     }
 };
 
-// URLシェア機能
+// URLを共有する。スマホは共有シート、PC はクリップボード
+// 戻り値: SHARED / COPIED / ERROR: 〜
 window.shareUrlNative = async (title, url) => {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    // 1. 【スマホ向け】モバイル端末 ＆ Web Share APIが使える場合
     if (isMobile && navigator.share) {
         navigator.share({
             title: title,
@@ -64,7 +62,6 @@ window.shareUrlNative = async (title, url) => {
         }).catch(err => console.log("Share aborted", err));
         return "SHARED";
     } else {
-        // 2. 【PC向け】クリップボードにURLを直接コピー
         try {
             if (navigator.clipboard) {
                 await navigator.clipboard.writeText(url);
@@ -78,9 +75,9 @@ window.shareUrlNative = async (title, url) => {
     }
 };
 
-// JSONバックアップ
+// バックアップファイルを共有またはダウンロードする
+// 戻り値: SHARED / DOWNLOADED / CANCELED
 window.shareOrDownloadFile = async (filename, contentType, content) => {
-    // 直接ダウンロード用のフォールバック関数
     const fallbackDownload = () => {
         const blob = new Blob([content], { type: contentType });
         const url = URL.createObjectURL(blob);
@@ -93,10 +90,8 @@ window.shareOrDownloadFile = async (filename, contentType, content) => {
         URL.revokeObjectURL(url);
     };
     try {
-        // 文字列(JSON)からFileオブジェクトを生成
         const file = new File([content], filename, { type: contentType });
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        // 端末がモバイルで、かつファイル共有に対応しているかチェック
         if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
                 await navigator.share({
@@ -104,7 +99,7 @@ window.shareOrDownloadFile = async (filename, contentType, content) => {
                 });
                 return "SHARED";
             } catch (error) {
-                // ユーザーがシェア画面を閉じた場合 (AbortError) はキャンセル扱い
+                // 共有画面を閉じただけ（AbortError）ならキャンセル扱い
                 if (error.name !== 'AbortError') {
                     console.error('シェア処理に失敗しました。ダウンロードにフォールバックします:', error);
                     fallbackDownload();
@@ -113,13 +108,12 @@ window.shareOrDownloadFile = async (filename, contentType, content) => {
                 return "CANCELED";
             }
         } else {
-            // PCブラウザなど非対応の場合は直接ダウンロード
             fallbackDownload();
             return "DOWNLOADED";
         }
     } catch (e) {
         console.error("ファイル処理エラー:", e);
-        // 予期せぬエラー時も念のためダウンロードを試行
+        // 想定外のエラーでもバックアップだけは残せるようダウンロードを試みる
         fallbackDownload();
         return "DOWNLOADED";
     }

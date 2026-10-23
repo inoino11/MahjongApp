@@ -20,7 +20,7 @@
             対局履歴、名簿およびルールプリセットを<br />
             JSONファイルとしてダウンロードします。
         </MudText>
-        @* データ消失に関する注意喚起 *@
+        @* データが消える操作の注意 *@
         <MudAlert Severity="Severity.Normal" Icon="@Icons.Material.Filled.Lightbulb" Class="mb-4 pa-3" Style="font-size: 0.8rem; line-height: 1.5; background-color: rgba(41, 182, 246, 0.05);">
             <div style="font-weight: bold; margin-bottom: 4px;">データ保存に関するTips</div>
             @if (!envInfo.IsPwa)
@@ -94,14 +94,13 @@
             バックアップファイルを保存
         </MudButton>
     </MudPaper>
-    @* ダウンロード *@
+    @* 復元・統合 *@
     <MudPaper Class="pa-6 mb-6" Outlined="true" Style="border-color: var(--mud-palette-warning);">
         <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Warning">データの復元・統合</MudText>
         <MudText Typo="Typo.body2" Class="mb-4">
             バックアップされたJSONファイルを<br />
             読み込みます。
         </MudText>
-        @* モード選択のラジオボタン *@
         <MudRadioGroup @bind-Value="importMode" Class="mb-4 d-flex flex-column">
             <MudRadio Value='"overwrite"' Color="Color.Error">
                 <strong>完全上書き</strong><br />(データを消去して入れ替えます)
@@ -130,9 +129,9 @@
 </MudContainer>
 
 @code {
-    private string importMode = "merge"; // 初期値は統合
+    private string importMode = "merge"; // "merge": 統合 / "overwrite": 完全上書き
 
-    // 初期化時にJSを呼び出して判定
+    // OS と PWA かどうかで案内文を切り替える
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -181,14 +180,13 @@
             using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
             using var reader = new System.IO.StreamReader(stream);
             var json = await reader.ReadToEndAsync();
-            // DBへ流し込む前に、C#側でJSONスキーマの妥当性を事前検証する
+            // DBに入れる前に、バックアップファイルの形式かどうかを確認する
             try
             {
                 var options = new System.Text.Json.JsonSerializerOptions
                 {
                     PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
                 };
-                // AllDbData型にパースできるかテスト
                 var testParse = System.Text.Json.JsonSerializer.Deserialize<MahjongApp.Services.AllDbData>(json, options);
                 if (testParse == null || (testParse.Players == null && testParse.Games == null && testParse.RulePresets == null) || !HasRequiredKeys(json))
                 {
@@ -198,13 +196,11 @@
             }
             catch (System.Text.Json.JsonException)
             {
-                // JSONとしてそもそも解析不能なファイル（テキストファイルや画像など）が来た場合
                 Snackbar.Add("ファイルの解析に失敗しました。無効なファイルです。", Severity.Error);
                 return;
             }
-            // 検証を通過した場合のみインポートを実行
             await DatabaseService.ImportDataAsync(json, isMerge);
-            _ = StatsCache.InitializeAsync(forceReload: true); // キャッシュの再構築
+            _ = StatsCache.InitializeAsync(forceReload: true);
             string successMsg = isMerge ? "データを統合しました！" : "データを復元しました！";
             Snackbar.Add(successMsg, Severity.Success);
             await Task.Delay(1500);
@@ -216,8 +212,8 @@
         }
     }
 
-    // IndexedDBの主キー（players.id / sessions.sessionId / games.id）が全件にあるか検証する。
-    // 欠けているとDBへの書き込みが途中で失敗するため、取り込み前に弾く。
+    // IndexedDB の主キー（players.id / sessions.sessionId / games.id）が全件にあるか確認する。
+    // 欠けているとDBへの書き込みが途中で失敗するため、取り込む前に弾く
     private static bool HasRequiredKeys(string json)
     {
         using var doc = System.Text.Json.JsonDocument.Parse(json);
@@ -236,7 +232,7 @@
         return AllHaveKey("players", "id") && AllHaveKey("sessions", "sessionId") && AllHaveKey("games", "id");
     }
 
-    // 全データ初期化
+    // 誤操作を防ぐため2回確認してから全データを消す
     private async Task ConfirmWipeAllData()
     {
         bool? result1 = await DialogService.ShowMessageBoxAsync(

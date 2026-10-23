@@ -23,7 +23,7 @@
         -webkit-overflow-scrolling: touch;
         padding-bottom: 4px;
 
-        /* 独自チップ風デザイン（PresetDialogから流用） */
+        /* ルール名のバッジ（PresetDialog と同じデザイン） */
         .rule-badge {
             display: inline-flex;
             align-items: center;
@@ -36,37 +36,36 @@
         }
     }
 
-    /* --- ページネーションの配置・間隔調整 --- */
-
-    /* 1. 外枠と内部ツールバーの両方の高さを強制的に上書き */
+    /* --- ページ送り: 高さを詰め、件数表示を左・ボタンを右に置く --- */
+    /* 外枠と内部ツールバーの高さ */
     .session-table .mud-table-pagination,
     .session-table .mud-table-pagination .mud-toolbar {
         min-height: 36px !important;
         height: 36px !important;
     }
 
-    /* 2. 内部ツールバーを「両端揃え」にし、左右の端からの距離をとる */
+    /* 内部ツールバーを両端揃えにする */
     .session-table .mud-table-pagination .mud-toolbar {
         justify-content: space-between !important;
         padding: 0 32px !important; /* ← 端の余白 */
     }
 
-    /* 3. 見えないスペーサーを無効化（テキストを左側に持っていくため） */
+    /* 件数表示を左に寄せるため、スペーサーを消す */
     .session-table .mud-table-pagination-spacer {
         display: none !important;
     }
 
-    /* 4. テキストの不要なマージンをリセット */
+    /* 件数表示の余白 */
     .session-table .mud-table-pagination-information {
         margin-right: 0 !important;
     }
 
-    /* 5. ボタン群のラップ要素の余白を消す */
+    /* ボタン群の余白 */
     .session-table .mud-table-pagination-actions {
         margin-left: 0 !important;
     }
 
-    /* 6. ボタン同士の間隔とクリック範囲の調整 */
+    /* ボタンの間隔と押せる範囲 */
     .session-table .mud-table-pagination-actions .mud-icon-button {
         padding: 4px !important;  
         margin: 0 8px !important; 
@@ -90,7 +89,7 @@
     else
     {
         <MudTable Items="@sessionGroups" RowsPerPage="100" Class="session-table" Hover="true" Dense="true" Elevation="1" Breakpoint="Breakpoint.None">
-            @* ページネーション *@
+            @* ページ送り *@
             <PagerContent>
                 <MudTablePager HideRowsPerPage="true" />
             </PagerContent>
@@ -98,13 +97,12 @@
                 <MudTd Style="@($"cursor: pointer; padding: 10px 12px {(group.ShowDetails ? "0px" : "10px")} 12px; border-bottom: {(group.ShowDetails ? "none" : "1px solid var(--mud-palette-divider)")}; transition: padding-bottom 0.2s ease;")"
                        @onclick="@(() => { group.ShowDetails = !group.ShowDetails; group.HasBeenOpened = true; })">
                     <div class="d-flex align-start w-100">
-                        @* 1. 左側のアイコン領域（幅を固定してインデントの軸を作る） *@
+                        @* 開閉アイコン（幅を固定して2行目の字下げをそろえる） *@
                         <div style="width: 32px; flex-shrink: 0; display: flex; justify-content: flex-start; margin-top: 1px;">
                             <MudIcon Icon="@(group.ShowDetails ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Size="Size.Small" Style="color: #888;" />
                         </div>
-                        @* 2. 右側のテキスト領域（タイトルと対局者名） *@
+                        @* 日付・バッジ・対局者名 *@
                         <div class="flex-grow-1 d-flex flex-column" style="min-width: 0;">
-                            @* 日付とバッジの行 *@
                             <div class="d-flex align-center justify-space-between w-100" style="margin-bottom: 4px;">
                                 <span style="font-size: 0.95rem; font-weight: bold; letter-spacing: 0.5px;">
                                     @group.Session.Date.ToString("yyyy/MM/dd HH:mm")
@@ -118,7 +116,6 @@
                                     </span>
                                 </div>
                             </div>
-                            @* 対局者名の行（改行を自然に） *@
                             <div style="font-size: 0.85rem; color: #aaaaaa; line-height: 1.5; overflow-wrap: break-word; word-break: normal;">
                                 @GetPlayerNames(group.Session.ParticipantPlayerIds)
                             </div>
@@ -295,7 +292,7 @@
         return session;
     }
 
-    // ごみ箱ボタンのクリックハンドラー
+    // 削除は2回押しで確定する（1回目は警告表示）
     private async Task HandleDeleteClick(SessionGroup group)
     {
         if (ArmedDeleteTarget != group)
@@ -306,7 +303,7 @@
         await ConfirmDeleteSession(group);
     }
 
-    // 別の場所をクリックしたときに警告（Armed）状態を解除する
+    // 他の場所を押したら削除の警告表示を解除する
     private void ClearArmedState()
     {
         if (ArmedDeleteTarget != null)
@@ -348,7 +345,7 @@
         }
     }
 
-    // データベース用の型(SavedGameRecord)を、UI表示用の型(GameResult)に変換する
+    // 保存済みの局（ID基準）を、結果表で表示する形（名前基準）に変換する
     private List<GameResult> ConvertToGameResults(List<SavedGameRecord> savedGames)
     {
         var results = new List<GameResult>();
@@ -378,7 +375,7 @@
                 int? currentRaw = rawSource.Count > i ? rawSource[i] : null;
                 if (existingIdx != -1 && !string.IsNullOrEmpty(name))
                 {
-                    // 重複枠の場合: 先に見つけた枠が「抜け番(null)」で、今回が「有効な点数」なら上書きする
+                    // 同じ人の枠が重複していたら（統合後など）、点数がある方を残す
                     if (!rScores[existingIdx].HasValue && currentRaw.HasValue)
                     {
                         rScores[existingIdx] = currentRaw;
@@ -392,7 +389,6 @@
                 }
                 else
                 {
-                    // 新規枠として追加する
                     pNames.Add(name ?? "");
                     rScores.Add(currentRaw);
                     pts.Add(ptsSource.Count > i ? ptsSource[i] : 0);
@@ -419,7 +415,7 @@
         return results;
     }
 
-    // ResultTableのヘッダーに表示するための「名前のリスト」を生成する
+    // 結果表の見出しに出す名前の一覧
     private List<string> GetSessionPlayerNames(SessionGroup group)
     {
         return group.Session.ParticipantPlayerIds

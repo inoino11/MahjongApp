@@ -1,4 +1,4 @@
-// トーストのスワイプ消去ロジック
+// トースト通知をスワイプで消せるようにする
 document.addEventListener('DOMContentLoaded', () => {
     let startX = 0;
     let startY = 0;
@@ -11,11 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
             startX = e.touches[0].clientX;
             startY = e.touches[0].clientY;
             isDragging = true;
-            // 個別のIDがない場合は付与する（動的CSSでターゲットにするため）
+            // 消すときのCSSで狙えるようIDを付ける
             if (!currentSnackbar.id) {
                 currentSnackbar.id = 'toast-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
             }
-            // 指の動きに即座に追従させる
             currentSnackbar.style.transition = 'none';
         }
     }, { passive: true });
@@ -23,27 +22,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isDragging || !currentSnackbar) return;
         const deltaX = e.touches[0].clientX - startX;
         const deltaY = e.touches[0].clientY - startY;
-        // 制限を解除し、全方向に指へ完全に追従させる
         currentSnackbar.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
     }, { passive: true });
     document.addEventListener('touchend', (e) => {
         if (!isDragging || !currentSnackbar) return;
         const deltaX = e.changedTouches[0].clientX - startX;
         const deltaY = e.changedTouches[0].clientY - startY;
-        // 吹き飛ばす判定の閾値（全方向共通で50px）
-        const threshold = 50;
+        const threshold = 50; // これ以上動かしたら消す（px）
         if (Math.abs(deltaX) > threshold || Math.abs(deltaY) > threshold) {
-            // --- 閾値を超えたら吹き飛ばす ---
             let escapeX = 0;
             let escapeY = 0;
-            // より大きく動かした方向（X軸かY軸か）へ一直線に飛ばす
+            // 大きく動かした方向へ飛ばして消す
             if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                escapeX = deltaX > 0 ? 200 : -200; // 左右
+                escapeX = deltaX > 0 ? 200 : -200;
             } else {
-                escapeY = deltaY > 0 ? 200 : -200; // 上下
+                escapeY = deltaY > 0 ? 200 : -200;
             }
             const toastId = currentSnackbar.id;
-            // Blazorの再描画によるチラつきを防ぐ動的CSS
+            // 要素の style を直接変えると Blazor の再描画で戻ってしまうため、CSS を差し込んで消す
             const styleEl = document.createElement('style');
             styleEl.innerHTML = `
                 #${toastId} {
@@ -54,12 +50,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             `;
             document.head.appendChild(styleEl);
-            // Blazor側で要素が安全に破棄された頃合いにお掃除
+            // トーストが Blazor 側で破棄された頃に CSS を片付ける
             setTimeout(() => {
                 styleEl.remove();
             }, 3000);
         } else {
-            // --- 閾値未満なら元の位置にポヨンと戻す ---
+            // 動かした量が少なければ元の位置に戻す
             currentSnackbar.style.transition = 'transform 0.25s ease-out';
             currentSnackbar.style.transform = 'translate(0px, 0px)';
         }

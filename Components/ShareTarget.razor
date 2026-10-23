@@ -7,7 +7,7 @@
             🀄 対局結果 🀄
         </h2>
 
-        @* ルール・レート情報の表示 *@
+        @* ルールとレート *@
         <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; font-size: 0.95rem;">
             <div><strong>ルール名:</strong> @(string.IsNullOrWhiteSpace(Rules.Name) ? "未設定" : Rules.Name)</div>
             <div><strong>形式:</strong> @(Rules.PlayerCount)人麻雀</div>
@@ -20,7 +20,7 @@
             }
         </div>
 
-        @* 成績テーブル *@
+        @* 成績表 *@
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center; font-variant-numeric: tabular-nums;">
             <thead>
                 <tr style="background-color: rgba(255,255,255,0.1); border-bottom: 2px solid #555;">

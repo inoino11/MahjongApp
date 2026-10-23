@@ -5,16 +5,19 @@ using MahjongApp.Models;
 
 namespace MahjongApp.Services;
 
+/// <summary>
+/// 1局分の素点からポイント・収支を計算する（状態を持たない）
+/// </summary>
 public class MahjongCalculatorService
 {
     /// <summary>
-    /// ポイントを0.1pt単位に丸めます（五捨六入）。
-    /// 素点は100点単位のため、通常の返し点では値は変わりません
+    /// ポイントを0.1pt単位に丸める（五捨六入）。
+    /// 素点は100点単位のため、通常の返し点では値は変わらない
     /// </summary>
     public double RoundToTenth(double value) => Math.Floor((value * 10) + 0.4) / 10.0;
 
     /// <summary>
-    /// 合計ptが0にならない場合の微調整を、順位が上のプレイヤーから順に行います
+    /// 合計ptが0からずれた分を0.1ずつ調整する（足りなければ上位から加え、余れば下位から引く）
     /// </summary>
     public void AdjustFractions(double[] points, List<int> orderedIndices)
     {
@@ -33,8 +36,8 @@ public class MahjongCalculatorService
     }
 
     /// <summary>
-    /// 同点者が存在し、席順（タイブレーカー）によって計算結果が変わるかを判定します。
-    /// ポイント折半では、同点者内の並び順を全通り試して実際に計算し、結果が変わる場合のみ席順の入力を求めます
+    /// 同点者がいて、席順によって計算結果が変わるかを判定する。
+    /// ポイント折半では、同点者内の並び順を全通り試して実際に計算し、結果が変わる場合だけ席順の入力を求める
     /// </summary>
     public bool CheckIfTieBreakerNeeded(RuleSet rules, List<int> activeScores, List<bool> activeYaki, List<bool> activeTobiBonus)
     {
@@ -87,7 +90,8 @@ public class MahjongCalculatorService
     }
 
     /// <summary>
-    /// ルール、素点、各種役フラグ、および席順優先度を元に、最終的なポイント・収支（円）を厳密に計算します
+    /// ルール・素点・焼き鳥・トビ賞・席順から、ポイントと収支を計算する。
+    /// priority は同点時の順位（値が小さいほど上位）
     /// </summary>
     public CalculationResult Calculate(RuleSet rules, List<int> activeScores, List<bool> activeYaki, List<bool> activeTobiBonus, Dictionary<int, int> priority)
     {
@@ -148,7 +152,7 @@ public class MahjongCalculatorService
 
         AdjustFractions(points, rankedIndices);
 
-        // --- 沈みウマ計算 ---
+        // --- 沈みウマ ---
         double[] preSinkPts = points.ToArray();
         if (rules.IsSinkEnabled)
         {
@@ -195,7 +199,7 @@ public class MahjongCalculatorService
         }
         var currentSinkPts = points.Select((p, i) => Math.Round(p - preSinkPts[i], 1)).ToList();
 
-        // --- 焼き鳥計算 ---
+        // --- 焼き鳥 ---
         double[] preYakiPts = points.ToArray();
         if (rules.IsYakiEnabled)
         {
@@ -241,7 +245,7 @@ public class MahjongCalculatorService
         }
         var yakiPts = points.Select((p, i) => Math.Round(p - preYakiPts[i], 1)).ToList();
 
-        // --- トビ計算 ---
+        // --- トビ賞 ---
         double[] preTobiPts = points.ToArray();
         if (rules.IsTobiEnabled)
         {
@@ -266,7 +270,7 @@ public class MahjongCalculatorService
         }
         var tobiPts = points.Select((p, i) => Math.Round(p - preTobiPts[i], 1)).ToList();
 
-        // --- コールド計算 ---
+        // --- コールド賞 ---
         double[] preColdPts = points.ToArray();
         if (rules.IsColdEnabled)
         {
@@ -287,7 +291,8 @@ public class MahjongCalculatorService
         }
         var currentColdPts = points.Select((p, i) => Math.Round(p - preColdPts[i], 1)).ToList();
 
-        // --- 収支（円）算出 ---
+        // --- 収支 ---
+        // 端数の切り捨てで合計が0にならない分は、端数の大きい人から1ずつ配る
         double[] exactYen = new double[pCount];
         int[] baseYen = new int[pCount];
         double[] fractions = new double[pCount];
@@ -325,6 +330,9 @@ public class MahjongCalculatorService
     }
 }
 
+/// <summary>
+/// 1局分の計算結果（各リストは素点と同じ並び）
+/// </summary>
 public class CalculationResult
 {
     public List<double> Points { get; set; } = new();

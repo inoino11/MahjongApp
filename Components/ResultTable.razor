@@ -6,49 +6,39 @@
         text-align: center !important;
     }
 
-    /* 最優先でスクロールバーを非表示にするため !important を追加 */
+    /* チップ集計と結果表は横スクロールを連動させる。スクロールバーは非表示にし、代わりに右端の影で続きを示す */
     .sync-chip-scroll {
         -ms-overflow-style: none !important;
-        /* IE, Edge用 */
         scrollbar-width: none !important;
-        /* Firefox用 */
     }
 
-    /* 最優先でスクロールバーを非表示にするため !important を追加 */
     .sync-chip-scroll::-webkit-scrollbar {
         display: none !important;
-        /* Chrome, Safari用 */
     }
 
-    /* テーブル部分のスクロールラッパー（縦スクロールとバー非表示を設定） */
+    /* 結果表は画面の高さの55%までにして、それ以上は表の中で縦スクロールさせる */
     .sync-table-scroll {
         max-height: 55vh;
-        /* 画面高の55%で一旦止める */
         overflow-y: auto !important;
-        /* 縦スクロールを有効化 */
         -ms-overflow-style: none !important;
-        /* IE, Edge用スクロールバー非表示 */
         scrollbar-width: none !important;
-        /* Firefox用スクロールバー非表示 */
     }
 
     .sync-table-scroll::-webkit-scrollbar {
         display: none !important;
-        /* Chrome, Safari用スクロールバー非表示 */
     }
 
-    /* 内部コンテナのスクロールを殺し、外側のJavaScript監視用divにスクロールを一任する */
+    /* MudTable 内部ではスクロールさせず、外側の div（JS でスクロール位置を連動させる）に任せる */
     .sync-table-scroll .mud-table-container {
         overflow-x: visible !important;
         overflow-y: visible !important;
     }
 
-    /* テーブルの最小幅を設定 */
     .sync-table-scroll .mud-table-container table {
         min-width: var(--table-min-width) !important;
     }
 
-    /* 実測・同期用の新設CSS */
+    /* グラフと表を同じ場所に重ね、切り替えても高さが跳ねないようにする */
     #result-container {
         width: 100%;
         display: grid;
@@ -57,7 +47,6 @@
         min-width: 0;
     }
 
-    /* グラフと表の共通設定。フェードアニメーションを追加 */
     #chart-wrapper,
     #table-wrapper {
         grid-area: content;
@@ -78,7 +67,7 @@
         z-index: -1;
     }
 
-    /* グラフ描画範囲 */
+    /* 標準の凡例は使わず、独自の凡例（最終Pt）を表示する */
     .mud-chart-legend {
         display: none !important;
     }
@@ -96,7 +85,7 @@
         }
     }
 
-    /* グラフと凡例の親要素をFlexコンテナにして高さを揃える */
+    /* スマホではグラフの下に凡例、広い画面では横に並べる */
     .chart-flex-container {
         display: flex;
         flex-direction: column;
@@ -109,12 +98,11 @@
         }
     }
 
-    /* 共通: 上下の見切れ防止とSVGのオーバーフロー許可 */
+    /* 線や点が上下で切れないよう、余白を取り SVG のはみ出しを許可する */
     .responsive-chart-wrapper {
         padding-top: 12px;
         padding-bottom: 12px;
         width: 100%;
-        /* 横幅の60%のサイズを高さとする */
         height: 40vw;
         min-height: 150px;
         max-height: 300px;
@@ -131,8 +119,7 @@
         overflow: visible !important;
     }
 
-    /* チップ入力中（テンキーが開いている対象）をハイライトするスタイル */
-    /* 修正可能な行・修正中の行（固定列の不透明背景も上書きする） */
+    /* 修正できる行・修正中の行（固定列の不透明な背景も上書きする） */
     .result-row-clickable {
         cursor: pointer;
     }
@@ -141,6 +128,7 @@
         background: linear-gradient(rgba(255, 152, 0, 0.22), rgba(255, 152, 0, 0.22)), var(--mud-palette-surface) !important;
     }
 
+    /* テンキーで入力中のチップ欄 */
     .chip-input-active {
         background-color: rgba(76, 175, 80, 0.15) !important;
         border-radius: 4px;
@@ -149,7 +137,7 @@
     }
 </style>
 
-@* 1. 表示モード切替ボタン ＆ リセットボタン *@
+@* 表示の切り替えと、入力中の記録のクリア *@
 <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4 gap-2">
     <div class="d-flex flex-wrap gap-2">
         <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
@@ -187,7 +175,7 @@
     }
 </MudStack>
 <div id="result-container">
-    @* --- グラフ表示 --- *@
+    @* --- グラフ --- *@
     <div id="chart-wrapper" class="@(DisplayMode == 7 ? "" : "hide-element")">
         <div class="pa-2 pa-md-4 mud-background-gray rounded-lg">
             <div class="chart-flex-container gap-3">
@@ -217,7 +205,7 @@
             </div>
         </div>
     </div>
-    @* --- テーブル表示エリア --- *@
+    @* --- 表 --- *@
     <div id="table-wrapper" class="@(DisplayMode != 7 ? "" : "hide-element")">
         @* チップ集計 *@
         @if (Rules?.ChipRate > 0)
@@ -292,7 +280,7 @@
                 </MudCardContent>
             </MudCard>
         }
-        @* テーブル *@
+        @* 結果表 *@
         <div id="@($"{TableScrollId}-hint")" class="scroll-hint-wrap">
         <div id="@TableScrollId" class="sync-table-scroll" style="width: 100%; overflow-x: auto; --table-min-width: @GetTableMinWidth();">
             <MudTable T="GameResult" Items="@History" OnRowClick="HandleRowClick" RowClassFunc="GetRowClass" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="width: 100%; table-layout: fixed;">
@@ -381,7 +369,7 @@
     [Parameter] public List<GameResult> History { get; set; } = new();
     [Parameter] public List<string> Players { get; set; } = new();
     [Parameter] public int ActiveParticipantCount { get; set; }
-    [Parameter] public int DisplayMode { get; set; }
+    [Parameter] public int DisplayMode { get; set; } // 0: 素点 / 1: ポイント / 2: 収支 / 3: 沈み / 4: 焼き鳥 / 5: トビ / 6: コールド / 7: グラフ
     [Parameter] public EventCallback<int> DisplayModeChanged { get; set; }
     [Parameter] public RuleSet Rules { get; set; } = new();
     [Parameter] public List<int> SessionChips { get; set; } = new();
@@ -397,7 +385,7 @@
     [Parameter] public GameResult? EditingTarget { get; set; }
     [Parameter] public bool IsEditing { get; set; }
 
-    // 行タップで局の修正を開始する（入力中のセッションのみ）
+    // 行のタップで局の修正を始める（入力中のセッションだけ）
     private bool CanEditRows => !IsReadOnly && OnRowClicked.HasDelegate;
 
     private async Task HandleRowClick(TableRowClickEventArgs<GameResult> e)
@@ -411,12 +399,12 @@
         return ReferenceEquals(item, EditingTarget) ? "result-row-clickable result-row-editing" : "result-row-clickable";
     }
 
-    // スクロール要素に個別IDを設定
+    // 同じ画面に複数の表があっても、横スクロールの連動先を取り違えないための ID
     private readonly string _uid = Guid.NewGuid().ToString("N");
     private string ChipScrollId => $"chip-{_uid}";
     private string TableScrollId => $"table-{_uid}";
 
-    // --- グラフ用データ定義 ---
+    // --- グラフ ---
     private List<ChartSeries<double>> _chartSeries = new();
     private string[] _xAxisLabels = Array.Empty<string>();
     private LineChartOptions _chartOptions = new();
@@ -429,12 +417,10 @@
         public string Color { get; set; } = "";
     }
 
-    // 黄金角を用いて色が被りにくいように自動生成
+    // 人ごとの線の色。色相を黄金角（約137.5度）ずつずらすと、人数が増えても色が近くなりにくい
     private string GenerateColor(int index)
     {
-        // 137.508度は黄金角。これを使うと色が被りにくい
         double hue = (index * 137.508) % 360.0;
-        // 彩度75%, 明度60%程度に固定し、見やすく目に優しいパステル調ベースにする
         return HslToHex(hue, 0.75, 0.60);
     }
 
@@ -458,13 +444,10 @@
 
     protected override void OnParametersSet()
     {
-        // 既存の列幅計算ロジック
         CalculateColumnWidths();
-        // モード7のとき、グラフデータを更新
         if (DisplayMode == 7) PrepareChartData();
     }
 
-    // スクロール同期
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (DisplayMode != 7)
@@ -487,7 +470,6 @@
         };
         int gameCount = History.Count;
         _xAxisLabels = Enumerable.Range(0, gameCount + 1).Select(i => i == 0 ? "Start" : $"{i}戦").ToArray();
-        // グラフの最大値・最小値を求めるための変数
         double maxPt = 0;
         double minPt = 0;
         for (int i = 0; i < ActiveParticipantCount; i++)
@@ -509,11 +491,11 @@
             _chartSeries.Add(new ChartSeries<double> { Name = pName, Data = data });
             _finalStats.Add(new PlayerFinalStat { Name = pName, TotalPt = cumulative, Color = color });
         }
-        // --- Y軸の刻み幅（よしなに計算） ---
+        // Y軸の目盛りは、範囲の約1/5を 1・2・5・10 × 10のべき乗 に丸めた間隔にする
         double range = maxPt - minPt;
         if (range == 0)
         {
-            newOptions.YAxisTicks = 10; // 全員0ptの時などのデフォルト
+            newOptions.YAxisTicks = 10; // 全員0ptなど、範囲がないとき
         }
         else
         {
@@ -627,15 +609,14 @@
 
     private string GetTdStyle(GameResult res, int idx)
     {
-        // 列幅が計算できていない場合は空を返す
         if (idx >= _columnWidths.Length) return "";
         double modeWidth = (DisplayMode >= 0 && DisplayMode <= 6 && idx < _modeWidths.GetLength(1)) ? _modeWidths[DisplayMode, idx] : 2.0;
         string boxWidth = $"{modeWidth}ch";
         string baseStyle = $"display:inline-block; width:{boxWidth}; text-align:right; font-variant-numeric:tabular-nums; font-size:0.8rem; letter-spacing:-0.5px; ";
-        // ヘッダーからプレイヤー名を取得し、その局(res)でのインデックスを探す
+        // 列は名前で並んでいるため、その局の中での位置を名前で探す
         string playerName = Players.ElementAtOrDefault(idx) ?? "";
         int originalIdx = res.PlayerNames?.IndexOf(playerName) ?? -1;
-        // 1. 該当プレイヤーがいない場合、または明示的な抜け番(null)の場合
+        // その局に参加していない、または抜け番
         if (originalIdx == -1 || originalIdx >= res.RawScores.Count || res.RawScores[originalIdx] == null)
             return baseStyle + "color: #9e9e9e; font-weight: normal; text-align: center;";
         var valList = DisplayMode switch
@@ -649,29 +630,27 @@
             6 => res.ColdPoints,
             _ => new List<double>()
         };
-        // 万が一データリストが短かった場合（フォールバック）
+        // 古いデータで内訳のリストが短い場合
         if (valList == null || originalIdx >= valList.Count)
             return baseStyle + "color: #9e9e9e; font-weight: normal; text-align: center;";
         double val = valList[originalIdx];
         string style = baseStyle;
-        // 2. 特殊ルール(沈み・焼き鳥など)で変動が0の場合（ハイフン表示になるためCenterに揃える）
+        // 特殊ルールの表示で変動がない場合は「-」を中央に出す
         if (DisplayMode >= 3 && val == 0)
             return baseStyle + "color: #9e9e9e; font-weight: normal; text-align: center;";
-        // 文字色の設定
+        // 素点はポイントの正負で色分けする。それ以外は値の正負で色分けする（色は反転設定に従う）
         if (DisplayMode == 0)
         {
-            // 素点: 既存ルールのまま
             bool isPositive = res.Points[originalIdx] >= 0;
             style += isPositive ? "color: var(--color-positive); " : "color: var(--color-negative); ";
         }
         else
         {
-            // 素点以外: 正は赤色、負は青色、0は標準テキスト色（黒）
             if (val > 0) style += "color: var(--color-positive); ";
             else if (val < 0) style += "color: var(--color-negative); ";
             else style += "color: var(--mud-palette-text-primary); ";
         }
-        // トップとラスの太字判定
+        // その局のトップとラスを太字にする
         if (valList.Distinct().Count() > 1 && (val == valList.Max() || val == valList.Min()))
             style += "font-weight: bold; ";
         return style;
@@ -725,29 +704,26 @@
         if (History.Count == 0 && chip == 0) return style;
         var allValues = Enumerable.Range(0, ActiveParticipantCount).Select(i => GetTotalNumericValue(i)).ToList();
         double val = allValues[idx];
-        // 文字色の設定
+        // 色分けは各局のセルと同じ規則（素点の平均は合計ポイントの正負で色分けする）
         if (DisplayMode == 0)
         {
             if (History.Count == 0)
             {
-                // 対局数0の場合は標準テキスト色
                 style += "color: var(--mud-palette-text-primary); ";
             }
             else
             {
-                // 素点: 既存ルールのまま
                 bool isPositive = GetTotalNumericValue(idx, 1) >= 0;
                 style += isPositive ? "color: var(--color-positive); " : "color: var(--color-negative); ";
             }
         }
         else
         {
-            // 素点以外 正は赤色、負は青色、0は標準テキスト色（黒）
             if (val > 0) style += "color: var(--color-positive); ";
             else if (val < 0) style += "color: var(--color-negative); ";
             else style += "color: var(--mud-palette-text-primary); ";
         }
-        // トップとラスの太字判定
+        // 合計のトップとラスを太字にする
         if (allValues.Distinct().Count() > 1 && (val == allValues.Max() || val == allValues.Min()))
             style += "font-weight: bold; ";
         return style;
@@ -767,7 +743,7 @@
         return $"{totalPx + 20}px";
     }
 
-    // データやルールが更新されるたびに自動で呼ばれるメソッド
+    // ルールの変更で表示できなくなったモード（特殊ルールをオフにした等）なら、ポイント表示に戻す
     protected override async Task OnParametersSetAsync()
     {
         bool isModeInvalid = DisplayMode switch
@@ -776,13 +752,13 @@
             4 => !Rules.IsYakiEnabled && !HasAnyYakiPoints,
             5 => !Rules.IsTobiEnabled && !HasAnyTobiPoints,
             6 => !Rules.IsColdEnabled && !HasAnyColdPoints,
-            _ => false // 素点(0), pt(1), 通貨単位(2), グラフ(7)などは常に表示可能とする
+            _ => false
         };
         if (isModeInvalid) await SetDisplayMode(1);
         CalculateColumnWidths();
     }
 
-    // 指定文字数を超えたら「...」を付ける
+    // 列幅を抑えるため、名前は4文字で切って「...」を付ける
     private string GetShortName(string? name)
     {
         if (string.IsNullOrWhiteSpace(name)) return "　";

@@ -1,3 +1,4 @@
+// 2つの要素の横スクロール位置を連動させる（チップ集計と結果表）
 window.syncScroll = (id1, id2) => {
     const el1 = document.getElementById(id1);
     const el2 = document.getElementById(id2);
@@ -22,7 +23,7 @@ window.syncScroll = (id1, id2) => {
     }, { passive: true });
 };
 
-// 表とグラフの高さ合わせ
+// 表とグラフを切り替えても高さが変わらないよう、高い方に合わせる
 window.syncContainerHeight = () => {
     const container = document.getElementById('result-container');
     const chart = document.getElementById('chart-wrapper');
@@ -33,7 +34,7 @@ window.syncContainerHeight = () => {
     const maxHeight = Math.max(chartHeight, tableHeight);
     container.style.minHeight = maxHeight + 'px';
 };
-// ロード画面のフェードアウト
+// 起動時のローディング画面をフェードアウトさせる
 window.hideMahjongLoader = () => {
     const loader = document.getElementById('mahjong-loader');
     if (loader) {
@@ -43,7 +44,7 @@ window.hideMahjongLoader = () => {
         }, 800);
     }
 };
-// 横スクロールできる領域に「続きがある」影を出す（スクロールバーを非表示にしているため）
+// 横スクロールの続きがあれば右端に影を出す（スクロールバーを非表示にしているため）
 // wrapperId: .scroll-hint-wrap を付けた要素のID / selector: その中のスクロール要素（省略時は最初の子要素）
 window.attachScrollHint = (wrapperId, selector) => {
     const wrap = document.getElementById(wrapperId);
@@ -63,5 +64,5 @@ window.attachScrollHint = (wrapperId, selector) => {
     update();
 };
 
-// 画面が表示中か（観戦ページの自動更新を裏に回っている間は止めるため）
+// 画面が表示中か（観戦ページは、裏に回っている間は自動更新しない）
 window.getVisibilityState = () => document.visibilityState;

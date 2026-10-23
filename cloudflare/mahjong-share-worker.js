@@ -8,7 +8,7 @@
 //   PUT  /live/{id}   : 観戦データを更新する（Authorization: Bearer {更新用の鍵}）
 //   GET  /live/{id}   : 観戦データを返す
 
-// 有効期限を90日（秒）に設定
+// 保存期限（秒）。観戦URLは更新のたびに延長する
 const KV_TTL = 60 * 60 * 24 * 90;
 
 const LIVE_PREFIX = "live:";
@@ -22,25 +22,23 @@ const CORS_HEADERS = {
 
 export default {
   async fetch(request, env, ctx) {
-    // CORSのプリフライトリクエスト対応
+    // CORS のプリフライト
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: CORS_HEADERS });
     }
 
     const url = new URL(request.url);
 
-    // 観戦URL（/live, /live/{id}）
     if (url.pathname === "/live" || url.pathname.startsWith("/live/")) {
       return handleLive(request, env, url);
     }
 
-    // 【POST】データの保存と短縮IDの発行
+    // POST /: 共有データを保存して短縮IDを返す
     if (request.method === "POST") {
       try {
         const body = await request.text();
         const shortId = generateShortId(6);
 
-        // KVにデータを保存（90日後に自動消去）
         await env.MAHJONG_KV.put(shortId, body, { expirationTtl: KV_TTL });
 
         return new Response(JSON.stringify({ id: shortId }), {
@@ -51,9 +49,9 @@ export default {
       }
     }
 
-    // 【GET】短縮IDからデータを取得
+    // GET /{id}: 共有データを返す
     if (request.method === "GET") {
-      const id = url.pathname.slice(1); // URLのパス部分（/xxxxxx）を取得
+      const id = url.pathname.slice(1);
       // 観戦データ（更新用の鍵のハッシュを含む）はこの入口からは返さない
       if (!id || id.startsWith(LIVE_PREFIX)) {
         return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
@@ -73,10 +71,9 @@ export default {
   }
 };
 
-// 観戦URLの処理
 async function handleLive(request, env, url) {
   try {
-    // 【POST /live】発行
+    // POST /live: 発行。更新用の鍵はハッシュだけを保存する
     if (request.method === "POST" && url.pathname === "/live") {
       const body = await request.json();
       if (typeof body.encryptedData !== "string") return jsonResponse({ error: "bad request" }, 400);
@@ -99,12 +96,12 @@ async function handleLive(request, env, url) {
     if (stored === null) return jsonResponse({ error: "not found" }, 404);
     const record = JSON.parse(stored);
 
-    // 【GET /live/{id}】取得（鍵のハッシュは返さない）
+    // GET /live/{id}: 取得（鍵のハッシュは返さない）
     if (request.method === "GET") {
       return jsonResponse({ encryptedData: record.encryptedData, status: record.status, updatedAt: record.updatedAt });
     }
 
-    // 【PUT /live/{id}】更新（発行した端末だけが持つ鍵で認証）
+    // PUT /live/{id}: 更新（発行した端末だけが持つ鍵で認証する）
     if (request.method === "PUT") {
       const auth = request.headers.get("Authorization") || "";
       const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
@@ -116,7 +113,6 @@ async function handleLive(request, env, url) {
       record.status = status;
       record.encryptedData = status === "discarded" ? "" : (typeof body.encryptedData === "string" ? body.encryptedData : record.encryptedData);
       record.updatedAt = new Date().toISOString();
-      // 更新のたびに期限を90日延長
       await env.MAHJONG_KV.put(LIVE_PREFIX + id, JSON.stringify(record), { expirationTtl: KV_TTL });
       return jsonResponse({ ok: true, updatedAt: record.updatedAt });
     }
@@ -134,7 +130,7 @@ function jsonResponse(obj, status = 200) {
   });
 }
 
-// 推測されにくいランダム文字列（観戦URLのIDと更新用の鍵）
+// 推測されにくいランダム文字列（観戦URLのIDと更新用の鍵に使う）
 function randomString(length) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const bytes = crypto.getRandomValues(new Uint8Array(length));
@@ -157,7 +153,7 @@ function timingSafeEqual(a, b) {
   return diff === 0;
 }
 
-// ランダムな英数字のIDを生成する関数
+// 共有URLの短縮ID（従来の形式のまま）
 function generateShortId(length = 6) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';

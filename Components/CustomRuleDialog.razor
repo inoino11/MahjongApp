@@ -3,7 +3,7 @@
 @inject IDialogService DialogService
 
 <style>
-    /* スマホ画面でタブをスクロールさせず1行に収めるための調整 */
+    /* スマホでもタブを横スクロールさせず1行に収める */
     .compact-tabs .mud-tab {
         min-width: 0 !important;
         padding-left: 8px !important;
@@ -11,11 +11,10 @@
         flex: 1;
     }
 
-    /* 今回追加: ラベルと枠線の重なりを解消 */
+    /* 枠付き入力欄のラベルが枠線と重ならないよう、背景で線を隠す */
     .mud-input-label-outlined {
         background-color: var(--mud-palette-surface) !important;
         padding: 0 4px !important;
-        /* 文字の左右に少しだけ余白を持たせて線を隠す */
         border-radius: 4px;
     }
 </style>
@@ -29,9 +28,7 @@
     <DialogContent>
         <MudTabs DisableRipple="true" Class="compact-tabs" @bind-ActivePanelIndex="activeTabIndex" Centered="true" Elevation="1" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4" Style="min-height: 450px;">
 
-            @* ==========================================
-               タブ1: ウマ・同点処理
-               ========================================== *@
+            @* --- タブ1: ウマ・同点処理 --- *@
             <MudTabPanel Text="@(activeTabIndex == 0 ? "ウマ・同点処理" : "")" Icon="@Icons.Material.Filled.Calculate">
                 <MudGrid Spacing="2">
                     <MudItem xs="12">
@@ -94,9 +91,7 @@
                 </MudGrid>
             </MudTabPanel>
 
-            @* ==========================================
-               タブ2: ペナルティ (沈みウマ・焼き鳥)
-               ========================================== *@
+            @* --- タブ2: ペナルティ（沈みウマ・焼き鳥） --- *@
             <MudTabPanel Text="@(activeTabIndex == 1 ? "沈み・焼き鳥" : "")" Icon="@Icons.Material.Filled.TrendingDown">
                 <MudGrid Spacing="2">
                     <MudItem xs="12">
@@ -170,9 +165,7 @@
                 </MudGrid>
             </MudTabPanel>
 
-            @* ==========================================
-               タブ3: ボーナス (トビ・コールド)
-               ========================================== *@
+            @* --- タブ3: ボーナス（トビ賞・コールド賞） --- *@
             <MudTabPanel Text="@(activeTabIndex == 2 ? "トビ・コールド" : "")" Icon="@Icons.Material.Filled.RocketLaunch">
                 <MudGrid Spacing="2">
                     <MudItem xs="12">
@@ -256,15 +249,13 @@
     protected override void OnInitialized()
     {
         EditingRules = OriginalRules.DeepClone();
-        // 初めて開いた時など、両方の基本ウマの値をデフォルトセット
+        // 個別設定でなければ、通常のウマ（Uma1/Uma2）から個別ウマの初期値を作る
         if (!EditingRules.IsCustomUma)
         {
-            // 四麻用
             EditingRules.CustomUma4_1 = EditingRules.Uma2;
             EditingRules.CustomUma4_2 = EditingRules.Uma1;
             EditingRules.CustomUma4_3 = -EditingRules.Uma1;
             EditingRules.CustomUma4_4 = -EditingRules.Uma2;
-            // 三麻用
             EditingRules.CustomUma3_1 = EditingRules.Uma1 + EditingRules.Uma2;
             EditingRules.CustomUma3_2 = -EditingRules.Uma1;
             EditingRules.CustomUma3_3 = -EditingRules.Uma2;
