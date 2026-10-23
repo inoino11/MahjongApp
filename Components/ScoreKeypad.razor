@@ -128,7 +128,7 @@
             <td>
                 @if (ShowRecordButton && IsTotalCorrect)
                 {
-                    <button type="button" class="keypad-btn record-key" @onpointerdown='e => Press(e, "記録")' @onpointerdown:preventDefault="true">記録</button>
+                    <button type="button" class="keypad-btn record-key" @onpointerdown='e => Press(e, "記録")' @onpointerdown:preventDefault="true">@RecordLabel</button>
                 }
                 else
                 {
@@ -143,6 +143,7 @@
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public bool IsTotalCorrect { get; set; }
     [Parameter] public bool ShowRecordButton { get; set; } = true;
+    [Parameter] public string RecordLabel { get; set; } = "記録"; // 表示のみ。送るキーは常に "記録"
     [Parameter] public EventCallback<string> OnKeyPress { get; set; }
 
     // 左クリック／タッチのみ受け付ける（右クリックは無視）

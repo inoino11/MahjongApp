@@ -143,6 +143,15 @@ public class SessionStateService
         await _localStorage.SetItemAsync(StorageKeys.ActiveHistory, ActiveHistory);
     }
 
+    public async Task ReplaceGameResultAsync(int index, GameResult result)
+    {
+        if (index >= 0 && index < ActiveHistory.Count)
+        {
+            ActiveHistory[index] = result;
+            await _localStorage.SetItemAsync(StorageKeys.ActiveHistory, ActiveHistory);
+        }
+    }
+
     public async Task RemoveGameResultAsync(GameResult result)
     {
         ActiveHistory.Remove(result);

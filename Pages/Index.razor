@@ -1,4 +1,5 @@
 @page "/"
+@implements IDisposable
 @inject ILocalStorageService LocalStorage
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -140,7 +141,7 @@
                 </div>
             </TitleContent>
             <ChildContent>
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mb-4" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="OpenPresetDialog">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mb-4" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="OpenPresetDialog" Disabled="isEditing">
                     保存済みの設定を呼び出す
                 </MudButton>
                 <MudCard Outlined="true" Class="w-100">
@@ -148,7 +149,7 @@
                         <CardHeaderContent>
                             <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                                 <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
-                                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Settings" OnClick="OpenCustomRuleDialog">
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Settings" OnClick="OpenCustomRuleDialog" Disabled="isEditing">
                                         カスタム<span class="d-none d-sm-inline">ルール</span>
                                     </MudButton>
                                     <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Save" OnClick="SavePreset">
@@ -164,7 +165,7 @@
                                 <MudTextField T="string" Label="ルール名" Value="rules.Name" ValueChanged="@((string v) => OnRuleNameChanged(v))" Margin="Margin.Dense" onfocus="this.select();" Class="px-2" @onfocusin="@(() => CloseKeypad())" />
                             </MudItem>
                             <MudItem xs="6" sm="4">
-                                <MudSelect T="int" Label="対局人数" Value="rules.PlayerCount" ValueChanged="OnPlayerCountChanged" Margin="Margin.Dense" Class="px-2">
+                                <MudSelect T="int" Label="対局人数" Value="rules.PlayerCount" ValueChanged="OnPlayerCountChanged" Disabled="isEditing" Margin="Margin.Dense" Class="px-2">
                                     <MudSelectItem Value="@(4)">四人麻雀</MudSelectItem>
                                     <MudSelectItem Value="@(3)">三人麻雀</MudSelectItem>
                                 </MudSelect>
@@ -205,18 +206,30 @@
 
     @* --- セクション2: 対局者＆素点入力 --- *@
     <MudPaper id="score-input-section" Class="pa-2 pa-sm-4 mb-6" Elevation="2">
+        @if (isEditing)
+        {
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Filled" Dense="true" NoIcon="true" Class="mb-3">
+                <div class="d-flex align-center justify-space-between gap-3">
+                    <div>
+                        <div style="font-weight: bold;">第@(EditingGameNumber)戦を修正中</div>
+                        <div style="font-size: 0.75rem;">現在のルールで再計算されます</div>
+                    </div>
+                    <MudButton Variant="Variant.Outlined" Size="Size.Small" Style="color: inherit; border-color: currentColor; flex-shrink: 0;" OnClick="@(() => CancelEditAsync())">キャンセル</MudButton>
+                </div>
+            </MudAlert>
+        }
         <div class="mb-3 px-1">
             <MudText Style="font-weight: bold;" Class="mb-1">素点入力</MudText>
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="width: 100%; overflow: hidden;">
                 <div class="d-flex align-center">
-                    <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="AddParticipant" Disabled="@(activeParticipantCount >= MaxParticipants)" Style="min-width: 0; padding-left: 4px; padding-right: 4px;">
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="AddParticipant" Disabled="@(activeParticipantCount >= MaxParticipants || isEditing)" Style="min-width: 0; padding-left: 4px; padding-right: 4px;">
                         <span style="white-space: nowrap;">追加</span>
                     </MudButton>
-                    <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonRemove" OnClick="RemoveParticipant" Disabled="@(activeParticipantCount <= rules.PlayerCount)" Style="min-width: 0; padding-left: 4px; padding-right: 4px;">
+                    <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonRemove" OnClick="RemoveParticipant" Disabled="@(activeParticipantCount <= rules.PlayerCount || isEditing)" Style="min-width: 0; padding-left: 4px; padding-right: 4px;">
                         <span style="white-space: nowrap;">削除</span>
                     </MudButton>
                 </div>
-                <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" StartIcon="@Icons.Material.Filled.History" OnClick="CopyPreviousGame" Disabled="@(ActiveHistory.Count == 0)" Style="white-space: nowrap; flex-shrink: 0; padding-left: 4px; padding-right: 4px;">
+                <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" StartIcon="@Icons.Material.Filled.History" OnClick="CopyPreviousGame" Disabled="@(ActiveHistory.Count == 0 || isEditing)" Style="white-space: nowrap; flex-shrink: 0; padding-left: 4px; padding-right: 4px;">
                     前回の入力をコピー
                 </MudButton>
             </MudStack>
@@ -229,12 +242,12 @@
                 <MudItem xs="12" sm="6">
                     <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center justify-space-between px-2 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
                         @* 左ブロック: 名前入力 *@
-                        <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" SearchFunc="@SearchRegisteredPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" ShowOnFocus="true" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input balanced-center-select" Style="font-weight: bold; font-size: 0.95rem; width: 9.5em;" Disabled="isSitOut" onfocus="this.select();" @onfocusin="@(() => CloseKeypad())" />
+                        <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" SearchFunc="@SearchRegisteredPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" ShowOnFocus="true" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input balanced-center-select" Style="font-weight: bold; font-size: 0.95rem; width: 9.5em;" Disabled="@(isSitOut || isEditing)" onfocus="this.select();" @onfocusin="@(() => CloseKeypad())" />
                         <div class="d-flex align-center justify-center flex-grow-1">
                             @* 抜け番 *@
                             @if (activeParticipantCount > rules.PlayerCount)
                             {
-                                <MudToggleIconButton Toggled="currentSitOuts[index]" ToggledChanged="@((bool v) => OnSitOutChanged(index, v))" Icon="@Icons.Material.Filled.Person" Color="Color.Default" Title="参加中" ToggledIcon="@Icons.Material.Filled.LocalCafe" ToggledColor="Color.Default" ToggledTitle="☕ 抜け番" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" />
+                                <MudToggleIconButton Toggled="currentSitOuts[index]" ToggledChanged="@((bool v) => OnSitOutChanged(index, v))" Icon="@Icons.Material.Filled.Person" Color="Color.Default" Title="参加中" ToggledIcon="@Icons.Material.Filled.LocalCafe" ToggledColor="Color.Default" ToggledTitle="☕ 抜け番" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isEditing" />
                             }
                             @* 焼き鳥 *@
                             @if (rules.IsYakiEnabled)
@@ -256,19 +269,19 @@
                 </MudItem>
             }
         </MudGrid>
-        <MudButton Variant="Variant.Filled" Color="Color.Warning" FullWidth="true" Class="mt-2 py-3" Disabled="@(!IsTotalCorrect)" OnClick="CalculateAndRecordGame">結果を記録する</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Warning" FullWidth="true" Class="mt-2 py-3" Disabled="@(!IsTotalCorrect)" OnClick="CalculateAndRecordGame">@(isEditing ? "修正を保存" : "結果を記録する")</MudButton>
     </MudPaper>
 
     @* --- セクション3: 集計結果 --- *@
     <MudPaper Class="pa-2 px-sm-4" Elevation="2">
-        <ResultTable History="ActiveHistory" Players="TablePlayers" ActiveParticipantCount="TablePlayers.Count" @bind-DisplayMode="displayMode" Rules="rules" SessionChips="TablePlayers.Select(p => ActiveSessionChips.TryGetValue(p, out var v) ? v : 0).ToList()" IsReadOnly="false" ArmedDeleteTarget="armedDeleteTarget" OnDeleteRequested="HandleDeleteRequest" OnResetRequested="ConfirmReset" OnChipChanged="HandleChipChangedCallback" ActiveChipInputIndex="@activeChipInputIndex" ChipInputBuffer="@chipInputBuffer" OnChipInputClicked="OpenChipKeypad" />
+        <ResultTable History="ActiveHistory" Players="TablePlayers" ActiveParticipantCount="TablePlayers.Count" @bind-DisplayMode="displayMode" Rules="rules" SessionChips="TablePlayers.Select(p => ActiveSessionChips.TryGetValue(p, out var v) ? v : 0).ToList()" IsReadOnly="false" ArmedDeleteTarget="armedDeleteTarget" OnDeleteRequested="HandleDeleteRequest" OnResetRequested="ConfirmReset" OnChipChanged="HandleChipChangedCallback" ActiveChipInputIndex="@activeChipInputIndex" ChipInputBuffer="@chipInputBuffer" OnChipInputClicked="OpenChipKeypad" OnRowClicked="StartEditGameAsync" EditingTarget="editingGame" IsEditing="isEditing" />
         @* 清算遷移 ＆ DBへ保存するボタン *@
         <div class="d-flex justify-center mt-6">
             <div class="d-flex gap-2" style="width: 100%; max-width: 400px;">
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.Payments" Disabled="@(ActiveHistory.Count == 0)" OnClick="NavigateToSettlement" Style="flex: 4; font-weight: bold; padding: 4px 0; white-space: nowrap;">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.Payments" Disabled="@(ActiveHistory.Count == 0 || isEditing)" OnClick="NavigateToSettlement" Style="flex: 4; font-weight: bold; padding: 4px 0; white-space: nowrap;">
                     場代清算
                 </MudButton>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.QueryStats" Disabled="@(ActiveHistory.Count == 0)" OnClick="ConfirmFinalizeSession" Style="flex: 6; font-weight: bold; padding: 4px 0; white-space: nowrap;">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.QueryStats" Disabled="@(ActiveHistory.Count == 0 || isEditing)" OnClick="ConfirmFinalizeSession" Style="flex: 6; font-weight: bold; padding: 4px 0; white-space: nowrap;">
                     成績に保存
                 </MudButton>
             </div>
@@ -281,7 +294,7 @@
 @* 外部からテンキーを閉じるための隠しボタン *@
 <button id="hidden-close-keypad-btn" style="display: none;" @onclick="CloseKeypadOutside"></button>
 @* テンキー *@
-<ScoreKeypad IsOpen="isKeypadOpen" IsTotalCorrect="IsTotalCorrect" ShowRecordButton="showRecordButton" OnKeyPress="OnKeypadPress" />
+<ScoreKeypad IsOpen="isKeypadOpen" IsTotalCorrect="IsTotalCorrect" ShowRecordButton="showRecordButton" RecordLabel="@(isEditing ? "保存" : "記録")" OnKeyPress="OnKeypadPress" />
 
 @code {
     [CascadingParameter] public CurrencySetting Currency { get; set; } = new();
@@ -336,6 +349,7 @@
     @* ローカルストレージからのデータ復元と初期化 *@
     protected override async Task OnInitializedAsync()
     {
+        locationChangingRegistration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
         // 1. すべての状態の復元をサービスに委譲
         await SessionState.InitializeStateAsync();
         // 2. データベース（名簿マスター）の読み込み
@@ -806,6 +820,15 @@
             ColdPoints = finalColdPts,
             Yen = finalYen
         };
+        if (editingGame != null)
+        {
+            int editIndex = ActiveHistory.IndexOf(editingGame);
+            newGameResult.Timestamp = editingGame.Timestamp; // 修正しても局の時刻と位置は変えない
+            await SessionState.ReplaceGameResultAsync(editIndex, newGameResult);
+            await CancelEditAsync();
+            Snackbar.Add($"第{editIndex + 1}戦を修正しました", Severity.Success);
+            return;
+        }
         await SessionState.AddGameResultAsync(newGameResult);
         ResetInputForms();
         await SessionState.ClearScoreBuffersAsync();
@@ -1034,6 +1057,106 @@
         }
         EvaluateAutoFill();
     }
+
+    // ===== 記録済みの局の修正 =====
+    private GameResult? editingGame = null;
+    private bool isEditing => editingGame != null;
+    private EditStash? editStash = null;
+    private IDisposable? locationChangingRegistration;
+    private int EditingGameNumber => editingGame == null ? 0 : ActiveHistory.IndexOf(editingGame) + 1;
+
+    // 修正前に入力欄にあった途中の入力
+    private class EditStash
+    {
+        public List<(string Name, string? Id)> Players { get; init; } = new();
+        public int ParticipantCount { get; init; }
+        public string[] Buffers { get; init; } = Array.Empty<string>();
+        public List<bool> Yaki { get; init; } = new();
+        public List<bool> TobiBonus { get; init; } = new();
+        public List<bool> SitOuts { get; init; } = new();
+        public List<int?> PreviousScores { get; init; } = new();
+        public int? AutoFilledIndex { get; init; }
+    }
+
+    @* 結果表の行タップで、その局を入力欄に読み込んで修正モードにする *@
+    private async Task StartEditGameAsync(GameResult game)
+    {
+        if (ReferenceEquals(game, editingGame)) return;
+        int playedCount = game.RawScores.Count(s => s.HasValue);
+        if (playedCount != rules.PlayerCount)
+        {
+            Snackbar.Add("現在の対局人数と異なる局のため修正できません", Severity.Warning);
+            return;
+        }
+        if (isEditing) await CancelEditAsync();
+        if (activeScoreInputIndex.HasValue || activeChipInputIndex.HasValue) await CloseKeypad();
+
+        editStash = new EditStash
+        {
+            Players = currentPlayers.Select(p => (p.Name, p.Id)).ToList(),
+            ParticipantCount = activeParticipantCount,
+            Buffers = scoreInputBuffers.ToArray(),
+            Yaki = currentYaki.ToList(),
+            TobiBonus = currentTobiBonus.ToList(),
+            SitOuts = currentSitOuts.ToList(),
+            PreviousScores = previousScores.ToList(),
+            AutoFilledIndex = autoFilledIndex
+        };
+
+        int slots = Math.Min(game.PlayerNames.Count, MaxParticipants);
+        for (int i = 0; i < MaxParticipants; i++)
+        {
+            int? raw = i < slots && i < game.RawScores.Count ? game.RawScores[i] : null;
+            string name = i < slots ? game.PlayerNames[i] : string.Empty;
+            currentPlayers[i].Name = name;
+            currentPlayers[i].Id = playerMaster.FirstOrDefault(p => p.Name == name)?.Id;
+            // 配列ごと差し替えると保存されてしまうため要素を書き換える
+            scoreInputBuffers[i] = raw?.ToString() ?? string.Empty;
+            currentSitOuts[i] = i < slots && !raw.HasValue;
+            currentYaki[i] = i < slots && (game.YakiPlayers?.ElementAtOrDefault(i) ?? false);
+            currentTobiBonus[i] = i < slots && (game.TobiBonusRecipients?.ElementAtOrDefault(i) ?? false);
+        }
+        previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
+        autoFilledIndex = null;
+        editingGame = game;
+        if (activeParticipantCount != slots)
+            await SessionState.SaveActiveParticipantCountAsync(slots);
+        StateHasChanged();
+        await Task.Delay(50);
+        await JSRuntime.InvokeVoidAsync("scrollToInput", "score-input-section");
+    }
+
+    @* 修正をやめ、修正前の途中入力を元に戻す（保存後・画面移動時もこれで戻す） *@
+    private async Task CancelEditAsync()
+    {
+        if (editStash == null) return;
+        var s = editStash;
+        activeScoreInputIndex = null;
+        for (int i = 0; i < MaxParticipants; i++)
+        {
+            currentPlayers[i].Name = s.Players[i].Name;
+            currentPlayers[i].Id = s.Players[i].Id;
+            scoreInputBuffers[i] = s.Buffers[i];
+        }
+        currentYaki = s.Yaki;
+        currentTobiBonus = s.TobiBonus;
+        currentSitOuts = s.SitOuts;
+        previousScores = s.PreviousScores;
+        autoFilledIndex = s.AutoFilledIndex;
+        editingGame = null;
+        editStash = null;
+        if (activeParticipantCount != s.ParticipantCount)
+            await SessionState.SaveActiveParticipantCountAsync(s.ParticipantCount);
+        await SessionState.SaveScoreBuffersAsync(scoreInputBuffers);
+        StateHasChanged();
+    }
+
+    private async ValueTask OnLocationChanging(LocationChangingContext context)
+    {
+        if (isEditing) await CancelEditAsync();
+    }
+
+    public void Dispose() => locationChangingRegistration?.Dispose();
 
     // 自動入力された枠のインデックスを保持
     private int? autoFilledIndex = null;
@@ -1350,7 +1473,7 @@
             scoreInputBuffers[idx] = string.Empty;
         }
         EvaluateAutoFill();
-        if (saveToStorage)
+        if (saveToStorage && !isEditing) // 修正中は退避前の途中入力を保存済みのまま残す
         {
             await SessionState.SaveScoreBuffersAsync(scoreInputBuffers);
         }

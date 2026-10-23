@@ -132,6 +132,15 @@
     }
 
     /* チップ入力中（テンキーが開いている対象）をハイライトするスタイル */
+    /* 修正可能な行・修正中の行（固定列の不透明背景も上書きする） */
+    .result-row-clickable {
+        cursor: pointer;
+    }
+
+    .result-row-editing td {
+        background: linear-gradient(rgba(255, 152, 0, 0.22), rgba(255, 152, 0, 0.22)), var(--mud-palette-surface) !important;
+    }
+
     .chip-input-active {
         background-color: rgba(76, 175, 80, 0.15) !important;
         border-radius: 4px;
@@ -174,7 +183,7 @@
     </div>
     @if (!IsReadOnly)
     {
-        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="() => OnResetRequested.InvokeAsync()">入力中の記録をクリア</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.DeleteForever" Disabled="IsEditing" OnClick="() => OnResetRequested.InvokeAsync()">入力中の記録をクリア</MudButton>
     }
 </MudStack>
 <div id="result-container">
@@ -286,7 +295,7 @@
         @* テーブル *@
         <div id="@($"{TableScrollId}-hint")" class="scroll-hint-wrap">
         <div id="@TableScrollId" class="sync-table-scroll" style="width: 100%; overflow-x: auto; --table-min-width: @GetTableMinWidth();">
-            <MudTable Items="@History" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="width: 100%; table-layout: fixed;">
+            <MudTable T="GameResult" Items="@History" OnRowClick="HandleRowClick" RowClassFunc="GetRowClass" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="width: 100%; table-layout: fixed;">
                 <ColGroup>
                     <col style="width: 45px;" />
                     @for (int i = 0; i < ActiveParticipantCount; i++)
@@ -336,7 +345,7 @@
                     {
                         <MudTd Style="text-align: center; white-space: nowrap; padding: 4px 0px !important;">
                             <span @onclick="() => { }" @onclick:stopPropagation="true">
-                                <MudIconButton Icon="@(ArmedDeleteTarget == context ? DeleteEmpty : Icons.Material.Filled.Delete)" Color="@(ArmedDeleteTarget == context ? Color.Error : Color.Default)" Size="Size.Small" Style="@(ArmedDeleteTarget == context ? "padding: 0px;" : "padding: 0px; color: #9e9e9e;")" OnClick="() => OnDeleteRequested.InvokeAsync(context)" />
+                                <MudIconButton Icon="@(ArmedDeleteTarget == context ? DeleteEmpty : Icons.Material.Filled.Delete)" Color="@(ArmedDeleteTarget == context ? Color.Error : Color.Default)" Size="Size.Small" Style="@(ArmedDeleteTarget == context ? "padding: 0px;" : "padding: 0px; color: #9e9e9e;")" Disabled="IsEditing" OnClick="() => OnDeleteRequested.InvokeAsync(context)" />
                             </span>
                         </MudTd>
                     }
@@ -384,6 +393,23 @@
     [Parameter] public int? ActiveChipInputIndex { get; set; }
     [Parameter] public string ChipInputBuffer { get; set; } = "";
     [Parameter] public EventCallback<int> OnChipInputClicked { get; set; }
+    [Parameter] public EventCallback<GameResult> OnRowClicked { get; set; }
+    [Parameter] public GameResult? EditingTarget { get; set; }
+    [Parameter] public bool IsEditing { get; set; }
+
+    // 行タップで局の修正を開始する（入力中のセッションのみ）
+    private bool CanEditRows => !IsReadOnly && OnRowClicked.HasDelegate;
+
+    private async Task HandleRowClick(TableRowClickEventArgs<GameResult> e)
+    {
+        if (CanEditRows && e.Item != null) await OnRowClicked.InvokeAsync(e.Item);
+    }
+
+    private string GetRowClass(GameResult item, int index)
+    {
+        if (!CanEditRows) return "";
+        return ReferenceEquals(item, EditingTarget) ? "result-row-clickable result-row-editing" : "result-row-clickable";
+    }
 
     // スクロール要素に個別IDを設定
     private readonly string _uid = Guid.NewGuid().ToString("N");
