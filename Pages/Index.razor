@@ -669,8 +669,23 @@
         StateHasChanged();
     }
 
-    @* 各局の結果を保存 *@
+    @* 各局の結果を保存（保存完了前の連打による二重記録を防止） *@
+    private bool isRecording = false;
     private async Task CalculateAndRecordGame()
+    {
+        if (isRecording) return;
+        isRecording = true;
+        try
+        {
+            await RecordGameAsync();
+        }
+        finally
+        {
+            isRecording = false;
+        }
+    }
+
+    private async Task RecordGameAsync()
     {
         int pCount = rules.PlayerCount;
         var activeIndices = Enumerable.Range(0, activeParticipantCount)
