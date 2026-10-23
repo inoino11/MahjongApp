@@ -416,7 +416,7 @@
         {
             rulePresets = savedPresets;
         }
-        ResetInputForms();
+        ResetInputForms(clearBuffers: false); // 復元した入力途中の素点は消さない
         EvaluateAutoFill(); // 自動計算枠などを再評価
     }
 
@@ -893,14 +893,15 @@
     }
 
     @* 素点入力欄を初期化 *@
-    private void ResetInputForms()
+    private void ResetInputForms(bool clearBuffers = true)
     {
         previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
         currentYaki = new(new bool[MaxParticipants]);
         currentTobiBonus = new(new bool[MaxParticipants]);
         currentSitOuts = new(new bool[MaxParticipants]);
         autoFilledIndex = null;
-        scoreInputBuffers = Enumerable.Repeat(string.Empty, MaxParticipants).ToArray();
+        if (clearBuffers)
+            scoreInputBuffers = Enumerable.Repeat(string.Empty, MaxParticipants).ToArray();
     }
 
     @* 特殊ルールOFF時のスコア表示モード切替 *@
