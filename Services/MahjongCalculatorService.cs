@@ -39,73 +39,57 @@ public class MahjongCalculatorService
     }
 
     /// <summary>
-    /// 同点者が存在し、かつポイント折半やペナルティ分配時にタイブレーカー（席順決定）が必要かを判定します
+    /// 同点者が存在し、席順（タイブレーカー）によって計算結果が変わるかを判定します。
+    /// ポイント折半では、同点者内の並び順を全通り試して実際に計算し、結果が変わる場合のみ席順の入力を求めます
     /// </summary>
-    public bool CheckIfTieBreakerNeeded(RuleSet rules, List<int> activeScores, List<bool> activeYaki)
+    public bool CheckIfTieBreakerNeeded(RuleSet rules, List<int> activeScores, List<bool> activeYaki, List<bool> activeTobiBonus)
     {
-        int pCount = rules.PlayerCount;
-        var groupedScores = activeScores.Select((score, index) => new { score, index })
+        var tieGroups = activeScores.Select((score, index) => new { score, index })
             .GroupBy(x => x.score)
             .OrderByDescending(g => g.Key)
+            .Select(g => g.Select(x => x.index).ToList())
             .ToList();
 
-        if (!groupedScores.Any(g => g.Count() > 1)) return false;
+        if (!tieGroups.Any(g => g.Count > 1)) return false;
         if (rules.TieBreaker == TieBreakerRule.Kamicha) return true;
 
-        double[] baseUmaOka = new double[pCount];
-        double oka = (rules.ReturnPoints - rules.StartingPoints) * pCount / 1000.0;
-        baseUmaOka[0] += oka;
-        
-        double[] umaArray = rules.PlayerCount == 4
-            ? new double[] { rules.CustomUma4_1, rules.CustomUma4_2, rules.CustomUma4_3, rules.CustomUma4_4 }
-            : new double[] { rules.CustomUma3_1, rules.CustomUma3_2, rules.CustomUma3_3 };
-
-        for (int rank = 0; rank < pCount; rank++)
-            baseUmaOka[rank] += umaArray[rank];
-
-        double totalPts = 0;
-        for (int i = 0; i < pCount; i++)
+        string? baseline = null;
+        foreach (var order in EnumerateTieOrders(tieGroups))
         {
-            double rawPt = (activeScores[i] - rules.ReturnPoints) / 1000.0;
-            totalPts += ApplyRounding(rawPt, rules.Rounding);
+            var priority = order.Select((index, rank) => new { index, rank }).ToDictionary(x => x.index, x => x.rank);
+            var result = Calculate(rules, activeScores, activeYaki, activeTobiBonus, priority);
+            string outcome = string.Join(",", result.Points.Select(p => Math.Round(p, 1))) + "|" + string.Join(",", result.Yen);
+            if (baseline == null) baseline = outcome;
+            else if (outcome != baseline) return true;
         }
-        int fractionsToAdjust = (int)Math.Round(-(totalPts + oka) * 10);
-
-        int currentRank = 0;
-        foreach (var group in groupedScores)
-        {
-            int count = group.Count();
-            if (count > 1)
-            {
-                if (fractionsToAdjust > currentRank && fractionsToAdjust < currentRank + count) return true;
-                double sumUmaOka = 0;
-                for (int i = 0; i < count; i++) sumUmaOka += baseUmaOka[currentRank + i];
-                double splitBase = Math.Floor(sumUmaOka / count * 10) / 10.0;
-                double remainder = Math.Round(sumUmaOka - (splitBase * count), 1);
-                if (remainder > 0) return true;
-            }
-            currentRank += count;
-        }
-
-        int topCount = groupedScores.First().Count();
-        if (topCount > 1)
-        {
-            if (rules.IsSinkEnabled && rules.SinkUmaDistribution == PenaltyDistribution.WinnerTakeAll)
-            {
-                int borderPoint = rules.IsSinkBaseCustom ? rules.SinkUmaBasePoint : rules.StartingPoints;
-                int shizumiCount = activeScores.Count(s => rules.SinkJustIsUki ? s < borderPoint : s <= borderPoint);
-                if (shizumiCount > 0 && shizumiCount < pCount && (shizumiCount * rules.SinkUmaPenalty * 10) % topCount != 0)
-                    return true;
-            }
-            if (rules.IsYakiEnabled && rules.YakiDistribution == PenaltyDistribution.WinnerTakeAll)
-            {
-                int yakiCount = activeYaki.Count(y => y);
-                if (yakiCount > 0 && yakiCount < pCount && (yakiCount * rules.YakiPenalty * 10) % topCount != 0)
-                    return true;
-            }
-        }
-
         return false;
+    }
+
+    // 素点の高い順に並んだ同点グループごとに、グループ内の並びを全通り組み合わせた席順を列挙する
+    private static IEnumerable<List<int>> EnumerateTieOrders(List<List<int>> tieGroups)
+    {
+        IEnumerable<List<int>> orders = new[] { new List<int>() };
+        foreach (var group in tieGroups)
+            orders = orders.SelectMany(o => Permutations(group).Select(p => o.Concat(p).ToList())).ToList();
+        return orders;
+    }
+
+    private static IEnumerable<List<int>> Permutations(List<int> items)
+    {
+        if (items.Count <= 1)
+        {
+            yield return new List<int>(items);
+            yield break;
+        }
+        for (int i = 0; i < items.Count; i++)
+        {
+            var rest = items.Where((_, k) => k != i).ToList();
+            foreach (var p in Permutations(rest))
+            {
+                p.Insert(0, items[i]);
+                yield return p;
+            }
+        }
     }
 
     /// <summary>
