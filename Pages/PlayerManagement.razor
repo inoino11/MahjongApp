@@ -336,7 +336,7 @@
         var targetName = players.First(p => p.Id == mergeTargetId).Name;
         bool? result = await DialogService.ShowMessageBoxAsync(
             "🔀 名前の統合",
-            (MarkupString)$"【{sourceName}】のすべての履歴とチップを<br />【{targetName}】の中でこれからも生き続けます。<br /><br />※この操作は取り消せません。実行しますか？",
+            (MarkupString)$"【{sourceName}】のすべての履歴とチップは、<br />【{targetName}】の中でこれからも生き続けます。<br /><br />※この操作は取り消せません。実行しますか？",
             yesText: "統合を実行", cancelText: "キャンセル");
         if (result == true)
         {
@@ -344,7 +344,7 @@
             await SessionState.InitializeStateAsync();
             await DatabaseService.MergePlayersAsync(mergeSourceId, mergeTargetId);
             _ = StatsCache.InitializeAsync(forceReload: true);
-            Snackbar.Add("名前を統合しました。", Severity.Success);
+            Snackbar.Add("名前を統合しました", Severity.Success);
             mergeTargetId = null;
             mergeSourceId = null;
             await LoadData();

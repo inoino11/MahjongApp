@@ -274,7 +274,7 @@
         <div class="d-flex justify-center mt-6">
             <div class="d-flex gap-2" style="width: 100%; max-width: 400px;">
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.Payments" Disabled="@(ActiveHistory.Count == 0 || isEditing)" OnClick="NavigateToSettlement" Style="flex: 4; font-weight: bold; padding: 4px 0; white-space: nowrap;">
-                    場代清算
+                    場代精算
                 </MudButton>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.QueryStats" Disabled="@(ActiveHistory.Count == 0 || isEditing)" OnClick="ConfirmFinalizeSession" Style="flex: 6; font-weight: bold; padding: 4px 0; white-space: nowrap;">
                     成績に保存
@@ -826,7 +826,7 @@
     private async Task ConfirmReset()
     {
         bool? result = await DialogService.ShowMessageBoxAsync(
-            "入力中データのクリア",
+            "入力中の記録のクリア",
             (MarkupString)$"現在入力中の対局記録とチップを破棄しますか？<br /><span style='font-size: 0.85rem; color: var(--mud-palette-text-secondary);'>※通算成績などの保存済みデータは消えません。</span>",
             yesText: "破棄する", cancelText: "キャンセル");
         if (result == true)

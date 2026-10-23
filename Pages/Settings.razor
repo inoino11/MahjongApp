@@ -170,7 +170,7 @@
         bool isMerge = importMode == "merge";
         string title = isMerge ? "データの統合" : "データの完全上書き";
         string message = isMerge
-            ? "現在のデータにバックアップファイルのデータを追加・統合します。\n（※同じIDの履歴はバックアップ側の内容で更新されます）\n本当によろしいですか？"
+            ? "現在のデータにバックアップファイルのデータを追加・統合します。\n（同じ対局が含まれている場合は、バックアップ側の内容で上書きされます）\n本当によろしいですか？"
             : "現在のアプリ内のデータはすべて消去され、選択したファイルの内容で上書きされます。\n本当によろしいですか？";
         bool? result = await DialogService.ShowMessageBoxAsync(
             title, message, yesText: "はい、実行します", cancelText: "キャンセル");
@@ -190,13 +190,13 @@
                 var testParse = System.Text.Json.JsonSerializer.Deserialize<MahjongApp.Services.AllDbData>(json, options);
                 if (testParse == null || (testParse.Players == null && testParse.Games == null && testParse.RulePresets == null) || !HasRequiredKeys(json))
                 {
-                    Snackbar.Add("ファイル形式が正しくありません。麻雀集計ツールのバックアップデータを選択してください。", Severity.Error);
+                    Snackbar.Add("ファイル形式が正しくありません\nTaGAMΣ のバックアップファイルを選んでください", Severity.Error);
                     return;
                 }
             }
             catch (System.Text.Json.JsonException)
             {
-                Snackbar.Add("ファイルの解析に失敗しました。無効なファイルです。", Severity.Error);
+                Snackbar.Add("ファイルを読み取れませんでした\nバックアップファイルではない可能性があります", Severity.Error);
                 return;
             }
             await DatabaseService.ImportDataAsync(json, isMerge);

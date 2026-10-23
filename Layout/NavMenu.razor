@@ -7,7 +7,7 @@
 <div style="display: flex; flex-direction: column; height: 100%;">
     <MudNavMenu>
         <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Functions">素点集計</MudNavLink>
-        <MudNavLink Href="settlement" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Payments">場代清算</MudNavLink>
+        <MudNavLink Href="settlement" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Payments">場代精算</MudNavLink>
         <MudNavLink Href="sessions" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.History">対局履歴</MudNavLink>
         <MudNavLink Href="dashboard" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.QueryStats">通算成績</MudNavLink>
         <MudNavLink Href="players" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.ManageAccounts">名簿管理</MudNavLink>
@@ -124,11 +124,11 @@
             var result = await JSRuntime.InvokeAsync<string>("checkForUpdate");
             if (result == "CHECKED")
             {
-                Snackbar.Add("アップデートをチェックしました", Severity.Info);
+                Snackbar.Add("最新版を確認しました\n新しいバージョンがあれば案内が表示されます", Severity.Info);
             }
             else if (result == "NOT_REGISTERED")
             {
-                Snackbar.Add("Service Workerが未登録です\n初回ロードまたはPWA非対応ブラウザ", Severity.Warning);
+                Snackbar.Add("更新を確認できませんでした\n初回の読み込み中か、対応していないブラウザです", Severity.Warning);
             }
             else
             {

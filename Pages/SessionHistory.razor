@@ -328,7 +328,7 @@
     {
         bool? result = await DialogService.ShowMessageBoxAsync(
             "対局の削除",
-            (MarkupString)$"対局（{group.Session.Date.ToString("yyyy/MM/dd HH:mm")}）データを削除します。<br />よろしいですか？",
+            (MarkupString)$"この対局（{group.Session.Date.ToString("yyyy/MM/dd HH:mm")}）を削除します。<br />よろしいですか？",
             yesText: "削除する",
             cancelText: "キャンセル"
         );
