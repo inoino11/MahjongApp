@@ -4,6 +4,9 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 @inject HttpClient Http
+@inject IDialogService DialogService
+@inject MahjongApp.Services.LiveShareService LiveShare
+@implements IDisposable
 
 <div class="d-flex justify-end mt-4 gap-2">
     <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Image" OnClick="ShareImageAsync" Disabled="@(isSharing || ActiveHistory.Count == 0)" Style="flex: 1; max-width: 140px; white-space: nowrap;">
@@ -12,6 +15,22 @@
     <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Link" OnClick="CopyShareUrlAsync" Disabled="@(isSharing || ActiveHistory.Count == 0)" Style="flex: 1; max-width: 140px; white-space: nowrap;">
         @(isSharing ? "生成中..." : "URLシェア")
     </MudButton>
+    @if (!LiveShare.IsActive)
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.LiveTv" OnClick="StartLiveAsync" Disabled="@isSharing" Style="flex: 1; max-width: 140px; white-space: nowrap;">
+            観戦URL
+        </MudButton>
+    }
+    else
+    {
+        <div style="flex: 1; max-width: 140px;">
+            <MudMenu Label="@(LiveShare.HasError ? "更新失敗" : "LIVE")" StartIcon="@(LiveShare.HasError ? Icons.Material.Filled.SyncProblem : Icons.Material.Filled.Sensors)" Variant="Variant.Filled" Color="@(LiveShare.HasError ? Color.Warning : Color.Error)" Size="Size.Small" FullWidth="true" AnchorOrigin="Origin.TopRight" TransformOrigin="Origin.BottomRight">
+                <MudMenuItem Icon="@Icons.Material.Filled.Share" OnClick="ShareLiveUrlAsync">URLを共有</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Sync" OnClick="UpdateLiveNowAsync">今すぐ更新</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.StopCircle" OnClick="StopLiveAsync">配信を停止</MudMenuItem>
+            </MudMenu>
+        </div>
+    }
 </div>
 
 <ShareTarget 
@@ -31,6 +50,67 @@
     private string? cachedShareUrl = null;
     private string lastPayloadJson = "";
 
+    protected override async Task OnInitializedAsync()
+    {
+        await LiveShare.EnsureLoadedAsync();
+        LiveShare.OnChanged += HandleLiveChanged;
+    }
+
+    private void HandleLiveChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => LiveShare.OnChanged -= HandleLiveChanged;
+
+    // ===== 観戦URL =====
+    private async Task StartLiveAsync()
+    {
+        isSharing = true;
+        StateHasChanged();
+        try
+        {
+            string payloadJson = System.Text.Json.JsonSerializer.Serialize(CreatePayloadObject());
+            await LiveShare.StartAsync(payloadJson);
+            Snackbar.Add("観戦URLを発行しました\n記録するたびに自動で更新されます", Severity.Success);
+            await ShareLiveUrlAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"観戦URLの発行に失敗しました:\n{ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSharing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShareLiveUrlAsync()
+    {
+        if (LiveShare.ShareUrl == null) return;
+        string shareResult = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 観戦", LiveShare.ShareUrl);
+        if (shareResult == "COPIED") Snackbar.Add("観戦URLをクリップボードにコピーしました", Severity.Success);
+        else if (shareResult.StartsWith("ERROR")) Snackbar.Add("共有またはコピーに失敗しました", Severity.Error);
+    }
+
+    private async Task UpdateLiveNowAsync()
+    {
+        bool ok = await LiveShare.UpdateNowAsync();
+        if (ok) Snackbar.Add("観戦URLを更新しました", Severity.Success);
+        else if (LiveShare.IsActive) Snackbar.Add("観戦URLの更新に失敗しました\n通信状況を確認してください", Severity.Warning);
+        else Snackbar.Add("観戦URLの有効期限が切れています\n新しく発行してください", Severity.Warning);
+    }
+
+    private async Task StopLiveAsync()
+    {
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "配信の停止",
+            (MarkupString)"観戦URLの更新を停止しますか？<br /><span style='font-size: 0.85rem; color: var(--mud-palette-text-secondary);'>※停止時点の結果は、このURLで90日間見られます。</span>",
+            yesText: "停止する", cancelText: "キャンセル");
+        if (result != true) return;
+        string payloadJson = System.Text.Json.JsonSerializer.Serialize(CreatePayloadObject());
+        await LiveShare.EndAsync("stopped", payloadJson);
+        Snackbar.Add("観戦URLの配信を停止しました", Severity.Info);
+    }
+
     protected override void OnParametersSet()
     {
         var currentPayloadJson = System.Text.Json.JsonSerializer.Serialize(CreatePayloadObject());
@@ -41,29 +121,7 @@
         }
     }
 
-    private object CreatePayloadObject()
-    {
-        return new
-        {
-            r = Rules,
-            p = TablePlayers,
-            cs = Currency,
-            c = TablePlayers.Select(p => ActiveSessionChips.TryGetValue(p, out var v) ? v : 0).ToList(),
-            h = ActiveHistory.Select(g => new
-            {
-                t = g.Timestamp.Ticks,
-                s = g.RawScores,
-                pt = g.Points,
-                yp = g.YakiPlayers,
-                tb = g.TobiBonusRecipients,
-                sp = g.SinkPoints,
-                ypt = g.YakiPoints,
-                tpt = g.TobiPoints,
-                cp = g.ColdPoints,
-                y = g.Yen
-            }).ToList()
-        };
-    }
+    private object CreatePayloadObject() => SharePayloadBuilder.Build(Rules, TablePlayers, ActiveHistory, ActiveSessionChips, Currency);
 
     private async Task ShareImageAsync()
     {

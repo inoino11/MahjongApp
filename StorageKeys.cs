@@ -15,4 +15,5 @@ public static class StorageKeys
     public const string IsColorInverted = "isColorInverted";
     public const string IsDarkMode = "isDarkMode";
     public const string CurrencySetting = "currencySetting";
+    public const string LiveShare = "liveShare";
 }

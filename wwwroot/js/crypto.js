@@ -80,5 +80,24 @@ window.blazorCrypto = {
 
         const decoder = new TextDecoder();
         return decoder.decode(plainBuffer);
+    },
+    // 観戦URL用: 発行時の鍵を使い回して再暗号化する（IVは毎回新しく生成）
+    encryptWithKey: async function (plainText, keyUrlSafeBase64) {
+        let keyBase64 = keyUrlSafeBase64.replace(/-/g, '+').replace(/_/g, '/');
+        while (keyBase64.length % 4) { keyBase64 += '='; }
+        const key = await crypto.subtle.importKey("raw", this.base64ToBuffer(keyBase64), "AES-GCM", false, ["encrypt"]);
+
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const cipherBuffer = await crypto.subtle.encrypt(
+            { name: "AES-GCM", iv: iv },
+            key,
+            new TextEncoder().encode(plainText)
+        );
+
+        // IV(12 bytes) + 暗号文 を結合（encrypt と同じ形式）
+        const combined = new Uint8Array(iv.length + cipherBuffer.byteLength);
+        combined.set(iv, 0);
+        combined.set(new Uint8Array(cipherBuffer), iv.length);
+        return this.bufferToBase64(combined);
     }
 };

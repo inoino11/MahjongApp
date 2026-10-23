@@ -2,6 +2,7 @@
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
 @inject HttpClient Http
+@implements IDisposable
 @using System.Text.Json.Serialization
 @using MahjongApp.Models
 
@@ -18,8 +19,22 @@
     {
         <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
     }
+    else if (liveStatus == "discarded")
+    {
+        <MudAlert Severity="Severity.Info">この観戦は終了しました（記録は破棄されました）。</MudAlert>
+    }
     else
     {
+        @if (isLiveMode)
+        {
+            <div class="d-flex align-center justify-space-between flex-wrap gap-2 mb-3">
+                <div class="d-flex align-center gap-2">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="@LiveStatusColor" Icon="@(liveStatus == "live" ? Icons.Material.Filled.Sensors : null)" Class="ma-0">@LiveStatusLabel</MudChip>
+                    <span style="font-size: 0.8rem; color: var(--mud-palette-text-secondary);">最終更新 @LiveUpdatedText</span>
+                </div>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Refresh" OnClick="RefreshLiveAsync" Disabled="isRefreshing">更新</MudButton>
+            </div>
+        }
         <MudPaper Class="pa-4" Elevation="2" Style="overflow: hidden; width: 100%;">
             <CascadingValue Value="DisplayCurrency">
                 <ResultTable History="sharedData?.History ?? new()" Players="sharedData?.Players ?? new()" ActiveParticipantCount="sharedData?.Players?.Count ?? 0" @bind-DisplayMode="displayMode" Rules="sharedData?.Rules ?? new()" SessionChips="sharedData?.SessionChips ?? new()" IsReadOnly="true" />
@@ -52,88 +67,199 @@
     [SupplyParameterFromQuery(Name = "id")]
     public string? SharedIdParam { get; set; }
 
+    // 観戦URL（/shared?live={id}#{鍵}）
+    [SupplyParameterFromQuery(Name = "live")]
+    public string? LiveIdParam { get; set; }
+
+    private bool isLiveMode => !string.IsNullOrEmpty(LiveIdParam);
+    private string? liveStatus;
+    private DateTimeOffset? liveUpdatedAt;
+    private bool isRefreshing = false;
+    private CancellationTokenSource? pollCts;
+    private const int LivePollSeconds = 20;
+
     protected override async Task OnInitializedAsync()
     {
-        if (!string.IsNullOrEmpty(SharedIdParam))
+        string? decryptionKey = GetDecryptionKey();
+        if (!isLiveMode && string.IsNullOrEmpty(SharedIdParam))
+        {
+            errorMessage = "データが見つかりません。";
+        }
+        else if (decryptionKey == null)
+        {
+            errorMessage = "復号用の鍵がURLに含まれていません。";
+        }
+        else if (isLiveMode)
+        {
+            await LoadLiveAsync(decryptionKey);
+            if (liveStatus == "live") StartPolling(decryptionKey);
+        }
+        else
         {
             try
             {
-                var uri = new Uri(NavigationManager.Uri);
-                string fragment = uri.Fragment;
-                if (string.IsNullOrEmpty(fragment) || fragment.Length < 2)
-                {
-                    errorMessage = "復号用の鍵がURLに含まれていません。";
-                    isLoading = false;
-                    return;
-                }
-                string decryptionKey = fragment.Substring(1);
-
                 var encData = await Http.GetFromJsonAsync<EncryptedResponse>($"{workerUrl}/{SharedIdParam}");
-
                 if (encData != null && !string.IsNullOrEmpty(encData.EncryptedData))
-                {
-                    // --- 変更点: JS側のWeb Crypto APIを利用して復号 ---
-                    string decryptedJson = await JSRuntime.InvokeAsync<string>("blazorCrypto.decrypt", encData.EncryptedData, decryptionKey);
-
-                    var options = new System.Text.Json.JsonSerializerOptions
-                    {
-                        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-                        PropertyNameCaseInsensitive = true
-                    };
-                    var minData = System.Text.Json.JsonSerializer.Deserialize<MinifiedPayload>(decryptedJson, options);
-
-                    if (minData != null)
-                    {
-                        var resolvedPlayers = minData.Players ?? new List<string>();
-
-                        sharedData = new SharedPayload
-                        {
-                            Rules = minData.Rules,
-                            Players = resolvedPlayers,
-                            SessionChips = minData.SessionChips,
-                            Currency = minData.Currency,
-                            History = minData.History?.Select(m => new GameResult
-                            {
-                                Timestamp = new DateTime(m.Ticks),
-                                PlayerNames = resolvedPlayers,
-                                RawScores = m.RawScores ?? new(),
-                                Points = m.Points ?? new(),
-                                YakiPlayers = m.YakiPlayers ?? new(),
-                                TobiBonusRecipients = m.TobiBonusRecipients ?? new(),
-                                SinkPoints = m.SinkPoints ?? new(),
-                                YakiPoints = m.YakiPoints ?? new(),
-                                TobiPoints = m.TobiPoints ?? new(),
-                                ColdPoints = m.ColdPoints ?? new(),
-                                Yen = m.Yen ?? new()
-                            }).ToList()
-                        };
-                        DisplayCurrency = minData.Currency ?? AppCurrency;
-                    }
-                }
+                    await ApplyEncryptedAsync(encData.EncryptedData, decryptionKey);
                 else
-                {
                     errorMessage = "データが存在しないか、形式が異なります。";
-                }
-
-                isLoading = false;
             }
             catch (Microsoft.JSInterop.JSException)
             {
                 // JavaScript側での復号（crypto.subtle.decrypt）に失敗した場合
                 errorMessage = "データの復号に失敗しました。URLが欠損しているか、鍵が間違っています。";
-                isLoading = false;
             }
             catch (Exception)
             {
                 errorMessage = "無効なURL、またはデータの有効期限（90日）が切れています。";
-                isLoading = false;
             }
         }
-        else
+        isLoading = false;
+    }
+
+    private string? GetDecryptionKey()
+    {
+        string fragment = new Uri(NavigationManager.Uri).Fragment;
+        return string.IsNullOrEmpty(fragment) || fragment.Length < 2 ? null : fragment.Substring(1);
+    }
+
+    // 観戦データを取得して表示を更新する（取得に失敗しても表示中の結果は残す）
+    private async Task LoadLiveAsync(string decryptionKey)
+    {
+        try
         {
-            errorMessage = "データが見つかりません。";
-            isLoading = false;
+            var live = await Http.GetFromJsonAsync<LiveResponse>($"{workerUrl}/live/{LiveIdParam}");
+            if (live == null)
+            {
+                errorMessage = "データが存在しないか、形式が異なります。";
+                return;
+            }
+            liveStatus = live.Status;
+            liveUpdatedAt = DateTimeOffset.TryParse(live.UpdatedAt, out var updated) ? updated : null;
+            if (!string.IsNullOrEmpty(live.EncryptedData))
+                await ApplyEncryptedAsync(live.EncryptedData, decryptionKey);
+            errorMessage = null;
         }
+        catch (Microsoft.JSInterop.JSException)
+        {
+            errorMessage = "データの復号に失敗しました。URLが欠損しているか、鍵が間違っています。";
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            errorMessage = "観戦URLが見つからないか、有効期限（90日）が切れています。";
+        }
+        catch (Exception)
+        {
+            // 一時的な通信エラーは、表示中の結果があればそのまま残して次の更新を待つ
+            if (sharedData == null) errorMessage = "観戦データを読み込めませんでした。通信状況を確認してください。";
+        }
+    }
+
+    private async Task ApplyEncryptedAsync(string encryptedData, string decryptionKey)
+    {
+        string decryptedJson = await JSRuntime.InvokeAsync<string>("blazorCrypto.decrypt", encryptedData, decryptionKey);
+
+        var options = new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true
+        };
+        var minData = System.Text.Json.JsonSerializer.Deserialize<MinifiedPayload>(decryptedJson, options);
+        if (minData == null) return;
+
+        var resolvedPlayers = minData.Players ?? new List<string>();
+        sharedData = new SharedPayload
+        {
+            Rules = minData.Rules,
+            Players = resolvedPlayers,
+            SessionChips = minData.SessionChips,
+            Currency = minData.Currency,
+            History = minData.History?.Select(m => new GameResult
+            {
+                Timestamp = new DateTime(m.Ticks),
+                PlayerNames = resolvedPlayers,
+                RawScores = m.RawScores ?? new(),
+                Points = m.Points ?? new(),
+                YakiPlayers = m.YakiPlayers ?? new(),
+                TobiBonusRecipients = m.TobiBonusRecipients ?? new(),
+                SinkPoints = m.SinkPoints ?? new(),
+                YakiPoints = m.YakiPoints ?? new(),
+                TobiPoints = m.TobiPoints ?? new(),
+                ColdPoints = m.ColdPoints ?? new(),
+                Yen = m.Yen ?? new()
+            }).ToList()
+        };
+        DisplayCurrency = minData.Currency ?? AppCurrency;
+    }
+
+    // 配信中は一定間隔で読み込み直す（画面が裏に回っている間は通信しない）
+    private void StartPolling(string decryptionKey)
+    {
+        pollCts = new CancellationTokenSource();
+        _ = PollAsync(decryptionKey, pollCts.Token);
+    }
+
+    private async Task PollAsync(string decryptionKey, CancellationToken token)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(LivePollSeconds));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(token))
+            {
+                if (liveStatus != "live") break;
+                var visibility = await JSRuntime.InvokeAsync<string>("getVisibilityState");
+                if (visibility != "visible") continue;
+                await LoadLiveAsync(decryptionKey);
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (JSDisconnectedException) { }
+    }
+
+    private async Task RefreshLiveAsync()
+    {
+        var key = GetDecryptionKey();
+        if (key == null) return;
+        isRefreshing = true;
+        await LoadLiveAsync(key);
+        isRefreshing = false;
+    }
+
+    public void Dispose() => pollCts?.Cancel();
+
+    private string LiveStatusLabel => liveStatus switch
+    {
+        "live" => "LIVE",
+        "finished" => "終了",
+        "stopped" => "配信停止",
+        _ => "-"
+    };
+
+    private Color LiveStatusColor => liveStatus switch
+    {
+        "live" => Color.Error,
+        "finished" => Color.Primary,
+        _ => Color.Default
+    };
+
+    private string LiveUpdatedText
+    {
+        get
+        {
+            if (liveUpdatedAt == null) return "-";
+            var local = liveUpdatedAt.Value.ToLocalTime();
+            var minutes = (int)(DateTimeOffset.Now - local).TotalMinutes;
+            string relative = minutes < 1 ? "たった今" : minutes < 60 ? $"{minutes}分前" : $"{minutes / 60}時間前";
+            return $"{local:M/d HH:mm}（{relative}）";
+        }
+    }
+
+    public class LiveResponse
+    {
+        [JsonPropertyName("encryptedData")] public string? EncryptedData { get; set; }
+        [JsonPropertyName("status")] public string? Status { get; set; }
+        [JsonPropertyName("updatedAt")] public string? UpdatedAt { get; set; }
     }
 
     public class EncryptedResponse

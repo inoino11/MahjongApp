@@ -62,3 +62,6 @@ window.attachScrollHint = (wrapperId, selector) => {
     }
     update();
 };
+
+// 画面が表示中か（観戦ページの自動更新を裏に回っている間は止めるため）
+window.getVisibilityState = () => document.visibilityState;

@@ -9,6 +9,7 @@
 @inject MahjongApp.Services.StatsCacheService StatsCache
 @inject MahjongApp.Services.SessionStateService SessionState
 @inject MahjongApp.Services.MahjongCalculatorService Calculator
+@inject MahjongApp.Services.LiveShareService LiveShare
 
 @* 素点入力欄のスタイル *@
 <style>
@@ -350,6 +351,7 @@
     protected override async Task OnInitializedAsync()
     {
         locationChangingRegistration = NavigationManager.RegisterLocationChangingHandler(OnLocationChanging);
+        await LiveShare.EnsureLoadedAsync();
         // 1. すべての状態の復元をサービスに委譲
         await SessionState.InitializeStateAsync();
         // 2. データベース（名簿マスター）の読み込み
@@ -844,6 +846,7 @@
         if (result == true)
         {
             await SessionState.ClearSessionAsync();
+            await LiveShare.EndAsync("discarded", null);
             Snackbar.Add("入力中の記録をクリアしました", Severity.Info);
             StateHasChanged();
         }
@@ -1158,6 +1161,15 @@
 
     public void Dispose() => locationChangingRegistration?.Dispose();
 
+    // ===== 観戦URL =====
+    private string BuildSharePayloadJson() => SharePayloadBuilder.BuildJson(rules, TablePlayers, ActiveHistory, ActiveSessionChips, Currency);
+
+    // 記録・削除・修正・チップ・ルール変更はいずれも再描画を伴うため、描画後に内容の変化を検知して送る
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (LiveShare.IsActive) LiveShare.ScheduleUpdate(BuildSharePayloadJson());
+    }
+
     // 自動入力された枠のインデックスを保持
     private int? autoFilledIndex = null;
 
@@ -1353,6 +1365,7 @@
                 }
             }
             await DatabaseService.SaveSessionAsync(playersToUpdate, sessionRecord, gameRecordsToSave);
+            if (LiveShare.IsActive) await LiveShare.EndAsync("finished", BuildSharePayloadJson());
             ActiveHistory.Clear();
             ActiveSessionChips.Clear();
             await LocalStorage.SetItemAsync(StorageKeys.ActiveHistory, ActiveHistory);
