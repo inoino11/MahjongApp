@@ -595,8 +595,9 @@
         double fee = totalFee;
         if (selectedRule == FeeRule.TopPays)
         {
-            double maxPt = activePlayers.Max(p => p.TotalPt);
-            var topPlayers = activePlayers.Where(p => p.TotalPt == maxPt).ToList();
+            // 小数の計算誤差で同点を取りこぼさないよう、表示と同じ小数第1位で比較する
+            double maxPt = Math.Round(activePlayers.Max(p => p.TotalPt), 1);
+            var topPlayers = activePlayers.Where(p => Math.Round(p.TotalPt, 1) == maxPt).ToList();
             double splitFee = fee / topPlayers.Count;
             foreach (var p in topPlayers) p.Fee = splitFee;
         }
@@ -618,7 +619,7 @@
                         var pId = gPids[i];
                         if (string.IsNullOrEmpty(pId)) continue;
                         double? score = null;
-                        if (i < gPts.Count && gPts[i] is { } pt) score = pt;
+                        if (i < gPts.Count && gPts[i] is { } pt) score = Math.Round(pt, 1);
                         if (score.HasValue)
                         {
                             if (score.Value > maxScore)
