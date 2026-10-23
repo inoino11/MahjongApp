@@ -30,9 +30,9 @@
         <MudTabs DisableRipple="true" Class="compact-tabs" @bind-ActivePanelIndex="activeTabIndex" Centered="true" Elevation="1" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4" Style="min-height: 450px;">
 
             @* ==========================================
-               タブ1: ウマ・端数処理
+               タブ1: ウマ・同点処理
                ========================================== *@
-            <MudTabPanel Text="@(activeTabIndex == 0 ? "ウマ・端数処理" : "")" Icon="@Icons.Material.Filled.Calculate">
+            <MudTabPanel Text="@(activeTabIndex == 0 ? "ウマ・同点処理" : "")" Icon="@Icons.Material.Filled.Calculate">
                 <MudGrid Spacing="2">
                     <MudItem xs="12">
                         <div style="width: fit-content;">
@@ -86,15 +86,9 @@
                     </MudItem>
 
                     <MudItem xs="12" sm="6" Class="mt-4">
-                        <MudSelect T="RoundingRule" Label="端数処理ルール" @bind-Value="EditingRules.Rounding" Margin="Margin.Dense" Variant="Variant.Outlined">
-                            <MudSelectItem Value="RoundingRule.GoshaRokunyu">五捨六入</MudSelectItem>
-                            <MudSelectItem Value="RoundingRule.ShishaGonyu">四捨五入</MudSelectItem>
-                            <MudSelectItem Value="RoundingRule.RoundDown">切り捨て</MudSelectItem>
-                            <MudSelectItem Value="RoundingRule.RoundUp">切り上げ</MudSelectItem>
-                        </MudSelect>
                         <MudText Class="mud-text-secondary" Typo="Typo.caption">
                             <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
-                            計算イベントごとに0.1ポイント未満の端数を丸め、上位(同点なら上家)に余りを分配します
+                            ポイントは0.1pt単位で計算し、同点などで割り切れない端数は上位（同点なら上家）に配分します
                         </MudText>
                     </MudItem>
                 </MudGrid>
@@ -319,7 +313,6 @@
 
         EditingRules.IsCustomUma = false;
         EditingRules.TieBreaker = TieBreakerRule.Kamicha;
-        EditingRules.Rounding = RoundingRule.GoshaRokunyu;
 
         EditingRules.IsSinkEnabled = false;
         EditingRules.IsSinkBaseCustom = false;

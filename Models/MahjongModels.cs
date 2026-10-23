@@ -12,14 +12,6 @@ public enum TieBreakerRule
     Split    // ポイント折半
 }
 
-public enum RoundingRule
-{
-    GoshaRokunyu, // 五捨六入
-    ShishaGonyu,  // 四捨五入
-    RoundDown,    // 切り捨て
-    RoundUp       // 切り上げ
-}
-
 public enum PenaltyDistribution
 {
     WinnerTakeAll, // 1着総取り
@@ -58,7 +50,6 @@ public class RuleSet
 
     // --- 同点・端数処理 ---
     public TieBreakerRule TieBreaker { get; set; } = TieBreakerRule.Kamicha;
-    public RoundingRule Rounding { get; set; } = RoundingRule.GoshaRokunyu;
 
     // --- 沈みウマ ---
     public bool IsSinkEnabled { get; set; } = false;

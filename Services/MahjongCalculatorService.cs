@@ -8,16 +8,10 @@ namespace MahjongApp.Services;
 public class MahjongCalculatorService
 {
     /// <summary>
-    /// ルール設定に応じたポイントの端数丸め処理を行います
+    /// ポイントを0.1pt単位に丸めます（五捨六入）。
+    /// 素点は100点単位のため、通常の返し点では値は変わりません
     /// </summary>
-    public double ApplyRounding(double value, RoundingRule rule) => rule switch
-    {
-        RoundingRule.ShishaGonyu => Math.Round(value, 1, MidpointRounding.AwayFromZero),
-        RoundingRule.RoundDown => Math.Floor(value * 10) / 10.0,
-        RoundingRule.RoundUp => Math.Ceiling(value * 10) / 10.0,
-        RoundingRule.GoshaRokunyu => Math.Floor((value * 10) + 0.4) / 10.0,
-        _ => value
-    };
+    public double RoundToTenth(double value) => Math.Floor((value * 10) + 0.4) / 10.0;
 
     /// <summary>
     /// 合計ptが0にならない場合の微調整を、順位が上のプレイヤーから順に行います
@@ -113,7 +107,7 @@ public class MahjongCalculatorService
         for (int i = 0; i < pCount; i++)
         {
             double rawPt = (activeScores[i] - rules.ReturnPoints) / 1000.0;
-            points[i] = ApplyRounding(rawPt, rules.Rounding);
+            points[i] = RoundToTenth(rawPt);
         }
 
         var rankedIndices = activeScores.Select((score, index) => new { score, index })
