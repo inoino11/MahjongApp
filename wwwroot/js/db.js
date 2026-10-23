@@ -61,6 +61,7 @@ window.mahjongDb = {
             const tx = db.transaction(['players', 'sessions', 'games'], 'readwrite');
             tx.oncomplete = () => resolve(true);
             tx.onerror = (e) => reject(e.target.error);
+            tx.onabort = () => reject(tx.error || new Error("Transaction aborted"));
             const playerStore = tx.objectStore('players');
             const sessionStore = tx.objectStore('sessions');
             const gameStore = tx.objectStore('games');
@@ -93,6 +94,7 @@ window.mahjongDb = {
             reqS.onsuccess = () => { result.sessions = reqS.result; checkDone(); };
             reqG.onsuccess = () => { result.games = reqG.result; checkDone(); };
             tx.onerror = (e) => reject(e.target.error);
+            tx.onabort = () => reject(tx.error || new Error("Transaction aborted"));
         }));
     },
     // プレイヤー名の変更やチップの直接修正
@@ -102,6 +104,7 @@ window.mahjongDb = {
             tx.objectStore('players').put(player);
             tx.oncomplete = () => resolve(true);
             tx.onerror = (e) => reject(e.target.error);
+            tx.onabort = () => reject(tx.error || new Error("Transaction aborted"));
         }));
     },
     // プレイヤーの削除（※対局履歴がない場合のみC#側から呼ばれる想定）
@@ -111,6 +114,7 @@ window.mahjongDb = {
             tx.objectStore('players').delete(playerId);
             tx.oncomplete = () => resolve(true);
             tx.onerror = (e) => reject(e.target.error);
+            tx.onabort = () => reject(tx.error || new Error("Transaction aborted"));
         }));
     },
     // プレイヤーの統合
@@ -119,6 +123,7 @@ window.mahjongDb = {
             const tx = db.transaction(['players', 'sessions', 'games'], 'readwrite');
             tx.oncomplete = () => resolve(true);
             tx.onerror = (e) => reject(e.target.error);
+            tx.onabort = () => reject(tx.error || new Error("Transaction aborted"));
             const pStore = tx.objectStore('players');
             const sStore = tx.objectStore('sessions');
             const gStore = tx.objectStore('games');
@@ -128,7 +133,7 @@ window.mahjongDb = {
                 pStore.get(sourceId).onsuccess = (e2) => {
                     let sourcePlayer = e2.target.result;
                     if (targetPlayer && sourcePlayer) {
-                        targetPlayer.cumulativeChips += sourcePlayer.cumulativeChips;
+                        targetPlayer.cumulativeChips = (targetPlayer.cumulativeChips || 0) + (sourcePlayer.cumulativeChips || 0);
                         pStore.put(targetPlayer);
                         pStore.delete(sourceId);
                     }
@@ -138,9 +143,10 @@ window.mahjongDb = {
             gStore.getAll().onsuccess = (e) => {
                 e.target.result.forEach(game => {
                     let changed = false;
-                    for (let i = 0; i < game.playerIds.length; i++) {
-                        if (game.playerIds[i] === sourceId) {
-                            game.playerIds[i] = targetId;
+                    const ids = game.playerIds || [];
+                    for (let i = 0; i < ids.length; i++) {
+                        if (ids[i] === sourceId) {
+                            ids[i] = targetId;
                             changed = true;
                         }
                     }
@@ -151,9 +157,10 @@ window.mahjongDb = {
             sStore.getAll().onsuccess = (e) => {
                 e.target.result.forEach(session => {
                     let changed = false;
-                    for (let i = 0; i < session.participantPlayerIds.length; i++) {
-                        if (session.participantPlayerIds[i] === sourceId) {
-                            session.participantPlayerIds[i] = targetId;
+                    const pIds = session.participantPlayerIds || [];
+                    for (let i = 0; i < pIds.length; i++) {
+                        if (pIds[i] === sourceId) {
+                            pIds[i] = targetId;
                             changed = true;
                         }
                     }
@@ -168,6 +175,7 @@ window.mahjongDb = {
             const tx = db.transaction(['players', 'sessions', 'games'], 'readwrite');
             tx.oncomplete = () => resolve(true);
             tx.onerror = (e) => reject(e.target.error);
+            tx.onabort = () => reject(tx.error || new Error("Transaction aborted"));
             tx.objectStore('players').clear();
             tx.objectStore('sessions').clear();
             tx.objectStore('games').clear();
@@ -194,6 +202,7 @@ window.mahjongDb = {
                 tx = db.transaction(['players', 'sessions', 'games'], 'readwrite');
                 tx.oncomplete = () => resolve(true);
                 tx.onerror = (e) => reject(e.target.error);
+                tx.onabort = () => reject(tx.error || new Error("Transaction aborted"));
                 if (!isMerge) {
                     tx.objectStore('players').clear();
                     tx.objectStore('sessions').clear();
@@ -219,6 +228,7 @@ window.mahjongDb = {
             const tx = db.transaction(['sessions', 'games'], 'readwrite');
             tx.oncomplete = () => resolve(true);
             tx.onerror = (e) => reject(e.target.error);
+            tx.onabort = () => reject(tx.error || new Error("Transaction aborted"));
             // 1. セッション本体を削除
             tx.objectStore('sessions').delete(sessionId);
             // 2. このセッションIDを持つ対局(games)を探して全て削除
