@@ -190,7 +190,7 @@
                 };
                 // AllDbData型にパースできるかテスト
                 var testParse = System.Text.Json.JsonSerializer.Deserialize<MahjongApp.Services.AllDbData>(json, options);
-                if (testParse == null || (testParse.Players == null && testParse.Games == null && testParse.RulePresets == null))
+                if (testParse == null || (testParse.Players == null && testParse.Games == null && testParse.RulePresets == null) || !HasRequiredKeys(json))
                 {
                     Snackbar.Add("ファイル形式が正しくありません。麻雀集計ツールのバックアップデータを選択してください。", Severity.Error);
                     return;
@@ -214,6 +214,26 @@
         {
             Snackbar.Add($"ファイルの読み込み処理中にエラーが発生しました:\n{ex.Message}", Severity.Error);
         }
+    }
+
+    // IndexedDBの主キー（players.id / sessions.sessionId / games.id）が全件にあるか検証する。
+    // 欠けているとDBへの書き込みが途中で失敗するため、取り込み前に弾く。
+    private static bool HasRequiredKeys(string json)
+    {
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        if (root.ValueKind != System.Text.Json.JsonValueKind.Object) return false;
+        bool AllHaveKey(string arrayName, string keyName)
+        {
+            if (!root.TryGetProperty(arrayName, out var array) || array.ValueKind == System.Text.Json.JsonValueKind.Null) return true;
+            if (array.ValueKind != System.Text.Json.JsonValueKind.Array) return false;
+            return array.EnumerateArray().All(item =>
+                item.ValueKind == System.Text.Json.JsonValueKind.Object &&
+                item.TryGetProperty(keyName, out var key) &&
+                key.ValueKind == System.Text.Json.JsonValueKind.String &&
+                !string.IsNullOrEmpty(key.GetString()));
+        }
+        return AllHaveKey("players", "id") && AllHaveKey("sessions", "sessionId") && AllHaveKey("games", "id");
     }
 
     // 全データ初期化

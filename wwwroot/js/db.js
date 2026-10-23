@@ -181,9 +181,10 @@ window.mahjongDb = {
     restoreData: function (jsonData, isMerge) {
         return new Promise((resolve, reject) => {
             if (!this.db) return reject("Database not initialized");
+            let tx = null;
             try {
                 const data = JSON.parse(jsonData);
-                const tx = this.db.transaction(['players', 'sessions', 'games'], 'readwrite');
+                tx = this.db.transaction(['players', 'sessions', 'games'], 'readwrite');
                 tx.oncomplete = () => resolve(true);
                 tx.onerror = (e) => reject(e.target.error);
                 if (!isMerge) {
@@ -195,6 +196,10 @@ window.mahjongDb = {
                 if (data.sessions) data.sessions.forEach(s => tx.objectStore('sessions').put(s));
                 if (data.games) data.games.forEach(g => tx.objectStore('games').put(g));
             } catch (e) {
+                // 途中で失敗した場合は clear() も含めて全て取り消す（中途半端な状態で確定させない）
+                if (tx) {
+                    try { tx.abort(); } catch { /* 既に終了している場合は無視 */ }
+                }
                 reject("JSON Parsing or DB Error: " + e.message);
             }
         });
