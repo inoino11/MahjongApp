@@ -231,6 +231,7 @@
                             }
                         }
                     </div>
+                    <div id="@($"{ChipScrollId}-hint")" class="scroll-hint-wrap">
                     <div id="@ChipScrollId" class="sync-chip-scroll" style="width: 100%; overflow-x: auto; padding-bottom: 4px;">
                         @{
                             bool isChipError = !IsReadOnly && SessionChips.Take(ActiveParticipantCount).Sum() != 0;
@@ -278,10 +279,12 @@
                             </div>
                         </div>
                     </div>
+                    </div>
                 </MudCardContent>
             </MudCard>
         }
         @* テーブル *@
+        <div id="@($"{TableScrollId}-hint")" class="scroll-hint-wrap">
         <div id="@TableScrollId" class="sync-table-scroll" style="width: 100%; overflow-x: auto; --table-min-width: @GetTableMinWidth();">
             <MudTable Items="@History" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="width: 100%; table-layout: fixed;">
                 <ColGroup>
@@ -359,6 +362,7 @@
                     }
                 </FooterContent>
             </MudTable>
+        </div>
         </div>
     </div>
 </div>
@@ -438,7 +442,11 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (DisplayMode != 7)
+        {
             await JSRuntime.InvokeVoidAsync("syncScroll", ChipScrollId, TableScrollId);
+            await JSRuntime.InvokeVoidAsync("attachScrollHint", $"{ChipScrollId}-hint", null);
+            await JSRuntime.InvokeVoidAsync("attachScrollHint", $"{TableScrollId}-hint", null);
+        }
     }
 
     private void PrepareChartData()

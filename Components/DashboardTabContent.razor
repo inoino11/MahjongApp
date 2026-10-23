@@ -1,4 +1,5 @@
 @using MahjongApp.Models
+@inject IJSRuntime JSRuntime
 
 @if (Stats == null || Stats.Count == 0)
 {
@@ -35,6 +36,7 @@ else
             <MudIcon Icon="@Icons.Material.Filled.Leaderboard" />
             @(Title) ランキング
         </MudText>
+        <div id="@RankingHintId" class="scroll-hint-wrap">
         <MudTable T="PlayerStats" Items="@Stats" Class="sticky-table-col ranking-table" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="background: transparent;">
             <HeaderContent>
                 @for (int i = 0; i < RankHeaders.Length; i++)
@@ -81,6 +83,7 @@ else
                 </MudTd>
             </RowTemplate>
         </MudTable>
+        </div>
     </MudPaper>
 
     @* --- 相性分析エリア --- *@
@@ -106,6 +109,7 @@ else
         }
         else if (MatchupList.Count > 0)
         {
+            <div id="@MatchupHintId" class="scroll-hint-wrap">
             <MudTable T="MatchupStat" Items="@MatchupList" Class="sticky-table-col matchup-table" Hover="true" Dense="true" Elevation="0" Breakpoint="Breakpoint.None" Style="background: transparent;">
                 <HeaderContent>
                     @for (int i = 0; i < MatchupHeaders.Length; i++)
@@ -143,6 +147,7 @@ else
                     </MudTd>
                 </RowTemplate>
             </MudTable>
+            </div>
         }
         else
         {
@@ -164,6 +169,17 @@ else
     [Parameter] public List<PlayerProfile> AvailablePlayers { get; set; } = new();
 
     public static readonly string[] RankHeaders = { "名前", "対戦数", "総合Pt", "総合収支", "(Pt収支)", "(チップ収支)", "平均順位", "トップ率", "ラス回避率" };
+    private readonly string _uid = Guid.NewGuid().ToString("N");
+    private string RankingHintId => $"ranking-hint-{_uid}";
+    private string MatchupHintId => $"matchup-hint-{_uid}";
+
+    // 横スクロールできる表に「続きがある」影を出す（表の表示切替で要素が作り直されても再登録される）
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JSRuntime.InvokeVoidAsync("attachScrollHint", RankingHintId, ".mud-table-container");
+        await JSRuntime.InvokeVoidAsync("attachScrollHint", MatchupHintId, ".mud-table-container");
+    }
+
     public static readonly string[] MatchupHeaders = { "相手", "同卓数", "Pt差", "収支差", "直接対決", "先着率" };
 
     private string GetShortName(string? name)

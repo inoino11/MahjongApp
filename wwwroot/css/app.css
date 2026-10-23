@@ -113,3 +113,26 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* 横スクロールの続きがあることを示す右端の影（attachScrollHint で can-scroll-right を付け外し） */
+.scroll-hint-wrap {
+    position: relative;
+}
+
+.scroll-hint-wrap::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 24px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.45));
+    z-index: 5;
+}
+
+.scroll-hint-wrap.can-scroll-right::after {
+    opacity: 1;
+}

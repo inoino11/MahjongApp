@@ -43,3 +43,22 @@ window.hideMahjongLoader = () => {
         }, 800);
     }
 };
+// 横スクロールできる領域に「続きがある」影を出す（スクロールバーを非表示にしているため）
+// wrapperId: .scroll-hint-wrap を付けた要素のID / selector: その中のスクロール要素（省略時は最初の子要素）
+window.attachScrollHint = (wrapperId, selector) => {
+    const wrap = document.getElementById(wrapperId);
+    if (!wrap) return;
+    const el = selector ? wrap.querySelector(selector) : wrap.firstElementChild;
+    if (!el || el.dataset.scrollHint === "true") return;
+    el.dataset.scrollHint = "true";
+    const update = () => {
+        wrap.classList.toggle('can-scroll-right', el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+    };
+    el.addEventListener('scroll', update, { passive: true });
+    if (window.ResizeObserver) {
+        const observer = new ResizeObserver(update);
+        observer.observe(el);
+        if (el.firstElementChild) observer.observe(el.firstElementChild);
+    }
+    update();
+};
