@@ -84,13 +84,27 @@
     protected override async Task OnInitializedAsync()
     {
         _ = StatsCache.InitializeAsync();
-        var savedColorInverted = await LocalStorage.GetItemAsync<bool?>(StorageKeys.IsColorInverted);
+        var savedColorInverted = await SafeGetAsync<bool?>(StorageKeys.IsColorInverted);
         _isColorInverted = savedColorInverted ?? true;
-        var savedDarkMode = await LocalStorage.GetItemAsync<bool?>(StorageKeys.IsDarkMode);
+        var savedDarkMode = await SafeGetAsync<bool?>(StorageKeys.IsDarkMode);
         _isDarkMode = savedDarkMode ?? true;
-        var savedCurrency = await LocalStorage.GetItemAsync<CurrencySetting>(StorageKeys.CurrencySetting);
+        var savedCurrency = await SafeGetAsync<CurrencySetting>(StorageKeys.CurrencySetting);
         if (savedCurrency != null) _currencySetting = savedCurrency;
         StateHasChanged();
+    }
+
+    // 表示設定が読めなくても（保存形式の変更・破損など）初期値で起動を続ける
+    private async Task<T?> SafeGetAsync<T>(string key)
+    {
+        try
+        {
+            return await LocalStorage.GetItemAsync<T>(key);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"localStorage '{key}' の読み込みに失敗しました: {ex.Message}");
+            return default;
+        }
     }
 
     // ダイアログを開き、設定を保存する処理

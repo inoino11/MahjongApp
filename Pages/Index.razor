@@ -360,7 +360,19 @@
             }
         }
         // 4. ルールプリセットの初期化（初回のみ）
-        var savedPresets = await LocalStorage.GetItemAsync<List<RuleSet>>(StorageKeys.RulePresets);
+        List<RuleSet>? savedPresets;
+        bool isPresetsUnreadable = false;
+        try
+        {
+            savedPresets = await LocalStorage.GetItemAsync<List<RuleSet>>(StorageKeys.RulePresets);
+        }
+        catch (Exception ex)
+        {
+            // 読めない場合もデフォルトで起動を続ける（保存済みプリセットを上書きしないよう、保存はしない）
+            Console.WriteLine($"プリセットの読み込みに失敗しました: {ex.Message}");
+            savedPresets = null;
+            isPresetsUnreadable = true;
+        }
         if (savedPresets == null || savedPresets.Count == 0)
         {
             // 初回起動時のデフォルトプリセット
@@ -397,7 +409,8 @@
                     TieBreaker = TieBreakerRule.Split
                 }
             };
-            await LocalStorage.SetItemAsync(StorageKeys.RulePresets, rulePresets);
+            if (!isPresetsUnreadable)
+                await LocalStorage.SetItemAsync(StorageKeys.RulePresets, rulePresets);
         }
         else
         {

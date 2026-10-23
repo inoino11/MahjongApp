@@ -32,15 +32,15 @@ public class SessionStateService
     public async Task InitializeStateAsync()
     {
         // 1. ルールの復元
-        var savedRules = await _localStorage.GetItemAsync<RuleSet>(StorageKeys.Rules);
+        var savedRules = await SafeGetAsync<RuleSet>(StorageKeys.Rules);
         if (savedRules != null) Rules = savedRules;
 
         // 2. 参加人数の復元
-        var savedActiveCount = await _localStorage.GetItemAsync<int?>(StorageKeys.ActiveParticipantCount);
-        ActiveParticipantCount = savedActiveCount ?? Rules.PlayerCount;
+        var savedActiveCount = await SafeGetAsync<int?>(StorageKeys.ActiveParticipantCount);
+        ActiveParticipantCount = Math.Clamp(savedActiveCount ?? Rules.PlayerCount, 3, 7);
 
         // 3. プレイヤー名の復元
-        var savedPlayers = await _localStorage.GetItemAsync<List<string>>(StorageKeys.CurrentPlayers);
+        var savedPlayers = await SafeGetAsync<List<string>>(StorageKeys.CurrentPlayers);
         if (savedPlayers != null)
         {
             for (int i = 0; i < savedPlayers.Count && i < 7; i++)
@@ -50,20 +50,20 @@ public class SessionStateService
         }
 
         // 4. 局履歴の復元
-        var savedHistory = await _localStorage.GetItemAsync<List<GameResult>>(StorageKeys.ActiveHistory);
+        var savedHistory = await SafeGetAsync<List<GameResult>>(StorageKeys.ActiveHistory);
         if (savedHistory != null) ActiveHistory = savedHistory;
 
         // 5. チップ情報の復元（古いList型形式からの救済ロジックも内包）
         try
         {
-            var savedChipsDict = await _localStorage.GetItemAsync<Dictionary<string, int>>(StorageKeys.ActiveSessionChips);
+            var savedChipsDict = await SafeGetAsync<Dictionary<string, int>>(StorageKeys.ActiveSessionChips);
             if (savedChipsDict != null)
             {
                 ActiveSessionChips = savedChipsDict;
             }
             else
             {
-                var savedChipsList = await _localStorage.GetItemAsync<List<int>>(StorageKeys.ActiveSessionChips);
+                var savedChipsList = await SafeGetAsync<List<int>>(StorageKeys.ActiveSessionChips);
                 if (savedChipsList != null)
                 {
                     ActiveSessionChips = new Dictionary<string, int>();
@@ -81,7 +81,7 @@ public class SessionStateService
         }
 
         // 6. 入力バッファの復元
-        var backupBuffers = await _localStorage.GetItemAsync<string[]>(StorageKeys.BackupScoreBuffers);
+        var backupBuffers = await SafeGetAsync<string[]>(StorageKeys.BackupScoreBuffers);
         if (backupBuffers != null && backupBuffers.Length == 7)
         {
             if (backupBuffers.Any(b => !string.IsNullOrEmpty(b)))
@@ -91,12 +91,27 @@ public class SessionStateService
         }
 
         // 7. 一時場代の復元
-        var savedTempFee = await _localStorage.GetItemAsync<int?>(StorageKeys.TempTotalFee);
+        var savedTempFee = await SafeGetAsync<int?>(StorageKeys.TempTotalFee);
         if (savedTempFee.HasValue) TemporaryTotalFee = savedTempFee.Value;
 
         // 8. 一時支払いルールの復元
-        var savedTempRule = await _localStorage.GetItemAsync<int?>(StorageKeys.TempFeeRule);
+        var savedTempRule = await SafeGetAsync<int?>(StorageKeys.TempFeeRule);
         if (savedTempRule.HasValue) TemporaryFeeRule = savedTempRule.Value;
+    }
+
+    // 読み込みに失敗した値（保存形式の変更・破損など）は初期値扱いにして、起動を止めない。
+    // 救済できる可能性を残すため、読めなかったキーは削除しない。
+    private async Task<T?> SafeGetAsync<T>(string key)
+    {
+        try
+        {
+            return await _localStorage.GetItemAsync<T>(key);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"localStorage '{key}' の読み込みに失敗しました: {ex.Message}");
+            return default;
+        }
     }
 
     // --- 状態変更 兼 永続化メソッド群 ---
