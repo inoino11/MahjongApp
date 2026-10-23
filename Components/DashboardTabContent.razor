@@ -43,7 +43,7 @@ else
                 {
                     var colIndex = i;
                     var headerText = RankHeaders[colIndex];
-                    var colorStyle = (colIndex == 2 || colIndex == 3) ? "color:#4caf50;" : "";
+                    var colorStyle = (colIndex == 2 || colIndex == 3) ? "color:var(--mud-palette-success);" : "";
                     <MudTh Style="@(RankLayout.GetTdStyle(colIndex))">
                         <MudText Typo="Typo.caption" Align="Align.Center" Style="@($"font-weight: bold; white-space: nowrap; {colorStyle}")">
                             @headerText
@@ -116,7 +116,7 @@ else
                     {
                         var colIndex = i;
                         var headerText = MatchupHeaders[colIndex];
-                        var colorStyle = (colIndex == 2 || colIndex == 3) ? "color:#4caf50;" : "";
+                        var colorStyle = (colIndex == 2 || colIndex == 3) ? "color:var(--mud-palette-success);" : "";
                         <MudTh Style="@(MatchupLayout.GetTdStyle(colIndex))">
                             <MudText Typo="Typo.caption" Align="Align.Center" Style="@($"font-weight: bold; white-space: nowrap; {colorStyle}")">
                                 @headerText

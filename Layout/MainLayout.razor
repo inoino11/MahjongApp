@@ -188,12 +188,15 @@
             Surface = "#ffffff", // 白
             TextPrimary = "#000000",
             AppbarBackground = "#1b5e20",
+            Success = "#2e7d32", // 白背景上の文字・白文字ボタンでも読める濃さ
         },
 
         // --- ダークモード設定（シックな黒緑スタイル） ---
         PaletteDark = new PaletteDark()
         {
             Primary = "#81c784", // 明るめの緑（ボタン等）
+            PrimaryContrastText = "#0d140d", // 明るい緑の塗りボタン上は濃い文字にする
+            SuccessContrastText = "#0d140d",
             Secondary = "#ef5350", // 明るめの赤（削除ボタン等）
             Background = "#0d140d", // 背景：黒に近い深い緑
             Surface = "#1a261a", // カード：少しだけ明るい黒緑（雀卓の質感をイメージ）
