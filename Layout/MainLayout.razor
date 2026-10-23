@@ -52,7 +52,24 @@
             </MudDrawer>
         }
         <MudMainContent>
-            @Body
+            @* 画面内で例外が起きてもヘッダー・メニューは残し、他画面へ移動・復帰できるようにする *@
+            <ErrorBoundary @ref="_errorBoundary">
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent>
+                    <MudContainer MaxWidth="MaxWidth.Small" Class="mt-6">
+                        <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                            <MudText Typo="Typo.subtitle1" Style="font-weight: bold;">エラーが発生しました</MudText>
+                            <MudText Typo="Typo.body2" Class="mt-1">入力中のデータは保存されています。トップに戻るか、再読み込みしてください。</MudText>
+                        </MudAlert>
+                        <div class="d-flex gap-2 mt-4">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RecoverToTop">トップに戻る</MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="ReloadApp">再読み込み</MudButton>
+                        </div>
+                    </MudContainer>
+                </ErrorContent>
+            </ErrorBoundary>
         </MudMainContent>
     </MudLayout>
 </CascadingValue>
@@ -70,9 +87,20 @@
         NavManager.LocationChanged += (s, e) =>
         {
             CheckIfSharedPage(e.Location);
+            _errorBoundary?.Recover(); // 画面遷移したらエラー表示を解除
             StateHasChanged();
         };
     }
+
+    private ErrorBoundary? _errorBoundary;
+
+    private void RecoverToTop()
+    {
+        _errorBoundary?.Recover();
+        NavManager.NavigateTo("");
+    }
+
+    private void ReloadApp() => NavManager.NavigateTo(NavManager.Uri, forceLoad: true);
 
     // URLに "/shared" が含まれているか判定
     private void CheckIfSharedPage(string uri)

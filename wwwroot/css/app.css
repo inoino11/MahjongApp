@@ -47,7 +47,7 @@ a, .btn-link {
     padding: 0.6rem 1.25rem 0.7rem 1.25rem;
     position: fixed;
     width: 100%;
-    z-index: 1000;
+    z-index: 10000; /* ローディング画面(9999)より手前に表示 */
 }
 
     #blazor-error-ui .dismiss {
