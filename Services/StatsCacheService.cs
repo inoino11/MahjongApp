@@ -68,10 +68,14 @@ public class StatsCacheService
                 var yen = game.Yen ?? new List<int>();
                 bool isSanma = game.PlayerCount == 3;
                 var currentMap = isSanma ? statsMap3 : statsMap4;
+                // 同点時の順位は、席順で決まった順位ウマが反映された基本ポイント（特殊ルール分を除く）で判定する
+                double At(List<double>? list, int idx) => list != null && idx < list.Count ? list[idx] : 0;
+                double BasePoint(int idx) => At(points, idx) - At(game.SinkPoints, idx) - At(game.YakiPoints, idx) - At(game.TobiPoints, idx) - At(game.ColdPoints, idx);
                 var validPlayers = playerIds
                     .Select((id, idx) => new { Id = id, Score = rawScores.Count > idx ? rawScores[idx] : null, Index = idx })
                     .Where(x => !string.IsNullOrEmpty(x.Id) && x.Score.HasValue)
                     .OrderByDescending(x => x.Score)
+                    .ThenByDescending(x => Math.Round(BasePoint(x.Index), 1))
                     .ToList();
                 for (int rank = 0; rank < validPlayers.Count; rank++)
                 {
