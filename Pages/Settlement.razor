@@ -116,7 +116,7 @@
                     </MudText>
                     @if (allSessions.Count == 0)
                     {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">記録された対局はありません。</MudText>
+                        <MudText Class="mud-text-secondary" Typo="Typo.body2">記録された対局はありません。</MudText>
                     }
                     else
                     {
@@ -182,13 +182,13 @@
                         </MudText>
                         @if (selectedSessions.Count == 0)
                         {
-                            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary" Class="py-8">
+                            <MudText Typo="Typo.body1" Align="Align.Center" Class="mud-text-secondary py-8">
                                 セッションを選択してください。
                             </MudText>
                         }
                         else if (calculatedResults.Count == 0)
                         {
-                            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary" Class="py-8">
+                            <MudText Typo="Typo.body1" Align="Align.Center" Class="mud-text-secondary py-8">
                                 有効なスコアデータがありません。
                             </MudText>
                         }
@@ -438,6 +438,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // 再読み込みや直接表示でも、入力中セッションと場代の入力値を表示できるよう状態を読み込む
+        await SessionStateService.InitializeStateAsync();
         _totalFee = SessionStateService.TemporaryTotalFee;
         if (_totalFee != 0)
         {

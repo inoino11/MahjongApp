@@ -103,7 +103,7 @@ else
         
         @if (!Stats.Any(s => s.Id == SelectedHeroId))
         {
-            <MudText Color="Color.Secondary" Class="mt-2 pa-4" Style="background-color: rgba(255,255,255,0.01); border-radius: 4px; text-align: center;">
+            <MudText Class="mud-text-secondary mt-2 pa-4" Style="background-color: rgba(255,255,255,0.01); border-radius: 4px; text-align: center;">
                 対象者の対局履歴がありません。
             </MudText>
         }
@@ -151,7 +151,7 @@ else
         }
         else
         {
-            <MudText Color="Color.Secondary" Class="mt-2">同卓データがありません。</MudText>
+            <MudText Class="mud-text-secondary mt-2">同卓データがありません。</MudText>
         }
     </MudPaper>
 }

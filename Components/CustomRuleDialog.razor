@@ -92,7 +92,7 @@
                             <MudSelectItem Value="RoundingRule.RoundDown">切り捨て</MudSelectItem>
                             <MudSelectItem Value="RoundingRule.RoundUp">切り上げ</MudSelectItem>
                         </MudSelect>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        <MudText Class="mud-text-secondary" Typo="Typo.caption">
                             <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Style="vertical-align: bottom; font-size: 14px;" />
                             計算イベントごとに0.1ポイント未満の端数を丸め、上位(同点なら上家)に余りを分配します
                         </MudText>
@@ -111,7 +111,7 @@
                         </div>
                         <MudCollapse Expanded="EditingRules.IsSinkEnabled">
                             <MudPaper Class="pa-3 mt-2" Outlined="true">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-flex align-center">
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2 d-flex align-center">
                                     <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Class="mr-1 flex-shrink-0" Style="font-size: 14px; margin-top: 2px;" />
                                     <span style="line-height: 1.4;">
                                         基準点数に満たない対局者に<br />ペナルティを課します
@@ -153,7 +153,7 @@
                         <MudSwitch @bind-Value="EditingRules.IsYakiEnabled" Color="Color.Primary" Label="焼き鳥" />
                         <MudCollapse Expanded="EditingRules.IsYakiEnabled">
                             <MudPaper Class="pa-3 mt-2" Outlined="true">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-flex align-center">
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2 d-flex align-center">
                                     <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Class="mr-1 flex-shrink-0" Style="font-size: 14px; margin-top: 2px;" />
                                     <span style="line-height: 1.4;">
                                         🍗にチェックが入った対局者に<br />ペナルティを課します
@@ -187,7 +187,7 @@
                         </div>
                         <MudCollapse Expanded="EditingRules.IsTobiEnabled">
                             <MudPaper Class="pa-3 mt-2" Outlined="true">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-flex align-center">
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2 d-flex align-center">
                                     <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Class="mr-1 flex-shrink-0" Style="font-size: 14px; margin-top: 2px;" />
                                     <span style="line-height: 1.4;">
                                         🚀にチェックが入った対局者に<br />トビボーナスを分配します
@@ -214,7 +214,7 @@
                         <MudSwitch @bind-Value="EditingRules.IsColdEnabled" Color="Color.Primary" Label="コールド賞" />
                         <MudCollapse Expanded="EditingRules.IsColdEnabled">
                             <MudPaper Class="pa-3 mt-2" Outlined="true">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-flex align-center">
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2 d-flex align-center">
                                     <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Small" Class="mr-1 flex-shrink-0" Style="font-size: 14px; margin-top: 2px;" />
                                     <span style="line-height: 1.4;">
                                         コールド達成時にボーナスを<br />他家全員から徴収します
