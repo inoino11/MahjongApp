@@ -193,6 +193,9 @@
                                     <MudNumericField T="int" Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←3)" : "順位ウマ(1←4)")" Value="rules.Uma2" ValueChanged="@((int v) => OnUmaChanged(rules.Uma1, v))" Step="5" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="@(() => CloseKeypad())" />
                                 </MudItem>
                             }
+                            <MudItem xs="12">
+                                <MudTextField T="string" Label="その他のルール（メモ）" Value="rules.Memo" ValueChanged="OnMemoChanged" Placeholder="例: 北抜き / 取りきり / 赤3枚 / 鳴き祝儀なし / 流し満貫は満貫 / ツモ損あり" Lines="2" Sizing="InputSizing.Auto" MaxLines="8" MaxLength="500" Margin="Margin.Dense" Class="px-2" @onfocusin="@(() => CloseKeypad())" />
+                            </MudItem>
                         </MudGrid>
                     </MudCardContent>
                 </MudCard>
@@ -454,6 +457,12 @@
     private async Task OnChipRateChanged(int val)
     {
         rules.ChipRate = val;
+        await SessionState.SaveRulesAsync(rules);
+    }
+
+    private async Task OnMemoChanged(string val)
+    {
+        rules.Memo = val ?? "";
         await SessionState.SaveRulesAsync(rules);
     }
 
@@ -1209,6 +1218,14 @@
         await SessionState.SaveRulesAsync(rules);
     }
 
+    // 計算に関わるルールだけを比べるため、メモを除いたJSONにする
+    private static string RuleJsonWithoutMemo(RuleSet r)
+    {
+        var copy = r.DeepClone();
+        copy.Memo = "";
+        return System.Text.Json.JsonSerializer.Serialize(copy);
+    }
+
     // セッションを確定して成績に保存する前の確認
     private async Task ConfirmFinalizeSession()
     {
@@ -1227,9 +1244,7 @@
                 if (preset != null)
                 {
                     isPresetNameExists = true;
-                    string presetJson = System.Text.Json.JsonSerializer.Serialize(preset);
-                    string currentJson = System.Text.Json.JsonSerializer.Serialize(rules);
-                    isPresetMatch = presetJson == currentJson;
+                    isPresetMatch = RuleJsonWithoutMemo(preset) == RuleJsonWithoutMemo(rules);
                 }
             }
             bool needsRuleNameChange = false;

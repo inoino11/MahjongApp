@@ -28,6 +28,17 @@
         color: var(--mud-palette-text-secondary);
         white-space: nowrap;
     }
+
+    /* メモは改行を保ったまま、最大2行で省略する */
+    .preset-memo {
+        font-size: 0.75rem;
+        color: var(--mud-palette-text-secondary);
+        white-space: pre-line;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
 </style>
 
 <MudDialog>
@@ -78,6 +89,10 @@
                                         <span class="rule-badge">チップ: @(preset.ChipRate)</span>
                                     }
                                 </div>
+                                @if (!string.IsNullOrWhiteSpace(preset.Memo))
+                                {
+                                    <div class="preset-memo">@preset.Memo</div>
+                                }
                             </MudStack>
                         </MudPaper>
                     }

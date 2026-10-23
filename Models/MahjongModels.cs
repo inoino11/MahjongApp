@@ -30,6 +30,7 @@ public class RuleSet
     public int Uma2 { get; set; } = 20;
     public int Rate { get; set; } = 50;
     public int ChipRate { get; set; } = 100;
+    public string Memo { get; set; } = ""; // 集計に関係しないルールのメモ（抜き牌・赤の枚数など）
 
     // --- 順位ウマの個別設定（カスタムルール） ---
     // 計算には常に CustomUma* を使う。個別設定でないときは Uma1/Uma2 から同期する
