@@ -238,31 +238,31 @@
             @for (int i = 0; i < activeParticipantCount; i++)
             {
                 var index = i;
-                bool isSitOut = currentSitOuts[index];
+                bool isSitOut = input.SitOuts[index];
                 <MudItem xs="12" sm="6">
                     <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center justify-space-between px-2 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
                         @* 名前 *@
-                        <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="currentPlayers[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" SearchFunc="@SearchRegisteredPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" ShowOnFocus="true" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input balanced-center-select" Style="font-weight: bold; font-size: 0.95rem; width: 9.5em;" Disabled="@(isSitOut || isEditing)" onfocus="this.select();" @onfocusin="@(() => CloseKeypad())" />
+                        <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="input.Players[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" SearchFunc="@SearchRegisteredPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" ShowOnFocus="true" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input balanced-center-select" Style="font-weight: bold; font-size: 0.95rem; width: 9.5em;" Disabled="@(isSitOut || isEditing)" onfocus="this.select();" @onfocusin="@(() => CloseKeypad())" />
                         <div class="d-flex align-center justify-center flex-grow-1">
                             @* 抜け番 *@
                             @if (activeParticipantCount > rules.PlayerCount)
                             {
-                                <MudToggleIconButton Toggled="currentSitOuts[index]" ToggledChanged="@((bool v) => OnSitOutChanged(index, v))" Icon="@Icons.Material.Filled.Person" Color="Color.Default" Title="参加中" ToggledIcon="@Icons.Material.Filled.LocalCafe" ToggledColor="Color.Default" ToggledTitle="☕ 抜け番" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isEditing" />
+                                <MudToggleIconButton Toggled="input.SitOuts[index]" ToggledChanged="@((bool v) => OnSitOutChanged(index, v))" Icon="@Icons.Material.Filled.Person" Color="Color.Default" Title="参加中" ToggledIcon="@Icons.Material.Filled.LocalCafe" ToggledColor="Color.Default" ToggledTitle="☕ 抜け番" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isEditing" />
                             }
                             @* 焼き鳥 *@
                             @if (rules.IsYakiEnabled)
                             {
-                                <MudToggleIconButton @bind-Toggled="currentYaki[index]" Icon="@Icons.Material.Filled.NoMeals" Color="Color.Default" Title="焼き鳥ではありません" ToggledIcon="@YakiIcon" ToggledColor="Color.Warning" ToggledTitle="🍗 焼き鳥です" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
+                                <MudToggleIconButton @bind-Toggled="input.Yaki[index]" Icon="@Icons.Material.Filled.NoMeals" Color="Color.Default" Title="焼き鳥ではありません" ToggledIcon="@YakiIcon" ToggledColor="Color.Warning" ToggledTitle="🍗 焼き鳥です" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
                             }
                             @* トビ賞 *@
                             @if (rules.IsTobiEnabled)
                             {
-                                <MudToggleIconButton @bind-Toggled="currentTobiBonus[index]" Icon="@Icons.Material.Filled.Rocket" Color="Color.Default" Title="トビ賞を獲得しません" ToggledIcon="@Icons.Material.Filled.RocketLaunch" ToggledColor="Color.Error" ToggledTitle="🚀 トビ賞を獲得します" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
+                                <MudToggleIconButton @bind-Toggled="input.TobiBonus[index]" Icon="@Icons.Material.Filled.Rocket" Color="Color.Default" Title="トビ賞を獲得しません" ToggledIcon="@Icons.Material.Filled.RocketLaunch" ToggledColor="Color.Error" ToggledTitle="🚀 トビ賞を獲得します" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
                             }
                         </div>
                         @* 素点（百点単位で入力し、下2桁の「00」は表示だけ） *@
                         <div id="score-input-@index" class="d-flex align-baseline" @onclick="@(async () => await OpenKeypad(index))" @onclick:stopPropagation="true">
-                            <MudTextField T="string" Value="@scoreInputBuffers[index]" ReadOnly="true" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == autoFilledIndex ? "auto-filled" : "")} {(activeScoreInputIndex == index ? "score-input-active" : "")} {(activeScoreInputIndex.HasValue && index == autoFilledIndex ? "score-input-auto-filling" : "")}")" Style="width: 77px; cursor: pointer;" Disabled="isSitOut" Adornment="@(index == autoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
+                            <MudTextField T="string" Value="@scoreInputBuffers[index]" ReadOnly="true" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == input.AutoFilledIndex ? "auto-filled" : "")} {(activeScoreInputIndex == index ? "score-input-active" : "")} {(activeScoreInputIndex.HasValue && index == input.AutoFilledIndex ? "score-input-auto-filling" : "")}")" Style="width: 77px; cursor: pointer;" Disabled="isSitOut" Adornment="@(index == input.AutoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
                             <span class="score-zeros" style="cursor: pointer;">00</span>
                         </div>
                     </MudPaper>
@@ -295,41 +295,24 @@
 
 @code {
     [CascadingParameter] public CurrencySetting Currency { get; set; } = new();
-    // 入力欄の対局者
-    public class PlayerInputState
-    {
-        public string? Id { get; set; } // 名簿にある人はそのID、新しい名前なら null
-        public string Name { get; set; } = string.Empty;
-    }
     private RuleSet rules => SessionState.Rules;
     private List<RuleSet> rulePresets = new();
-    private const int MaxParticipants = 7;
+    private const int MaxParticipants = ScoreInputState.MaxParticipants;
     private int activeParticipantCount
     {
         get => SessionState.ActiveParticipantCount;
         set => _ = SessionState.SaveActiveParticipantCountAsync(value);
     }
-    private List<PlayerInputState> currentPlayers = Enumerable.Range(0, 7).Select(_ => new PlayerInputState()).ToList();
+    // 素点入力欄の状態（素点の文字列は SessionState の配列を共有する）
+    private ScoreInputState? _input;
+    private ScoreInputState input => _input ??= new ScoreInputState(() => SessionState.ScoreInputBuffers);
     private List<PlayerProfile> playerMaster = new();
-    private List<int?> currentScores => scoreInputBuffers.Select(val => ScoreExpression.Evaluate(val)).ToList();
     private bool isFinalizing = false;
-    private List<int?> previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
     private List<GameResult> ActiveHistory => SessionState.ActiveHistory;
     private Dictionary<string, int> ActiveSessionChips => SessionState.ActiveSessionChips;
     private int displayMode = 1;
     private bool isSettingsExpanded = true;
-    private bool IsTotalCorrect
-    {
-        get
-        {
-            var activeScores = currentScores.Take(activeParticipantCount).Where((s, i) => !currentSitOuts[i]).ToList();
-            if (activeScores.Count(x => x.HasValue) != rules.PlayerCount) return false;
-            return activeScores.Sum(x => x ?? 0) == (rules.StartingPoints * rules.PlayerCount) / 100;
-        }
-    }
-    private List<bool> currentYaki = new(new bool[MaxParticipants]);
-    private List<bool> currentTobiBonus = new(new bool[MaxParticipants]);
-    private List<bool> currentSitOuts = new(new bool[MaxParticipants]);
+    private bool IsTotalCorrect => input.IsTotalCorrect(rules, activeParticipantCount);
     private const string YakiIcon = "<g transform=\"matrix(0.025, 0, 0, 0.025, 0, 24)\"><path d=\"M843-60 670-234l-85 85q-23 23-56.5 23T472-149l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23 23-56.5 23T246-375l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23-23-23-56.5t23-56.5l28-28L60-844l56-56 102 102 28-28q23-23 57-23t57 23l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l-85 84 172 173-56 57ZM529-205l227-226-57-57-227 227 57 56Zm-57-170 114-113-57-56-113 113 56 56Zm-170-56 227-227-57-56-226 226 56 57Zm-56-170 114-113-57-57-113 113 56 57Zm368 255ZM501-460ZM388-573ZM275-686Z\"/></g>";
     private GameResult? armedDeleteTarget = null;
     private int? activeScoreInputIndex = null;
@@ -362,11 +345,11 @@
         for (int i = 0; i < 7; i++)
         {
             string savedName = SessionState.CurrentPlayerNames[i];
-            currentPlayers[i].Name = savedName;
+            input.Players[i].Name = savedName;
             if (!string.IsNullOrEmpty(savedName))
             {
                 var matched = playerMaster.FirstOrDefault(p => p.Name == savedName);
-                if (matched != null) currentPlayers[i].Id = matched.Id;
+                if (matched != null) input.Players[i].Id = matched.Id;
             }
         }
         // 4. ルールのプリセット（初回はよく使うものを用意する）
@@ -475,22 +458,6 @@
         await SessionState.SaveRulesAsync(rules);
     }
 
-    // 素点の文字列（式を含む）が変わったとき
-    private async Task HandleScoreStringInput(int index, string val)
-    {
-        int? parsedVal = ScoreExpression.Evaluate(val);
-        if (parsedVal == null && currentScores[index] != null)
-        {
-            currentScores[index] = null;
-            StateHasChanged();
-            await Task.Yield();
-        }
-        if (index == autoFilledIndex && parsedVal != null)
-            autoFilledIndex = null;
-        currentScores[index] = parsedVal;
-        EvaluateAutoFill();
-    }
-
     // 名前の入力候補（名簿から部分一致で探す）
     private Task<IEnumerable<string>> SearchRegisteredPlayers(string value, CancellationToken token)
     {
@@ -508,14 +475,14 @@
         if (value == "削除済み")
         {
             Snackbar.Add("名前「削除済み」は使用できません", Severity.Warning);
-            currentPlayers[index].Name = string.Empty;
-            currentPlayers[index].Id = null;
+            input.Players[index].Name = string.Empty;
+            input.Players[index].Id = null;
             await SessionState.UpdatePlayerNameAsync(index, string.Empty);
             return;
         }
-        currentPlayers[index].Name = value;
+        input.Players[index].Name = value;
         var matchedPlayer = playerMaster.FirstOrDefault(p => p.Name == value);
-        currentPlayers[index].Id = matchedPlayer?.Id;
+        input.Players[index].Id = matchedPlayer?.Id;
         await SessionState.UpdatePlayerNameAsync(index, value);
     }
 
@@ -653,15 +620,12 @@
 
     private async Task RecordGameAsync()
     {
-        int pCount = rules.PlayerCount;
-        var activeIndices = Enumerable.Range(0, activeParticipantCount)
-            .Where(i => !currentSitOuts[i] && currentScores[i].HasValue)
-            .ToList();
-        if (activeIndices.Count != pCount) return;
-        var activeScores = activeIndices.Select(i => (currentScores[i] ?? 0) * 100).ToList();
-        var activePlayers = activeIndices.Select(i => currentPlayers[i].Name).ToList();
-        var activeYaki = activeIndices.Select(i => currentYaki[i]).ToList();
-        var activeTobiBonus = activeIndices.Select(i => currentTobiBonus[i]).ToList();
+        var active = input.BuildActiveInput(rules, activeParticipantCount);
+        if (active == null) return;
+        var activeScores = active.Scores;
+        var activePlayers = active.Names;
+        var activeYaki = active.Yaki;
+        var activeTobiBonus = active.TobiBonus;
         // 1. 入力のチェック
         if (activePlayers.Any(string.IsNullOrWhiteSpace))
         {
@@ -695,47 +659,13 @@
         bool needsTieBreaker = Calculator.CheckIfTieBreakerNeeded(rules, activeScores, activeYaki, activeTobiBonus);
         Dictionary<int, int>? priority = needsTieBreaker
             ? await OpenTieBreakerIfNeeded(activeScores, activePlayers)
-            : Enumerable.Range(0, pCount).ToDictionary(i => i, i => i);
+            : Enumerable.Range(0, rules.PlayerCount).ToDictionary(i => i, i => i);
         if (priority == null) return; // 席順の入力がキャンセルされた
         // 3. 計算
         var calcResult = Calculator.Calculate(rules, activeScores, activeYaki, activeTobiBonus, priority);
         // 4. 参加者だけで計算した結果を、抜け番を含む入力欄の並びに戻す
-        List<int?> finalRawScores = Enumerable.Repeat((int?)null, activeParticipantCount).ToList();
-        List<double> finalPoints = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
-        List<double> finalSinkPts = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
-        List<double> finalYakiPts = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
-        List<double> finalTobiPts = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
-        List<double> finalColdPts = Enumerable.Repeat(0.0, activeParticipantCount).ToList();
-        List<int> finalYen = Enumerable.Repeat(0, activeParticipantCount).ToList();
-        List<bool> finalTobiPlayers = Enumerable.Repeat(false, activeParticipantCount).ToList();
-        for (int i = 0; i < pCount; i++)
-        {
-            int originalIdx = activeIndices[i];
-            finalRawScores[originalIdx] = currentScores[originalIdx];
-            finalPoints[originalIdx] = calcResult.Points[i];
-            finalSinkPts[originalIdx] = calcResult.SinkPoints[i];
-            finalYakiPts[originalIdx] = calcResult.YakiPoints[i];
-            finalTobiPts[originalIdx] = calcResult.TobiPoints[i];
-            finalColdPts[originalIdx] = calcResult.ColdPoints[i];
-            finalYen[originalIdx] = calcResult.Yen[i];
-            finalTobiPlayers[originalIdx] = calcResult.TobiPlayers[i];
-        }
+        var newGameResult = input.ToGameResult(active, calcResult, activeParticipantCount);
         // 5. 保存（修正中なら、その局を置き換える）
-        var newGameResult = new GameResult
-        {
-            Timestamp = DateTime.Now,
-            PlayerNames = currentPlayers.Take(activeParticipantCount).Select(p => p.Name).ToList(),
-            RawScores = finalRawScores,
-            Points = finalPoints,
-            YakiPlayers = currentYaki.Take(activeParticipantCount).ToList(),
-            TobiPlayers = finalTobiPlayers,
-            TobiBonusRecipients = currentTobiBonus.Take(activeParticipantCount).ToList(),
-            SinkPoints = finalSinkPts,
-            YakiPoints = finalYakiPts,
-            TobiPoints = finalTobiPts,
-            ColdPoints = finalColdPts,
-            Yen = finalYen
-        };
         if (editingGame != null)
         {
             int editIndex = ActiveHistory.IndexOf(editingGame);
@@ -797,14 +727,7 @@
         int requiredCount = lastGame.RawScores.Count;
         if (activeParticipantCount < requiredCount && activeParticipantCount < MaxParticipants)
             await SessionState.SaveActiveParticipantCountAsync(Math.Min(requiredCount, MaxParticipants));
-        for (int i = 0; i < activeParticipantCount; i++)
-            if (i < lastGame.RawScores.Count)
-            {
-                scoreInputBuffers[i] = lastGame.RawScores[i]?.ToString() ?? string.Empty;
-                if (lastGame.YakiPlayers != null && i < lastGame.YakiPlayers.Count) currentYaki[i] = lastGame.YakiPlayers[i];
-                if (lastGame.TobiBonusRecipients != null && i < lastGame.TobiBonusRecipients.Count) currentTobiBonus[i] = lastGame.TobiBonusRecipients[i];
-            }
-        autoFilledIndex = null;
+        input.CopyFrom(lastGame, activeParticipantCount);
         EvaluateAutoFill();
         StateHasChanged();
         await SessionState.SaveScoreBuffersAsync(scoreInputBuffers);
@@ -817,7 +740,7 @@
         {
             // まだ1局もなければ、入力欄の名前（空欄を含む）を仮の列にする
             if (ActiveHistory.Count == 0)
-                return currentPlayers.Take(activeParticipantCount).Select(p => p.Name).ToList();
+                return input.Players.Take(activeParticipantCount).Select(p => p.Name).ToList();
             // 局があれば、素点が記録された名前を出てきた順に並べる
             var players = new List<string>();
             foreach (var game in ActiveHistory)
@@ -834,11 +757,7 @@
     // 入力欄をリセットする（clearBuffers が false なら素点の入力は残す）
     private void ResetInputForms(bool clearBuffers = true)
     {
-        previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
-        currentYaki = new(new bool[MaxParticipants]);
-        currentTobiBonus = new(new bool[MaxParticipants]);
-        currentSitOuts = new(new bool[MaxParticipants]);
-        autoFilledIndex = null;
+        input.Reset();
         if (clearBuffers)
             scoreInputBuffers = Enumerable.Repeat(string.Empty, MaxParticipants).ToArray();
     }
@@ -912,7 +831,7 @@
         if (activeParticipantCount < MaxParticipants)
         {
             int newIndex = activeParticipantCount;
-            if (autoFilledIndex.HasValue) currentSitOuts[newIndex] = true;
+            if (input.AutoFilledIndex.HasValue) input.SitOuts[newIndex] = true;
             await SessionState.SaveActiveParticipantCountAsync(activeParticipantCount + 1);
             EvaluateAutoFill();
         }
@@ -923,23 +842,7 @@
     {
         if (activeParticipantCount > rules.PlayerCount)
         {
-            int targetIndex = activeParticipantCount - 1;
-            scoreInputBuffers[targetIndex] = string.Empty;
-            currentSitOuts[targetIndex] = false;
-            currentYaki[targetIndex] = false;
-            currentTobiBonus[targetIndex] = false;
-            if (targetIndex == rules.PlayerCount)
-                for (int i = 0; i < targetIndex; i++)
-                    if (currentSitOuts[i])
-                    {
-                        currentSitOuts[i] = false;
-                        var prevScore = previousScores[i];
-                        if (prevScore.HasValue)
-                        {
-                            scoreInputBuffers[i] = prevScore.Value.ToString();
-                            previousScores[i] = null;
-                        }
-                    }
+            input.ClearLastSlot(rules, activeParticipantCount);
             await SessionState.SaveScoreBuffersAsync(scoreInputBuffers);
             await SessionState.SaveActiveParticipantCountAsync(activeParticipantCount - 1);
             EvaluateAutoFill();
@@ -949,46 +852,16 @@
     // 抜け番にしたら素点を退避し、参加に戻したら元に戻す
     private void OnSitOutChanged(int index, bool isSitOut)
     {
-        currentSitOuts[index] = isSitOut;
-        if (isSitOut)
-        {
-            previousScores[index] = currentScores[index];
-            scoreInputBuffers[index] = string.Empty;
-            currentYaki[index] = false;
-            currentTobiBonus[index] = false;
-            if (index == autoFilledIndex) autoFilledIndex = null;
-        }
-        else
-        {
-            var prevScore = previousScores[index];
-            if (prevScore.HasValue)
-            {
-                scoreInputBuffers[index] = prevScore.Value.ToString();
-                previousScores[index] = null;
-            }
-        }
+        input.SetSitOut(index, isSitOut);
         EvaluateAutoFill();
     }
 
     // --- 記録済みの局の修正 ---
     private GameResult? editingGame = null;
     private bool isEditing => editingGame != null;
-    private EditStash? editStash = null;
+    private ScoreInputState.Snapshot? editStash = null; // 修正前に入力欄にあった途中の入力
     private IDisposable? locationChangingRegistration;
     private int EditingGameNumber => editingGame == null ? 0 : ActiveHistory.IndexOf(editingGame) + 1;
-
-    // 修正前に入力欄にあった途中の入力
-    private class EditStash
-    {
-        public List<(string Name, string? Id)> Players { get; init; } = new();
-        public int ParticipantCount { get; init; }
-        public string[] Buffers { get; init; } = Array.Empty<string>();
-        public List<bool> Yaki { get; init; } = new();
-        public List<bool> TobiBonus { get; init; } = new();
-        public List<bool> SitOuts { get; init; } = new();
-        public List<int?> PreviousScores { get; init; } = new();
-        public int? AutoFilledIndex { get; init; }
-    }
 
     // 結果表の行をタップしたら、その局を入力欄に読み込んで修正を始める
     private async Task StartEditGameAsync(GameResult game)
@@ -1003,33 +876,8 @@
         if (isEditing) await CancelEditAsync();
         if (activeScoreInputIndex.HasValue || activeChipInputIndex.HasValue) await CloseKeypad();
 
-        editStash = new EditStash
-        {
-            Players = currentPlayers.Select(p => (p.Name, p.Id)).ToList(),
-            ParticipantCount = activeParticipantCount,
-            Buffers = scoreInputBuffers.ToArray(),
-            Yaki = currentYaki.ToList(),
-            TobiBonus = currentTobiBonus.ToList(),
-            SitOuts = currentSitOuts.ToList(),
-            PreviousScores = previousScores.ToList(),
-            AutoFilledIndex = autoFilledIndex
-        };
-
-        int slots = Math.Min(game.PlayerNames.Count, MaxParticipants);
-        for (int i = 0; i < MaxParticipants; i++)
-        {
-            int? raw = i < slots && i < game.RawScores.Count ? game.RawScores[i] : null;
-            string name = i < slots ? game.PlayerNames[i] : string.Empty;
-            currentPlayers[i].Name = name;
-            currentPlayers[i].Id = playerMaster.FirstOrDefault(p => p.Name == name)?.Id;
-            // 配列ごと差し替えると保存されてしまうため要素を書き換える
-            scoreInputBuffers[i] = raw?.ToString() ?? string.Empty;
-            currentSitOuts[i] = i < slots && !raw.HasValue;
-            currentYaki[i] = i < slots && (game.YakiPlayers?.ElementAtOrDefault(i) ?? false);
-            currentTobiBonus[i] = i < slots && (game.TobiBonusRecipients?.ElementAtOrDefault(i) ?? false);
-        }
-        previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
-        autoFilledIndex = null;
+        editStash = input.TakeSnapshot(activeParticipantCount);
+        int slots = input.LoadGame(game, playerMaster);
         editingGame = game;
         if (activeParticipantCount != slots)
             await SessionState.SaveActiveParticipantCountAsync(slots);
@@ -1044,17 +892,7 @@
         if (editStash == null) return;
         var s = editStash;
         activeScoreInputIndex = null;
-        for (int i = 0; i < MaxParticipants; i++)
-        {
-            currentPlayers[i].Name = s.Players[i].Name;
-            currentPlayers[i].Id = s.Players[i].Id;
-            scoreInputBuffers[i] = s.Buffers[i];
-        }
-        currentYaki = s.Yaki;
-        currentTobiBonus = s.TobiBonus;
-        currentSitOuts = s.SitOuts;
-        previousScores = s.PreviousScores;
-        autoFilledIndex = s.AutoFilledIndex;
+        input.Restore(s);
         editingGame = null;
         editStash = null;
         if (activeParticipantCount != s.ParticipantCount)
@@ -1079,52 +917,8 @@
         if (LiveShare.IsActive) LiveShare.ScheduleUpdate(BuildSharePayloadJson());
     }
 
-    // --- 最後の1人の素点の自動入力 ---
-    private int? autoFilledIndex = null; // 自動入力した欄（なければ null）
-
     // 1人だけ空欄なら合計が合うように自動入力し、条件を満たさなくなったら自動入力を消す
-    private void EvaluateAutoFill()
-    {
-        var activeIndices = Enumerable.Range(0, activeParticipantCount).Where(i => !currentSitOuts[i]).ToList();
-        if (activeIndices.Count != rules.PlayerCount)
-        {
-            ClearAutoFill();
-            return;
-        }
-        var scores = currentScores;
-        var manualIndices = activeIndices.Where(i => i != autoFilledIndex).ToList();
-        var nullManualIndices = manualIndices.Where(i => !scores[i].HasValue).ToList();
-        if (nullManualIndices.Count == 0)
-        {
-            if (autoFilledIndex.HasValue)
-            {
-                int targetTotal = (rules.StartingPoints * rules.PlayerCount) / 100;
-                int currentTotal = manualIndices.Sum(i => scores[i] ?? 0);
-                scoreInputBuffers[autoFilledIndex.Value] = (targetTotal - currentTotal).ToString();
-            }
-        }
-        else if (nullManualIndices.Count == 1)
-        {
-            if (autoFilledIndex.HasValue) ClearAutoFill();
-            else
-            {
-                autoFilledIndex = nullManualIndices[0];
-                int targetTotal = (rules.StartingPoints * rules.PlayerCount) / 100;
-                int currentTotal = activeIndices.Where(i => i != autoFilledIndex).Sum(i => scores[i] ?? 0);
-                scoreInputBuffers[autoFilledIndex.Value] = (targetTotal - currentTotal).ToString();
-            }
-        }
-        else ClearAutoFill();
-    }
-
-    private void ClearAutoFill()
-    {
-        if (autoFilledIndex.HasValue)
-        {
-            scoreInputBuffers[autoFilledIndex.Value] = string.Empty;
-            autoFilledIndex = null;
-        }
-    }
+    private void EvaluateAutoFill() => input.EvaluateAutoFill(rules, activeParticipantCount);
 
     private void NavigateToSettlement()
     {
@@ -1313,13 +1107,13 @@
     // 素点の入力でテンキーを開く
     private async Task OpenKeypad(int index)
     {
-        if (currentSitOuts[index]) return;
+        if (input.SitOuts[index]) return;
         if (activeChipInputIndex.HasValue) await CloseKeypad();
         bool isAlreadyOpen = activeScoreInputIndex.HasValue;
         if (activeScoreInputIndex.HasValue && activeScoreInputIndex.Value != index)
             await CommitScoreBuffer(activeScoreInputIndex.Value);
         activeScoreInputIndex = index;
-        var score = currentScores[index];
+        var score = input.Scores[index];
         if (string.IsNullOrEmpty(scoreInputBuffers[index]) && score.HasValue)
             scoreInputBuffers[index] = score.Value.ToString();
         if (!isAlreadyOpen)
@@ -1389,11 +1183,7 @@
                 await CalculateAndRecordGame();
                 return;
             }
-            if (scoreIdx == autoFilledIndex)
-            {
-                scoreInputBuffers[scoreIdx] = string.Empty;
-                autoFilledIndex = null;
-            }
+            input.TakeOverAutoFilled(scoreIdx);
             scoreInputBuffers[scoreIdx] = KeypadInput.Apply(scoreInputBuffers[scoreIdx], key);
             EvaluateAutoFill();
         }
