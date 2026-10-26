@@ -1,5 +1,5 @@
 // 要素を画像にして共有する。スマホは共有シート → PC はクリップボード → どちらも無理ならダウンロード
-// 戻り値: SHARED / COPIED / DOWNLOADED / ERROR: 〜
+// 戻り値: SHARED / COPIED / DOWNLOADED / CANCELED / ERROR: 〜
 window.exportAndShareResult = async (elementId) => {
     const element = document.getElementById(elementId);
     if (!element) return "ERROR: Element not found";
@@ -16,12 +16,31 @@ window.exportAndShareResult = async (elementId) => {
                     return;
                 }
                 const file = new File([blob], 'mahjong_result.png', { type: 'image/png' });
+                const download = () => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'mahjong_result.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                };
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
-                    navigator.share({
-                        files: [file]
-                    }).catch(e => console.log("Share aborted", e));
-                    resolve("SHARED");
+                    try {
+                        await navigator.share({ files: [file] });
+                        resolve("SHARED");
+                    } catch (e) {
+                        if (e.name === 'AbortError') {
+                            resolve("CANCELED");
+                        } else {
+                            // 画像の作成に時間がかかり、ボタンを押してからの猶予（Android の Chrome は約5秒）を
+                            // 過ぎると共有画面を開けない（NotAllowedError）。その場合はダウンロードに切り替える
+                            download();
+                            resolve("DOWNLOADED");
+                        }
+                    }
                     return;
                 }
                 try {
@@ -35,14 +54,7 @@ window.exportAndShareResult = async (elementId) => {
                 } catch (e) {
                     console.log("Clipboard error fallback", e);
                 }
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'mahjong_result.png';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                download();
                 resolve("DOWNLOADED");
             }, 'image/png');
         });
@@ -52,15 +64,19 @@ window.exportAndShareResult = async (elementId) => {
 };
 
 // URLを共有する。スマホは共有シート、PC はクリップボード
-// 戻り値: SHARED / COPIED / ERROR: 〜
+// 戻り値: SHARED / COPIED / CANCELED / RETRY / ERROR: 〜
+// RETRY: URLの発行に時間がかかり、ボタンを押してからの猶予を過ぎて共有できなかった（もう一度押せば共有できる）
 window.shareUrlNative = async (title, url) => {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (isMobile && navigator.share) {
-        navigator.share({
-            title: title,
-            url: url
-        }).catch(err => console.log("Share aborted", err));
-        return "SHARED";
+        try {
+            await navigator.share({ title: title, url: url });
+            return "SHARED";
+        } catch (err) {
+            if (err.name === 'AbortError') return "CANCELED";
+            if (err.name === 'NotAllowedError') return "RETRY";
+            return "ERROR: " + err.message;
+        }
     } else {
         try {
             if (navigator.clipboard) {
@@ -70,6 +86,7 @@ window.shareUrlNative = async (title, url) => {
                 return "ERROR: Clipboard API not available";
             }
         } catch (err) {
+            if (err.name === 'NotAllowedError') return "RETRY";
             return "ERROR: " + err.message;
         }
     }

@@ -88,6 +88,7 @@
         if (LiveShare.ShareUrl == null) return;
         string shareResult = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 観戦", LiveShare.ShareUrl);
         if (shareResult == "COPIED") Snackbar.Add("観戦URLをクリップボードにコピーしました", Severity.Success);
+        else if (shareResult == "RETRY") Snackbar.Add("共有の準備ができました\nもう一度押すと共有できます", Severity.Info);
         else if (shareResult.StartsWith("ERROR")) Snackbar.Add("共有またはコピーに失敗しました", Severity.Error);
     }
 
@@ -156,6 +157,7 @@
             {
                 string shareResult = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 対局結果", cachedShareUrl);
                 if (shareResult == "COPIED") Snackbar.Add("閲覧用URLをクリップボードにコピーしました", Severity.Success);
+                else if (shareResult == "RETRY") Snackbar.Add("共有の準備ができました\nもう一度押すと共有できます", Severity.Info);
                 else if (shareResult.StartsWith("ERROR")) Snackbar.Add("共有またはコピーに失敗しました", Severity.Error);
                 return;
             }
@@ -177,6 +179,7 @@
                     
                     string shareResult = await JSRuntime.InvokeAsync<string>("shareUrlNative", "麻雀集計ツール - 対局結果", cachedShareUrl);
                     if (shareResult == "COPIED") Snackbar.Add("閲覧用URLをクリップボードにコピーしました", Severity.Success);
+                    else if (shareResult == "RETRY") Snackbar.Add("共有の準備ができました\nもう一度押すと共有できます", Severity.Info);
                     else if (shareResult.StartsWith("ERROR")) Snackbar.Add("共有またはコピーに失敗しました", Severity.Error);
                 }
             }
