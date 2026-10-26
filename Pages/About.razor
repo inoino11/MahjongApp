@@ -1,0 +1,151 @@
+@page "/about"
+
+@* 初めて開いた人向けの説明（何ができるか、なぜこれを使うのか、はじめかた） *@
+<style>
+    .about-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .about-list li {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 8px 0;
+    }
+
+    .about-list li + li {
+        border-top: 1px solid var(--mud-palette-divider);
+    }
+
+    .about-list .about-item-title {
+        font-weight: bold;
+    }
+
+    .about-list .about-item-text {
+        font-size: 0.85rem;
+        color: var(--mud-palette-text-secondary);
+        line-height: 1.6;
+    }
+
+    .about-steps {
+        margin: 0;
+        padding-left: 1.4em;
+        line-height: 1.8;
+    }
+</style>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-4 pb-10">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
+        <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
+        使い方
+    </MudText>
+
+    <MudPaper Class="pa-5 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">TaGAMΣ とは</MudText>
+        <MudText Typo="Typo.body2" Style="line-height: 1.8;">
+            麻雀の点数計算と成績管理を、スマホひとつで済ませるための集計アプリです。<br />
+            半荘ごとに素点を入れるだけで、ウマ・オカから焼き鳥・トビ賞まで自動で計算し、その日の精算と通算成績まで残せます。
+        </MudText>
+    </MudPaper>
+
+    <MudPaper Class="pa-5 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-1" Style="font-weight: bold;">できること</MudText>
+        <ul class="about-list">
+            @foreach (var (icon, title, text) in Features)
+            {
+                <li>
+                    <MudIcon Icon="@icon" Color="Color.Primary" Class="mt-1" />
+                    <div>
+                        <div class="about-item-title">@title</div>
+                        <div class="about-item-text">@text</div>
+                    </div>
+                </li>
+            }
+        </ul>
+    </MudPaper>
+
+    <MudPaper Class="pa-5 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-1" Style="font-weight: bold;">なぜ TaGAMΣ なのか</MudText>
+        <ul class="about-list">
+            @foreach (var (icon, title, text) in Reasons)
+            {
+                <li>
+                    <MudIcon Icon="@icon" Color="Color.Primary" Class="mt-1" />
+                    <div>
+                        <div class="about-item-title">@title</div>
+                        <div class="about-item-text">@text</div>
+                    </div>
+                </li>
+            }
+        </ul>
+    </MudPaper>
+
+    <MudPaper Class="pa-5 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">はじめかた</MudText>
+        <ol class="about-steps">
+            <li><b>ルール設定</b>で持ち点・返し点・ウマ・レートを選びます。よく使うルールは「保存済みの設定」から呼び出せます。</li>
+            <li>対局者の名前を入れ、半荘が終わるたびに<b>素点</b>を入力して「結果を記録する」を押します。素点は百点単位で入力します（25,000点なら「250」）。3人分を入れると、残りの1人は自動で入ります。</li>
+            <li>その日の終わりに<b>「成績に保存」</b>を押すと、対局履歴と通算成績に反映されます。</li>
+        </ol>
+        <div class="d-flex justify-center mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Functions" Href="./">素点集計を始める</MudButton>
+        </div>
+    </MudPaper>
+
+    <MudPaper Class="pa-5 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">データの保存場所</MudText>
+        <MudText Typo="Typo.body2" Style="line-height: 1.8;">
+            記録はこの端末のブラウザの中に保存され、サーバーには送りません。<br />
+            そのため、ブラウザのサイトデータを消したり機種を変えたりすると、記録も消えます。
+            「データ管理」から、ファイルへの保存か、暗号化したクラウドバックアップを使ってください。
+        </MudText>
+        <div class="d-flex justify-center mt-4">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Settings" Href="settings">データ管理へ</MudButton>
+        </div>
+    </MudPaper>
+
+    <MudPaper Class="pa-5" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">よくある質問</MudText>
+        <MudExpansionPanels Elevation="0" Dense="true">
+            @foreach (var (question, answer) in Faqs)
+            {
+                <MudExpansionPanel Text="@question">
+                    <MudText Typo="Typo.body2" Style="line-height: 1.8;">@answer</MudText>
+                </MudExpansionPanel>
+            }
+        </MudExpansionPanels>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private static readonly (string Icon, string Title, string Text)[] Features =
+    {
+        (Icons.Material.Filled.Calculate, "素点を入れるだけで自動計算", "ウマ・オカ、同点時の扱い（上家取り／折半）、沈みウマ・焼き鳥・トビ賞・コールド賞まで、ルールどおりに計算します。"),
+        (Icons.Material.Filled.Groups, "5〜7人の卓にも対応", "抜け番を切り替えながら、同じ卓の記録を続けられます。三人麻雀にも対応しています。"),
+        (Icons.Material.Filled.EditNote, "記録した半荘の修正", "結果表の行をタップすると、その半荘を入力欄に読み込んで直せます。"),
+        (Icons.Material.Filled.Payments, "場代の精算", "同額・総額トップ・各戦トップ・対戦数比の4つの払い方から選べます。チップも合わせて計算します。"),
+        (Icons.Material.Filled.QueryStats, "成績の振り返り", "対局履歴、通算の順位率・平均順位・収支、よく同卓する相手との相性を見られます。"),
+        (Icons.Material.Filled.Share, "結果の共有", "画像、閲覧用のURL、記録するたびに自動で更新される観戦用のURLで、卓の仲間に結果を送れます。"),
+        (Icons.Material.Filled.CloudDone, "バックアップ", "ファイルへの保存に加えて、端末で暗号化したクラウドバックアップに自動で保存できます。機種変更のときはパスキーか復元キーで戻せます。"),
+    };
+
+    private static readonly (string Icon, string Title, string Text)[] Reasons =
+    {
+        (Icons.Material.Filled.TouchApp, "インストールも登録も不要", "URLを開けばすぐ使えます。ホーム画面に追加すれば、アプリと同じように起動できます。"),
+        (Icons.Material.Filled.WifiOff, "オフラインでも動く", "一度開けば、電波の届かない場所でも集計できます。"),
+        (Icons.Material.Filled.Lock, "記録は自分の端末の中", "成績は端末の中に保存します。共有やクラウドバックアップは端末で暗号化してから送るので、サーバー側では中身を読めません。"),
+        (Icons.Material.Filled.LiveTv, "卓の外からも見られる", "観戦用のURLを送れば、その場にいない人も途中経過を追えます。"),
+        (Icons.Material.Filled.MoneyOff, "無料・広告なし", "集計中の画面を広告がふさぐことはありません。"),
+    };
+
+    private static readonly (string Question, string Answer)[] Faqs =
+    {
+        ("「結果を記録する」が押せない", "素点の合計が「持ち点 × 人数」になっていると押せます（25,000点持ちの四人麻雀なら合計 1000）。名前が空欄の人や、同じ名前の人がいても記録できません。"),
+        ("5人以上で打ちたい", "素点入力の「追加」で枠を増やし、その半荘に入らない人を ☕（抜け番）にしてください。"),
+        ("ほかの人のスマホでも結果を見たい", "結果表の下の「URLシェア」で閲覧用のURLを、「観戦URL」で記録のたびに更新されるURLを送れます。"),
+        ("機種変更したい", "「データ管理」でクラウドバックアップを始めておくと、新しい端末で「クラウドから復元」を選び、パスキーか復元キーで戻せます。ファイルで移すこともできます。"),
+        ("ルールのメモは計算に使われる？", "使われません。抜き牌や赤の枚数など、計算に関係しない取り決めを残しておくための欄です。"),
+    };
+}

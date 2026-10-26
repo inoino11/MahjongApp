@@ -18,4 +18,5 @@ public static class StorageKeys
     public const string LiveShare = "liveShare";
     public const string LastBackupAt = "lastBackupAt";
     public const string CloudBackup = "cloudBackup";
+    public const string WelcomeDismissed = "welcomeDismissed";
 }

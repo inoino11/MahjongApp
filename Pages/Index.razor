@@ -27,6 +27,16 @@
         素点集計
     </MudText>
 
+    @* 初めて使う人への案内（入力中の記録も確定済みの成績もなく、閉じたこともないときだけ） *@
+    @if (showWelcome && ActiveHistory.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mb-4" ShowCloseIcon="true" CloseIconClicked="DismissWelcomeAsync">
+            <div style="font-weight: bold;">はじめての方へ</div>
+            <div style="font-size: 0.85rem;">素点を入れるだけで、ウマ・オカから特殊ルールまで自動で計算します。</div>
+            <MudLink Href="about" Typo="Typo.body2" Style="font-weight: bold;">できることと使い方を見る</MudLink>
+        </MudAlert>
+    }
+
     @* --- ルール設定 --- *@
     <RuleSettingsPanel IsEditing="isEditing" OnRulesChanged="HandleRulesChanged" OnFieldFocus="@(() => CloseKeypad())" />
 
@@ -95,14 +105,17 @@
         // 1. 入力中のセッションの状態
         await SessionState.InitializeStateAsync();
         // 2. 名簿（名前の候補とIDの対応に使う）
+        bool hasSavedSessions = false;
         try
         {
             var dbData = await DatabaseService.GetAllDataAsync();
             if (dbData?.Players != null) playerMaster = dbData.Players;
+            hasSavedSessions = dbData?.Sessions?.Count > 0;
         }
         catch
         {
         }
+        showWelcome = !hasSavedSessions && ActiveHistory.Count == 0 && !await SafeGetAsync<bool>(StorageKeys.WelcomeDismissed);
         // 3. 入力欄の名前に、名簿のIDを対応づける
         for (int i = 0; i < 7; i++)
         {
@@ -116,6 +129,31 @@
         }
         ResetInputForms(clearBuffers: false); // 復元した入力途中の素点は消さない
         EvaluateAutoFill();
+    }
+
+    // --- 初めて使う人への案内 ---
+    private bool showWelcome = false;
+
+    private async Task DismissWelcomeAsync()
+    {
+        showWelcome = false;
+        try
+        {
+            await LocalStorage.SetItemAsync(StorageKeys.WelcomeDismissed, true);
+        }
+        catch { }
+    }
+
+    private async Task<T?> SafeGetAsync<T>(string key)
+    {
+        try
+        {
+            return await LocalStorage.GetItemAsync<T>(key);
+        }
+        catch
+        {
+            return default;
+        }
     }
 
     // ルール設定で変更があったとき。対局人数が変わったら入力欄をリセットする
