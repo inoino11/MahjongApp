@@ -15,81 +15,9 @@
 @inject MahjongApp.Services.RulePresetService PresetService
 
 <style>
-    .player-name-input input {
-        text-align: center !important;
-        letter-spacing: 1px;
-    }
-
-    /* 入力中でない名前欄は控えめに表示する */
-    .player-name-input:not(:focus-within) {
-        opacity: 0.85;
-    }
-
-    .score-input input {
-        text-align: right !important;
-        font-size: 1.3rem !important;
-        font-weight: 500 !important;
-        padding-right: 2px !important;
-    }
-
-    .score-input.auto-filled input {
-        color: var(--mud-palette-info) !important;
-    }
-
-    .score-input.mud-input-control .mud-input-outlined {
-        height: 28px !important;
-        min-height: 28px !important;
-    }
-
-    .score-input.mud-input-control .mud-input-outlined .mud-input-adornment-start {
-        margin: 0 !important;
-    }
-
-    .score-input.mud-input-control .mud-input-outlined .mud-input-adornment-start svg {
-        font-size: 16px !important;
-    }
-
-    .score-zeros {
-        font-size: 1.3rem;
-        font-weight: 500;
-        color: #808080;
-        margin-left: 2px;
-        user-select: none;
-    }
-
-    /* 自動入力のアイコンが付いても、文字の高さがずれないようにする */
-    .score-input .mud-input {
-        align-items: baseline !important;
-    }
-
-    /* アイコン自体は高さの中央を維持する */
-    .score-input .mud-input-adornment-start {
-        align-self: center !important;
-        margin-top: 0 !important;
-    }
-
-    /* テンキーで入力中の素点欄 */
-    .score-input-active {
-        border: 1px solid #81c784 !important;
-        box-shadow: 0 0 6px rgba(129, 199, 132, 0.5);
-        background-color: rgba(76, 175, 80, 0.05) !important;
-    }
-
-    /* 他の欄を入力している間、自動入力の欄は仮の値として半透明・斜体にする */
-    .score-input-auto-filling input {
-        opacity: 0.4 !important;
-        transition: opacity 0.15s ease;
-    }
-
     /* テンキーが開いている間は、テンキー分の余白を下に取って最後の行まで見えるようにする */
     .keypad-open-padding {
         padding-bottom: 320px !important;
-    }
-
-    /* ▽アイコンの分だけ左に余白を取り、名前を中央に見せる */
-    .balanced-center-select input {
-        text-align: center !important;
-        padding-left: 10px !important;
     }
 </style>
 
@@ -103,72 +31,11 @@
     <RuleSettingsPanel IsEditing="isEditing" OnRulesChanged="HandleRulesChanged" OnFieldFocus="@(() => CloseKeypad())" />
 
     @* --- 対局者と素点の入力 --- *@
-    <MudPaper id="score-input-section" Class="pa-2 pa-sm-4 mb-6" Elevation="2">
-        @if (isEditing)
-        {
-            <MudAlert Severity="Severity.Warning" Variant="Variant.Filled" Dense="true" NoIcon="true" Class="mb-3">
-                <div class="d-flex align-center justify-space-between gap-3">
-                    <div>
-                        <div style="font-weight: bold;">第@(EditingGameNumber)戦を修正中</div>
-                        <div style="font-size: 0.75rem;">現在のルールで再計算されます</div>
-                    </div>
-                    <MudButton Variant="Variant.Outlined" Size="Size.Small" Style="color: inherit; border-color: currentColor; flex-shrink: 0;" OnClick="@(() => CancelEditAsync())">キャンセル</MudButton>
-                </div>
-            </MudAlert>
-        }
-        <div class="mb-3 px-1">
-            <MudText Style="font-weight: bold;" Class="mb-1">素点入力</MudText>
-            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="width: 100%; overflow: hidden;">
-                <div class="d-flex align-center">
-                    <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="AddParticipant" Disabled="@(activeParticipantCount >= MaxParticipants || isEditing)" Style="min-width: 0; padding-left: 4px; padding-right: 4px;">
-                        <span style="white-space: nowrap;">追加</span>
-                    </MudButton>
-                    <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.PersonRemove" OnClick="RemoveParticipant" Disabled="@(activeParticipantCount <= rules.PlayerCount || isEditing)" Style="min-width: 0; padding-left: 4px; padding-right: 4px;">
-                        <span style="white-space: nowrap;">削除</span>
-                    </MudButton>
-                </div>
-                <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" StartIcon="@Icons.Material.Filled.History" OnClick="CopyPreviousGame" Disabled="@(ActiveHistory.Count == 0 || isEditing)" Style="white-space: nowrap; flex-shrink: 0; padding-left: 4px; padding-right: 4px;">
-                    前回の入力をコピー
-                </MudButton>
-            </MudStack>
-        </div>
-        <MudGrid Spacing="1" AlignItems="AlignItems.Center">
-            @for (int i = 0; i < activeParticipantCount; i++)
-            {
-                var index = i;
-                bool isSitOut = input.SitOuts[index];
-                <MudItem xs="12" sm="6">
-                    <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center justify-space-between px-2 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
-                        @* 名前 *@
-                        <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="input.Players[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged(index, v))" SearchFunc="@SearchRegisteredPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" ShowOnFocus="true" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input balanced-center-select" Style="font-weight: bold; font-size: 0.95rem; width: 9.5em;" Disabled="@(isSitOut || isEditing)" onfocus="this.select();" @onfocusin="@(() => CloseKeypad())" />
-                        <div class="d-flex align-center justify-center flex-grow-1">
-                            @* 抜け番 *@
-                            @if (activeParticipantCount > rules.PlayerCount)
-                            {
-                                <MudToggleIconButton Toggled="input.SitOuts[index]" ToggledChanged="@((bool v) => OnSitOutChanged(index, v))" Icon="@Icons.Material.Filled.Person" Color="Color.Default" Title="参加中" ToggledIcon="@Icons.Material.Filled.LocalCafe" ToggledColor="Color.Default" ToggledTitle="☕ 抜け番" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isEditing" />
-                            }
-                            @* 焼き鳥 *@
-                            @if (rules.IsYakiEnabled)
-                            {
-                                <MudToggleIconButton @bind-Toggled="input.Yaki[index]" Icon="@Icons.Material.Filled.NoMeals" Color="Color.Default" Title="焼き鳥ではありません" ToggledIcon="@YakiIcon" ToggledColor="Color.Warning" ToggledTitle="🍗 焼き鳥です" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
-                            }
-                            @* トビ賞 *@
-                            @if (rules.IsTobiEnabled)
-                            {
-                                <MudToggleIconButton @bind-Toggled="input.TobiBonus[index]" Icon="@Icons.Material.Filled.Rocket" Color="Color.Default" Title="トビ賞を獲得しません" ToggledIcon="@Icons.Material.Filled.RocketLaunch" ToggledColor="Color.Error" ToggledTitle="🚀 トビ賞を獲得します" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
-                            }
-                        </div>
-                        @* 素点（百点単位で入力し、下2桁の「00」は表示だけ） *@
-                        <div id="score-input-@index" class="d-flex align-baseline" @onclick="@(async () => await OpenKeypad(index))" @onclick:stopPropagation="true">
-                            <MudTextField T="string" Value="@scoreInputBuffers[index]" ReadOnly="true" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == input.AutoFilledIndex ? "auto-filled" : "")} {(activeScoreInputIndex == index ? "score-input-active" : "")} {(activeScoreInputIndex.HasValue && index == input.AutoFilledIndex ? "score-input-auto-filling" : "")}")" Style="width: 77px; cursor: pointer;" Disabled="isSitOut" Adornment="@(index == input.AutoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
-                            <span class="score-zeros" style="cursor: pointer;">00</span>
-                        </div>
-                    </MudPaper>
-                </MudItem>
-            }
-        </MudGrid>
-        <MudButton Variant="Variant.Filled" Color="Color.Warning" FullWidth="true" Class="mt-2 py-3" Disabled="@(!IsTotalCorrect)" OnClick="CalculateAndRecordGame">@(isEditing ? "修正を保存" : "結果を記録する")</MudButton>
-    </MudPaper>
+    <ScoreInputPanel Input="input" Rules="rules" ParticipantCount="activeParticipantCount" IsEditing="isEditing" EditingGameNumber="EditingGameNumber"
+                     HasHistory="@(ActiveHistory.Count > 0)" ActiveScoreInputIndex="activeScoreInputIndex" IsTotalCorrect="IsTotalCorrect" SearchPlayers="SearchRegisteredPlayers"
+                     OnCancelEdit="CancelEditAsync" OnAddParticipant="AddParticipant" OnRemoveParticipant="RemoveParticipant" OnCopyPrevious="CopyPreviousGame"
+                     OnPlayerNameChanged="@(a => OnPlayerNameChanged(a.Index, a.Name))" OnSitOutChanged="@(a => OnSitOutChanged(a.Index, a.IsSitOut))"
+                     OnOpenKeypad="OpenKeypad" OnRecord="CalculateAndRecordGame" OnFieldFocus="@(() => CloseKeypad())" />
 
     @* --- 結果表 --- *@
     <MudPaper Class="pa-2 px-sm-4" Elevation="2">
@@ -209,7 +76,6 @@
     private Dictionary<string, int> ActiveSessionChips => SessionState.ActiveSessionChips;
     private int displayMode = 1;
     private bool IsTotalCorrect => input.IsTotalCorrect(rules, activeParticipantCount);
-    private const string YakiIcon = "<g transform=\"matrix(0.025, 0, 0, 0.025, 0, 24)\"><path d=\"M843-60 670-234l-85 85q-23 23-56.5 23T472-149l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23 23-56.5 23T246-375l-57-56q-23-23-23-56.5t23-56.5l-56-57q-23-23-23-56.5t23-56.5l28-28L60-844l56-56 102 102 28-28q23-23 57-23t57 23l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l56 56q23-23 56.5-23t56.5 23l57 56q23 23 23 57t-23 57l-85 84 172 173-56 57ZM529-205l227-226-57-57-227 227 57 56Zm-57-170 114-113-57-56-113 113 56 56Zm-170-56 227-227-57-56-226 226 56 57Zm-56-170 114-113-57-57-113 113 56 57Zm368 255ZM501-460ZM388-573ZM275-686Z\"/></g>";
     private GameResult? armedDeleteTarget = null;
     private int? activeScoreInputIndex = null;
     private int? activeChipInputIndex = null;
