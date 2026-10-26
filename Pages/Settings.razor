@@ -40,11 +40,25 @@
             <MudText Typo="Typo.body2" Class="mb-1">
                 成績が変わると自動で保存します（間隔は最短10分）。
             </MudText>
-            <MudText Typo="Typo.body2" Class="mb-4" Style="@(CloudBackup.HasError ? "color: var(--mud-palette-error);" : "")">
+            <MudText Typo="Typo.body2" Class="mb-1" Style="@(CloudBackup.HasError ? "color: var(--mud-palette-error);" : "")">
                 @CloudStatusText
+            </MudText>
+            <MudText Typo="Typo.body2" Class="mb-4">
+                @if (CloudBackup.PasskeyRegistered)
+                {
+                    <span>復元キーはパスキーにも保存済みです。</span>
+                }
+                else if (passkeySupported)
+                {
+                    <span style="color: var(--mud-palette-warning);">パスキーに保存しておくと、キーを控えていなくても顔認証や指紋認証で復元できます。</span>
+                }
             </MudText>
             <div class="d-flex flex-wrap gap-2">
                 <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.CloudSync" OnClick="BackupNow" Disabled="@(isCloudBusy || CloudBackup.IsSending)">今すぐバックアップ</MudButton>
+                @if (passkeySupported && !CloudBackup.PasskeyRegistered)
+                {
+                    <MudButton Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Fingerprint" OnClick="RegisterPasskey" Disabled="isCloudBusy">パスキーに保存</MudButton>
+                }
                 <MudButton Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Key" OnClick="ShowRecoveryKey">復元キーを表示</MudButton>
                 <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.CloudOff" OnClick="DisableCloudBackup" Disabled="isCloudBusy">停止する</MudButton>
             </div>
@@ -190,6 +204,7 @@
 @code {
     private string importMode = "merge"; // "merge": 統合 / "overwrite": 完全上書き
     private bool isCloudBusy = false;
+    private bool passkeySupported = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -212,6 +227,7 @@
         {
             envInfo = await JSRuntime.InvokeAsync<EnvironmentInfo>("pwaHelper.getEnvironmentInfo");
             lastBackupAt = await DatabaseService.GetLastBackupAtAsync();
+            passkeySupported = await CloudBackup.IsPasskeySupportedAsync();
             StateHasChanged();
         }
     }
@@ -236,6 +252,18 @@
             string recoveryKey = await CloudBackup.EnableAsync();
             Snackbar.Add("クラウドバックアップを始めました", Severity.Success);
             await ShowRecoveryKeyDialogAsync(recoveryKey, isFirstTime: true);
+            if (passkeySupported)
+            {
+                bool? usePasskey = await DialogService.ShowMessageBoxAsync(
+                    "パスキーにも保存",
+                    (MarkupString)"復元キーをパスキーにも保存しますか？<br />キーを控えていなくても、機種変更後に顔認証や指紋認証で復元できます。",
+                    yesText: "保存する", cancelText: "あとで");
+                if (usePasskey == true)
+                {
+                    isCloudBusy = false;
+                    await RegisterPasskey();
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -253,6 +281,34 @@
         if (ok) Snackbar.Add("クラウドに保存しました", Severity.Success);
         else if (CloudBackup.TakenOver) Snackbar.Add("別の端末に引き継がれたため、停止しました", Severity.Warning);
         else Snackbar.Add(CloudBackup.LastError ?? "送信に失敗しました", Severity.Error);
+    }
+
+    private async Task RegisterPasskey()
+    {
+        isCloudBusy = true;
+        try
+        {
+            var result = await CloudBackup.RegisterPasskeyAsync();
+            switch (result.Status)
+            {
+                case "OK":
+                    Snackbar.Add("復元キーをパスキーに保存しました", Severity.Success);
+                    break;
+                case "UNSUPPORTED":
+                    passkeySupported = false;
+                    Snackbar.Add("この端末のパスキーは、復元キーの保存に対応していません\n復元キーを控えておいてください", Severity.Warning);
+                    break;
+                case "CANCELED":
+                    break;
+                default:
+                    Snackbar.Add($"パスキーに保存できませんでした:\n{result.Message}", Severity.Error);
+                    break;
+            }
+        }
+        finally
+        {
+            isCloudBusy = false;
+        }
     }
 
     private async Task ShowRecoveryKey()

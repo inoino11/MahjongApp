@@ -30,6 +30,8 @@ public class CloudBackupService
     private bool _isLoaded = false;
     private int _changeVersion = 0;
     private CancellationTokenSource? _scheduleCts;
+    // パスキーで包んだ復元キー。次の送信で一緒に送る
+    private string? _pendingWrappedKey;
 
     public bool IsEnabled => !string.IsNullOrEmpty(_state.RecoveryKey);
     public bool IsPending => _state.Dirty;
@@ -66,6 +68,15 @@ public class CloudBackupService
     {
         public string BackupId { get; set; } = "";
         public string Token { get; set; } = "";
+    }
+
+    // passkey.register / passkey.unlock の戻り値
+    public class PasskeyResult
+    {
+        public string Status { get; set; } = "";
+        public string? WrappedKey { get; set; }
+        public string? RecoveryKey { get; set; }
+        public string? Message { get; set; }
     }
 
     // サーバーにあるバックアップの一覧
@@ -185,12 +196,13 @@ public class CloudBackupService
             OnChanged?.Invoke();
             int version = _changeVersion;
             string recoveryKey = _state.RecoveryKey!;
+            string? wrappedKey = _pendingWrappedKey;
             string json = await _database.BuildBackupJsonAsync();
             string encrypted = await _jsRuntime.InvokeAsync<string>("blazorCrypto.backup.encrypt", recoveryKey, json);
             var keys = await DeriveAsync(recoveryKey);
             var request = new HttpRequestMessage(HttpMethod.Put, $"{WorkerUrl}/backup/{keys.BackupId}")
             {
-                Content = JsonContent.Create(new { encryptedData = encrypted, deviceId = _state.DeviceId, force })
+                Content = JsonContent.Create(new { encryptedData = encrypted, deviceId = _state.DeviceId, force, wrappedKey })
             };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", keys.Token);
             var response = await _http.SendAsync(request);
@@ -199,6 +211,11 @@ public class CloudBackupService
             {
                 _state.LastSuccessAt = DateTime.Now;
                 if (version == _changeVersion) _state.Dirty = false;
+                if (wrappedKey != null)
+                {
+                    _state.PasskeyRegistered = true;
+                    _pendingWrappedKey = null;
+                }
                 HasError = false;
                 LastError = null;
                 await SaveStateAsync();
@@ -277,6 +294,30 @@ public class CloudBackupService
         await SaveStateAsync();
         OnChanged?.Invoke();
     }
+
+    public async Task<bool> IsPasskeySupportedAsync() =>
+        await _jsRuntime.InvokeAsync<bool>("passkey.isSupported");
+
+    /// <summary>
+    /// パスキーを作り、それで包んだ復元キーをサーバーに置く。戻り値の Status は OK / UNSUPPORTED / CANCELED / ERROR
+    /// </summary>
+    public async Task<PasskeyResult> RegisterPasskeyAsync()
+    {
+        await EnsureLoadedAsync();
+        if (!IsEnabled) return new PasskeyResult { Status = "ERROR", Message = "クラウドバックアップが有効ではありません" };
+        var keys = await DeriveAsync(_state.RecoveryKey!);
+        var result = await _jsRuntime.InvokeAsync<PasskeyResult>("passkey.register", keys.BackupId, _state.RecoveryKey);
+        if (result.Status != "OK" || result.WrappedKey == null) return result;
+        _pendingWrappedKey = result.WrappedKey;
+        if (!await BackupNowAsync()) return new PasskeyResult { Status = "ERROR", Message = LastError };
+        return result;
+    }
+
+    /// <summary>
+    /// パスキーで復元キーを取り出す。戻り値の Status は OK / UNSUPPORTED / NOT_FOUND / CANCELED / ERROR
+    /// </summary>
+    public async Task<PasskeyResult> UnlockWithPasskeyAsync() =>
+        await _jsRuntime.InvokeAsync<PasskeyResult>("passkey.unlock", WorkerUrl);
 
     public async Task<bool> IsValidRecoveryKeyAsync(string recoveryKey) =>
         await _jsRuntime.InvokeAsync<bool>("blazorCrypto.backup.isValidRecoveryKey", recoveryKey);
