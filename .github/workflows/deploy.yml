@@ -27,6 +27,10 @@ jobs:
       with:
         dotnet-version: '10.0.x'
     
+    # 計算のテストが落ちたら本番に反映しない
+    - name: Test
+      run: dotnet test tests/MahjongApp.Tests
+
     - name: Rewrite base href for GitHub Pages
       run: sed -i 's/<base href="\/" \/>/<base href="\/MahjongApp\/" \/>/g' wwwroot/index.html
 
