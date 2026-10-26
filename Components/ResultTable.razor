@@ -20,6 +20,8 @@
     .sync-table-scroll {
         max-height: 55vh;
         overflow-y: auto !important;
+        /* 表の端までスクロールしても、ページ側（Android の「引っ張って更新」など）に連鎖させない */
+        overscroll-behavior: contain;
         -ms-overflow-style: none !important;
         scrollbar-width: none !important;
     }
