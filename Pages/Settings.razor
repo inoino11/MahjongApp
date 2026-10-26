@@ -7,15 +7,52 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject MahjongApp.Services.CloudBackupService CloudBackup
+@implements IDisposable
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4 pb-10">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
         <MudIcon Icon="@Icons.Material.Filled.Settings" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
         データ管理
     </MudText>
+    @* クラウドバックアップ *@
+    <MudPaper Class="pa-6 mb-6" Outlined="true" Style="border-color: var(--mud-palette-success);">
+        <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Success">クラウドバックアップ</MudText>
+        @if (CloudBackup.TakenOver)
+        {
+            <MudAlert Severity="Severity.Warning" Class="mb-4" ShowCloseIcon="true" CloseIconClicked="DismissTakenOver">
+                別の端末にバックアップが引き継がれたため、この端末のバックアップを停止しました。
+            </MudAlert>
+        }
+        @if (!CloudBackup.IsEnabled)
+        {
+            <MudText Typo="Typo.body2" Class="mb-4">
+                成績を自動でクラウドに保存し、機種変更やデータが消えたときに戻せるようにします。<br />
+                データはこの端末で暗号化してから送るため、サーバー側では中身を読めません。<br />
+                <span style="color: var(--mud-palette-warning); font-weight: bold;">復元には「復元キー」が必要です。なくすと誰にも復元できません。</span>
+            </MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.CloudUpload" OnClick="EnableCloudBackup" Disabled="isCloudBusy">
+                @(isCloudBusy ? "準備中..." : "クラウドバックアップを始める")
+            </MudButton>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Class="mb-1">
+                成績が変わると自動で保存します（間隔は最短10分）。
+            </MudText>
+            <MudText Typo="Typo.body2" Class="mb-4" Style="@(CloudBackup.HasError ? "color: var(--mud-palette-error);" : "")">
+                @CloudStatusText
+            </MudText>
+            <div class="d-flex flex-wrap gap-2">
+                <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.CloudSync" OnClick="BackupNow" Disabled="@(isCloudBusy || CloudBackup.IsSending)">今すぐバックアップ</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Key" OnClick="ShowRecoveryKey">復元キーを表示</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.CloudOff" OnClick="DisableCloudBackup" Disabled="isCloudBusy">停止する</MudButton>
+            </div>
+        }
+    </MudPaper>
     @* バックアップ *@
     <MudPaper Class="pa-6 mb-6" Outlined="true" Style="border-color: var(--mud-palette-info);">
-        <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Info">データのバックアップ</MudText>
+        <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Info">ファイルでバックアップ</MudText>
         <MudText Typo="Typo.body2" Class="mb-4">
             対局履歴、名簿およびルールプリセットを<br />
             JSONファイルとしてダウンロードします。
@@ -125,9 +162,14 @@
                 <strong>データ統合</strong><br />(データに差分を追加します)
             </MudRadio>
         </MudRadioGroup>
-        <MudButton HtmlTag="label" for="backup-upload" Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Upload">
-            ファイルを選択して実行
-        </MudButton>
+        <div class="d-flex flex-wrap gap-2">
+            <MudButton HtmlTag="label" for="backup-upload" Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Upload">
+                ファイルを選択して実行
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Warning" StartIcon="@Icons.Material.Filled.CloudDownload" OnClick="RestoreFromCloud">
+                クラウドから復元
+            </MudButton>
+        </div>
         <InputFile id="backup-upload" OnChange="ImportData" accept=".json" style="display: none;" />
     </MudPaper>
     @* 全データ初期化 *@
@@ -136,7 +178,8 @@
         <MudText Typo="Typo.body2" Class="mb-4">
             対局履歴、名簿およびルールプリセットを<br />
             完全に削除します。<br />
-            事前のバックアップをお勧めします。
+            事前のバックアップをお勧めします。<br />
+            ※クラウドバックアップは残り、復元キーで戻せます。
         </MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteForever" OnClick="ConfirmWipeAllData">
             全データを初期化する
@@ -146,6 +189,21 @@
 
 @code {
     private string importMode = "merge"; // "merge": 統合 / "overwrite": 完全上書き
+    private bool isCloudBusy = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CloudBackup.EnsureLoadedAsync();
+        CloudBackup.OnChanged += HandleCloudChanged;
+    }
+
+    private void HandleCloudChanged() => InvokeAsync(async () =>
+    {
+        lastBackupAt = await DatabaseService.GetLastBackupAtAsync();
+        StateHasChanged();
+    });
+
+    public void Dispose() => CloudBackup.OnChanged -= HandleCloudChanged;
 
     // OS と PWA かどうかで案内文を切り替える
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -155,6 +213,118 @@
             envInfo = await JSRuntime.InvokeAsync<EnvironmentInfo>("pwaHelper.getEnvironmentInfo");
             lastBackupAt = await DatabaseService.GetLastBackupAtAsync();
             StateHasChanged();
+        }
+    }
+
+    // --- クラウドバックアップ ---
+    private string CloudStatusText
+    {
+        get
+        {
+            if (CloudBackup.IsSending) return "送信中...";
+            if (CloudBackup.HasError) return CloudBackup.LastError ?? "送信に失敗しました";
+            string last = CloudBackup.LastSuccessAt == null ? "まだ送信していません" : $"最後の保存: {FormatElapsed(CloudBackup.LastSuccessAt.Value)}";
+            return CloudBackup.IsPending ? $"{last}（未送信の変更があります）" : last;
+        }
+    }
+
+    private async Task EnableCloudBackup()
+    {
+        isCloudBusy = true;
+        try
+        {
+            string recoveryKey = await CloudBackup.EnableAsync();
+            Snackbar.Add("クラウドバックアップを始めました", Severity.Success);
+            await ShowRecoveryKeyDialogAsync(recoveryKey, isFirstTime: true);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"クラウドバックアップを始められませんでした:\n{ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isCloudBusy = false;
+        }
+    }
+
+    private async Task BackupNow()
+    {
+        bool ok = await CloudBackup.BackupNowAsync();
+        if (ok) Snackbar.Add("クラウドに保存しました", Severity.Success);
+        else if (CloudBackup.TakenOver) Snackbar.Add("別の端末に引き継がれたため、停止しました", Severity.Warning);
+        else Snackbar.Add(CloudBackup.LastError ?? "送信に失敗しました", Severity.Error);
+    }
+
+    private async Task ShowRecoveryKey()
+    {
+        if (CloudBackup.RecoveryKey != null) await ShowRecoveryKeyDialogAsync(CloudBackup.RecoveryKey, isFirstTime: false);
+    }
+
+    private async Task ShowRecoveryKeyDialogAsync(string recoveryKey, bool isFirstTime)
+    {
+        var parameters = new DialogParameters<Components.RecoveryKeyDialog>
+        {
+            { x => x.RecoveryKey, recoveryKey },
+            { x => x.IsFirstTime, isFirstTime }
+        };
+        // 初めて発行したときは、控える前に閉じてしまわないよう「控えました」でしか閉じられなくする
+        var options = new DialogOptions { BackdropClick = !isFirstTime, CloseOnEscapeKey = !isFirstTime, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<Components.RecoveryKeyDialog>(null, parameters, options);
+        await dialog.Result;
+    }
+
+    private async Task DisableCloudBackup()
+    {
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "クラウドバックアップの停止",
+            (MarkupString)"クラウド上のバックアップを削除し、自動保存を止めます。<br />この端末の成績はそのまま残ります。<br />よろしいですか？",
+            yesText: "停止する", cancelText: "キャンセル");
+        if (result != true) return;
+        isCloudBusy = true;
+        try
+        {
+            await CloudBackup.DisableAsync();
+            Snackbar.Add("クラウドバックアップを停止しました", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"停止できませんでした:\n{ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isCloudBusy = false;
+        }
+    }
+
+    private async Task DismissTakenOver() => await CloudBackup.DismissTakenOverAsync();
+
+    private async Task RestoreFromCloud()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<Components.CloudRestoreDialog>(null, options);
+        var dialogResult = await dialog.Result;
+        if (dialogResult is null || dialogResult.Canceled || dialogResult.Data is not Components.CloudRestoreDialog.Selection selection) return;
+
+        bool isMerge = importMode == "merge";
+        string when = selection.Generation.At.ToLocalTime().ToString("yyyy/MM/dd HH:mm");
+        string message = isMerge
+            ? $"{when} 時点のバックアップを、現在のデータに追加・統合します。<br />以後はこの端末でバックアップを続けます。<br />よろしいですか？"
+            : $"現在のデータをすべて消去し、{when} 時点のバックアップで置き換えます。<br />以後はこの端末でバックアップを続けます。<br />よろしいですか？";
+        bool? confirmed = await DialogService.ShowMessageBoxAsync(
+            isMerge ? "クラウドから統合" : "クラウドから完全上書き", (MarkupString)message,
+            yesText: "はい、実行します", cancelText: "キャンセル");
+        if (confirmed != true) return;
+        try
+        {
+            await CloudBackup.RestoreAsync(selection.RecoveryKey, selection.Listing, selection.Generation, isMerge);
+            _ = StatsCache.InitializeAsync(forceReload: true);
+            Snackbar.Add(isMerge ? "データを統合しました！" : "データを復元しました！", Severity.Success);
+            await Task.Delay(1500);
+            NavigationManager.NavigateTo(NavigationManager.BaseUri, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"復元に失敗しました:\n{ex.Message}", Severity.Error);
         }
     }
 
@@ -278,6 +448,7 @@
                 yesText: "はい、消去します", cancelText: "キャンセル");
             if (result2 == true)
             {
+                CloudBackup.ForgetOnThisDevice();
                 await DatabaseService.ClearAllDataAsync();
                 await LocalStorage.ClearAsync();
                 _ = StatsCache.InitializeAsync(forceReload: true);

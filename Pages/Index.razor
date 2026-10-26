@@ -10,6 +10,7 @@
 @inject MahjongApp.Services.SessionStateService SessionState
 @inject MahjongApp.Services.MahjongCalculatorService Calculator
 @inject MahjongApp.Services.LiveShareService LiveShare
+@inject MahjongApp.Services.CloudBackupService CloudBackup
 
 <style>
     .player-name-input input {
@@ -1372,6 +1373,8 @@
     // しばらくバックアップしていなければ、確定のついでに案内する（毎回ダイアログで止めるとしつこいのでスナックバーにする）
     private async Task SuggestBackupIfNeededAsync()
     {
+        await CloudBackup.EnsureLoadedAsync();
+        if (CloudBackup.IsEnabled) return;
         var lastBackupAt = await DatabaseService.GetLastBackupAtAsync();
         if (lastBackupAt != null && DateTime.Now - lastBackupAt.Value < TimeSpan.FromDays(7)) return;
         string status = lastBackupAt == null ? "成績のバックアップがまだありません" : "しばらくバックアップしていません";

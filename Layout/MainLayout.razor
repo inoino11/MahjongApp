@@ -4,6 +4,7 @@
 @inject NavigationManager NavManager
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 @inject IDialogService DialogService
+@inject MahjongApp.Services.CloudBackupService CloudBackup
 
 <MudThemeProvider Theme="@mahjongTheme" IsDarkMode="_isDarkMode" />
 <MudDialogProvider />
@@ -108,10 +109,11 @@
         IsSharedPage = uri.Contains("/shared");
     }
 
-    // 成績の集計は起動直後から裏で始めておく
+    // 成績の集計とクラウドバックアップの送り残しの確認は、起動直後から裏で始めておく
     protected override async Task OnInitializedAsync()
     {
         _ = StatsCache.InitializeAsync();
+        _ = CloudBackup.InitializeAsync();
         var savedColorInverted = await SafeGetAsync<bool?>(StorageKeys.IsColorInverted);
         _isColorInverted = savedColorInverted ?? true;
         var savedDarkMode = await SafeGetAsync<bool?>(StorageKeys.IsDarkMode);

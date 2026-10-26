@@ -1,0 +1,57 @@
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+
+@* 復元キーの表示。初めて発行したときは「控えました」を押すまで閉じられない *@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Key" Class="mr-2" Style="vertical-align: text-bottom;" />
+            復元キー
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-3">
+            機種変更やデータが消えたとき、このキーでクラウドから成績を戻せます。<br />
+            <span style="color: var(--mud-palette-error); font-weight: bold;">キーをなくすと、誰にも復元できません。</span>
+            メモやパスワード管理のアプリなどに控えてください。
+        </MudText>
+        <MudPaper Outlined="true" Class="pa-3 mb-3" Style="font-family: Consolas, 'Courier New', monospace; font-size: 1rem; word-break: break-all; user-select: all;">
+            @RecoveryKey
+        </MudPaper>
+        <div class="d-flex gap-2">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyAsync" Style="flex: 1;">コピー</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Share" OnClick="ShareAsync" Style="flex: 1;">共有</MudButton>
+        </div>
+        <MudText Typo="Typo.caption" Class="d-block mt-3" Style="color: var(--mud-palette-text-secondary);">
+            ※このキーを知っている人は成績を読めます。他人に見せないでください。
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close" Color="Color.Primary" Variant="Variant.Filled">@(IsFirstTime ? "控えました" : "閉じる")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public string RecoveryKey { get; set; } = "";
+    [Parameter] public bool IsFirstTime { get; set; }
+
+    private string ShareText => $"TaGAMΣ のクラウドバックアップの復元キー:\n{RecoveryKey}";
+
+    private async Task CopyAsync()
+    {
+        string result = await JSRuntime.InvokeAsync<string>("copyTextToClipboard", RecoveryKey);
+        if (result == "COPIED") Snackbar.Add("復元キーをコピーしました", Severity.Success);
+        else Snackbar.Add("コピーできませんでした\nキーを長押しして選択してください", Severity.Warning);
+    }
+
+    private async Task ShareAsync()
+    {
+        string result = await JSRuntime.InvokeAsync<string>("shareTextNative", "TaGAMΣ 復元キー", ShareText);
+        if (result == "COPIED") Snackbar.Add("復元キーをコピーしました", Severity.Success);
+        else if (result == "RETRY") Snackbar.Add("共有の準備ができました\nもう一度押すと共有できます", Severity.Info);
+        else if (result.StartsWith("ERROR")) Snackbar.Add("共有できませんでした\nコピーを使ってください", Severity.Warning);
+    }
+
+    private void Close() => MudDialog.Close(DialogResult.Ok(true));
+}

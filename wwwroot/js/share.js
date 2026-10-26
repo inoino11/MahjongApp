@@ -92,6 +92,35 @@ window.shareUrlNative = async (title, url) => {
     }
 };
 
+// 文字列を共有する。スマホは共有シート（メモやパスワードのアプリに送れる）、PC はクリップボード
+// 戻り値: SHARED / COPIED / CANCELED / RETRY / ERROR: 〜
+window.shareTextNative = async (title, text) => {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile && navigator.share) {
+        try {
+            await navigator.share({ title: title, text: text });
+            return "SHARED";
+        } catch (err) {
+            if (err.name === 'AbortError') return "CANCELED";
+            if (err.name === 'NotAllowedError') return "RETRY";
+            return "ERROR: " + err.message;
+        }
+    }
+    return await window.copyTextToClipboard(text);
+};
+
+// 文字列をクリップボードにコピーする。戻り値: COPIED / RETRY / ERROR: 〜
+window.copyTextToClipboard = async (text) => {
+    try {
+        if (!navigator.clipboard) return "ERROR: Clipboard API not available";
+        await navigator.clipboard.writeText(text);
+        return "COPIED";
+    } catch (err) {
+        if (err.name === 'NotAllowedError') return "RETRY";
+        return "ERROR: " + err.message;
+    }
+};
+
 // バックアップファイルを共有またはダウンロードする
 // 戻り値: SHARED / DOWNLOADED / CANCELED
 window.shareOrDownloadFile = async (filename, contentType, content) => {

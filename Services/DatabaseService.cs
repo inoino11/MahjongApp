@@ -19,6 +19,10 @@ public class DatabaseService
         _localStorage = localStorage;
     }
 
+    // 成績が変わったときの通知（クラウドバックアップの自動送信に使う）。
+    // 全データの初期化では通知しない（空のデータでクラウドの控えを上書きしないため）
+    public event Action? OnDataChanged;
+
     // 初回の呼び出し時に一度だけデータベースを開く
     private async Task EnsureInitializedAsync()
     {
@@ -36,6 +40,7 @@ public class DatabaseService
     {
         await EnsureInitializedAsync();
         await _jsRuntime.InvokeVoidAsync("mahjongDb.saveSession", playersToUpdate, sessionRecord, gameRecords);
+        OnDataChanged?.Invoke();
     }
 
     /// <summary>
@@ -51,18 +56,21 @@ public class DatabaseService
     {
         await EnsureInitializedAsync();
         await _jsRuntime.InvokeVoidAsync("mahjongDb.updatePlayer", player);
+        OnDataChanged?.Invoke();
     }
 
     public async Task DeletePlayerAsync(string playerId)
     {
         await EnsureInitializedAsync();
         await _jsRuntime.InvokeVoidAsync("mahjongDb.deletePlayer", playerId);
+        OnDataChanged?.Invoke();
     }
 
     public async Task MergePlayersAsync(string sourceId, string targetId)
     {
         await EnsureInitializedAsync();
         await _jsRuntime.InvokeVoidAsync("mahjongDb.mergePlayers", sourceId, targetId);
+        OnDataChanged?.Invoke();
     }
 
     public async Task ClearAllDataAsync()
@@ -71,7 +79,10 @@ public class DatabaseService
         await _jsRuntime.InvokeVoidAsync("mahjongDb.clearAllData");
     }
 
-    public async Task<string> ExportDataAsync()
+    /// <summary>
+    /// バックアップの中身（名簿・セッション・各局・ルールプリセット）を JSON にする。ファイル保存とクラウドで共用する
+    /// </summary>
+    public async Task<string> BuildBackupJsonAsync()
     {
         var data = await GetAllDataAsync();
         var presets = await _localStorage.GetItemAsync<List<RuleSet>>(StorageKeys.RulePresets);
@@ -80,7 +91,12 @@ public class DatabaseService
         {
             PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
         };
-        var json = System.Text.Json.JsonSerializer.Serialize(data, options);
+        return System.Text.Json.JsonSerializer.Serialize(data, options);
+    }
+
+    public async Task<string> ExportDataAsync()
+    {
+        var json = await BuildBackupJsonAsync();
         var filename = $"MahjongBackup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
         var result = await _jsRuntime.InvokeAsync<string>("shareOrDownloadFile", filename, "application/json", json);
         if (result is "SHARED" or "DOWNLOADED") await MarkBackedUpAsync();
@@ -156,12 +172,14 @@ public class DatabaseService
         {
             // プリセット部分が読めなくても、DBの復元は済んでいるのでそのまま終える
         }
+        OnDataChanged?.Invoke();
     }
 
     public async Task DeleteSessionAsync(string sessionId)
     {
         await EnsureInitializedAsync();
         await _jsRuntime.InvokeVoidAsync("mahjongDb.deleteSession", sessionId);
+        OnDataChanged?.Invoke();
     }
 }
 

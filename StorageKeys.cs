@@ -17,4 +17,5 @@ public static class StorageKeys
     public const string CurrencySetting = "currencySetting";
     public const string LiveShare = "liveShare";
     public const string LastBackupAt = "lastBackupAt";
+    public const string CloudBackup = "cloudBackup";
 }

@@ -97,5 +97,66 @@ window.blazorCrypto = {
         combined.set(iv, 0);
         combined.set(new Uint8Array(cipherBuffer), iv.length);
         return this.bufferToBase64(combined);
+    },
+    toUrlSafe: function (base64) {
+        return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    },
+    fromUrlSafe: function (urlSafe) {
+        let base64 = urlSafe.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) { base64 += '='; }
+        return this.base64ToBuffer(base64);
+    },
+    // 秘密の値から用途ごとの値を HKDF で導く（同じ秘密・同じ用途なら毎回同じ値になる）
+    hkdfBits: async function (secretBytes, info, bits) {
+        const base = await crypto.subtle.importKey("raw", secretBytes, "HKDF", false, ["deriveBits"]);
+        return new Uint8Array(await crypto.subtle.deriveBits(
+            { name: "HKDF", hash: "SHA-256", salt: new TextEncoder().encode("TaGAMΣ"), info: new TextEncoder().encode(info) },
+            base, bits));
+    },
+    aesEncrypt: async function (keyBytes, plainText) {
+        const key = await crypto.subtle.importKey("raw", keyBytes, "AES-GCM", false, ["encrypt"]);
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const cipherBuffer = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, new TextEncoder().encode(plainText));
+        const combined = new Uint8Array(iv.length + cipherBuffer.byteLength);
+        combined.set(iv, 0);
+        combined.set(new Uint8Array(cipherBuffer), iv.length);
+        return this.bufferToBase64(combined);
+    },
+    aesDecrypt: async function (keyBytes, combinedBase64) {
+        const key = await crypto.subtle.importKey("raw", keyBytes, "AES-GCM", false, ["decrypt"]);
+        const combined = this.base64ToBuffer(combinedBase64);
+        const plainBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv: combined.slice(0, 12) }, key, combined.slice(12));
+        return new TextDecoder().decode(plainBuffer);
+    },
+    // クラウドバックアップ用。復元キー（32バイトの乱数）から保存場所のID・認証用トークン・暗号鍵を導く
+    // 暗号鍵は JS の中だけで使い、C# 側には渡さない
+    backup: {
+        newRecoveryKey: function () {
+            return blazorCrypto.toUrlSafe(blazorCrypto.bufferToBase64(crypto.getRandomValues(new Uint8Array(32))));
+        },
+        isValidRecoveryKey: function (recoveryKey) {
+            try {
+                return typeof recoveryKey === 'string' && /^[A-Za-z0-9_-]{43}$/.test(recoveryKey) && blazorCrypto.fromUrlSafe(recoveryKey).length === 32;
+            } catch {
+                return false;
+            }
+        },
+        derive: async function (recoveryKey) {
+            const secret = blazorCrypto.fromUrlSafe(recoveryKey);
+            const idBytes = await blazorCrypto.hkdfBits(secret, "backup-id", 128);
+            const tokenBytes = await blazorCrypto.hkdfBits(secret, "backup-token", 256);
+            return {
+                backupId: [...idBytes].map(b => b.toString(16).padStart(2, "0")).join(""),
+                token: blazorCrypto.toUrlSafe(blazorCrypto.bufferToBase64(tokenBytes))
+            };
+        },
+        encrypt: async function (recoveryKey, plainText) {
+            const encKey = await blazorCrypto.hkdfBits(blazorCrypto.fromUrlSafe(recoveryKey), "backup-enc", 256);
+            return blazorCrypto.aesEncrypt(encKey, plainText);
+        },
+        decrypt: async function (recoveryKey, combinedBase64) {
+            const encKey = await blazorCrypto.hkdfBits(blazorCrypto.fromUrlSafe(recoveryKey), "backup-enc", 256);
+            return blazorCrypto.aesDecrypt(encKey, combinedBase64);
+        }
     }
 };

@@ -1,0 +1,111 @@
+@using System.Text.RegularExpressions
+@using MahjongApp.Services
+@inject CloudBackupService CloudBackup
+
+@* クラウドから復元する世代を選ぶ。復元そのものは呼び出し側で確認してから行う *@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.CloudDownload" Class="mr-2" Style="vertical-align: text-bottom;" />
+            クラウドから復元
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (listing == null)
+        {
+            <MudText Typo="Typo.body2" Class="mb-3">控えておいた復元キーを入力してください。</MudText>
+            <MudTextField @bind-Value="keyInput" Immediate="true" Label="復元キー" Variant="Variant.Outlined" Margin="Margin.Dense"
+                          Style="font-family: Consolas, 'Courier New', monospace;" />
+            @* MudTextField の Error は入力のたびに内部で解除されるため、メッセージは別に出す *@
+            @if (errorMessage != null)
+            {
+                <MudText Typo="Typo.caption" Class="d-block mt-1 cloud-restore-error" Style="color: var(--mud-palette-error);">@errorMessage</MudText>
+            }
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Class="mb-2">復元する時点を選んでください。</MudText>
+            <MudRadioGroup @bind-Value="selectedIndex" Class="d-flex flex-column">
+                @for (int i = 0; i < listing.Generations.Count; i++)
+                {
+                    int index = i;
+                    <MudRadio Value="index" Color="Color.Primary">
+                        @listing.Generations[index].At.ToLocalTime().ToString("yyyy/MM/dd HH:mm")@(index == 0 ? "（最新）" : "")
+                    </MudRadio>
+                }
+            </MudRadioGroup>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Color="Color.Default">キャンセル</MudButton>
+        @if (listing == null)
+        {
+            <MudButton OnClick="FindAsync" Color="Color.Primary" Variant="Variant.Filled" Disabled="@(isLoading || string.IsNullOrWhiteSpace(keyInput))">
+                @(isLoading ? "確認中..." : "バックアップを探す")
+            </MudButton>
+        }
+        else
+        {
+            <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled">この時点に戻す</MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+
+    public class Selection
+    {
+        public string RecoveryKey { get; set; } = "";
+        public CloudBackupService.BackupListing Listing { get; set; } = new();
+        public CloudBackupService.Generation Generation { get; set; } = new();
+    }
+
+    private string keyInput = "";
+    private string? errorMessage;
+    private bool isLoading;
+    private string recoveryKey = "";
+    private CloudBackupService.BackupListing? listing;
+    private int selectedIndex = 0;
+
+    private async Task FindAsync()
+    {
+        // 共有したメモの文面をそのまま貼っても読めるよう、キーの部分だけを取り出す
+        var match = Regex.Match(keyInput, @"[A-Za-z0-9_-]{43}");
+        if (!match.Success || !await CloudBackup.IsValidRecoveryKeyAsync(match.Value))
+        {
+            errorMessage = "復元キーの形式が正しくありません（43文字の英数字と - _）";
+            return;
+        }
+        errorMessage = null;
+        isLoading = true;
+        try
+        {
+            var found = await CloudBackup.GetListingAsync(match.Value);
+            if (found == null || found.Generations.Count == 0)
+            {
+                errorMessage = "このキーのバックアップは見つかりませんでした";
+                return;
+            }
+            recoveryKey = match.Value;
+            listing = found;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"取得に失敗しました: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(new Selection
+    {
+        RecoveryKey = recoveryKey,
+        Listing = listing!,
+        Generation = listing!.Generations[selectedIndex]
+    }));
+}
