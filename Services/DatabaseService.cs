@@ -82,7 +82,36 @@ public class DatabaseService
         };
         var json = System.Text.Json.JsonSerializer.Serialize(data, options);
         var filename = $"MahjongBackup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
-        return await _jsRuntime.InvokeAsync<string>("shareOrDownloadFile", filename, "application/json", json);
+        var result = await _jsRuntime.InvokeAsync<string>("shareOrDownloadFile", filename, "application/json", json);
+        if (result is "SHARED" or "DOWNLOADED") await MarkBackedUpAsync();
+        return result;
+    }
+
+    /// <summary>
+    /// 最後にバックアップした日時を記録する（バックアップ忘れの案内に使う）
+    /// </summary>
+    public async Task MarkBackedUpAsync()
+    {
+        try
+        {
+            await _localStorage.SetItemAsync(StorageKeys.LastBackupAt, DateTime.Now);
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// 最後にバックアップした日時。一度もしていなければ null
+    /// </summary>
+    public async Task<DateTime?> GetLastBackupAtAsync()
+    {
+        try
+        {
+            return await _localStorage.GetItemAsync<DateTime?>(StorageKeys.LastBackupAt);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task ImportDataAsync(string json, bool isMerge = false)

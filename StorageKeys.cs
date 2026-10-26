@@ -16,4 +16,5 @@ public static class StorageKeys
     public const string IsDarkMode = "isDarkMode";
     public const string CurrencySetting = "currencySetting";
     public const string LiveShare = "liveShare";
+    public const string LastBackupAt = "lastBackupAt";
 }

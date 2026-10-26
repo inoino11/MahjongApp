@@ -101,6 +101,14 @@
         <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Download" OnClick="ExportData">
             バックアップファイルを保存
         </MudButton>
+        @if (lastBackupAt == null)
+        {
+            <MudText Typo="Typo.caption" Class="d-block mt-2" Style="color: var(--mud-palette-warning); font-weight: bold;">まだバックアップしていません</MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.caption" Class="d-block mt-2">最後のバックアップ: @FormatElapsed(lastBackupAt.Value)</MudText>
+        }
     </MudPaper>
     @* 復元・統合 *@
     <MudPaper Class="pa-6 mb-6" Outlined="true" Style="border-color: var(--mud-palette-warning);">
@@ -145,17 +153,32 @@
         if (firstRender)
         {
             envInfo = await JSRuntime.InvokeAsync<EnvironmentInfo>("pwaHelper.getEnvironmentInfo");
+            lastBackupAt = await DatabaseService.GetLastBackupAtAsync();
             StateHasChanged();
         }
     }
 
     private EnvironmentInfo envInfo = new();
+    private DateTime? lastBackupAt;
+
+    private static string FormatElapsed(DateTime at)
+    {
+        var days = (DateTime.Now.Date - at.Date).Days;
+        string when = days switch
+        {
+            <= 0 => "今日",
+            1 => "昨日",
+            _ => $"{days}日前"
+        };
+        return $"{when}（{at:yyyy/MM/dd HH:mm}）";
+    }
 
     private async Task ExportData()
     {
         try
         {
             string result = await DatabaseService.ExportDataAsync();
+            lastBackupAt = await DatabaseService.GetLastBackupAtAsync();
             if (result == "SHARED")
             {
                 Snackbar.Add("バックアップファイルをシェアしました", Severity.Success);

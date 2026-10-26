@@ -1364,8 +1364,28 @@
             Snackbar.Add("対局結果を通算成績に保存しました！", Severity.Success);
             _ = StatsCache.InitializeAsync(forceReload: true);
             StateHasChanged();
+            await SuggestBackupIfNeededAsync();
         }
         catch (Exception ex) { Snackbar.Add("保存中にエラーが発生しました:\n" + ex.Message, Severity.Error); }
+    }
+
+    // しばらくバックアップしていなければ、確定のついでに案内する（毎回ダイアログで止めるとしつこいのでスナックバーにする）
+    private async Task SuggestBackupIfNeededAsync()
+    {
+        var lastBackupAt = await DatabaseService.GetLastBackupAtAsync();
+        if (lastBackupAt != null && DateTime.Now - lastBackupAt.Value < TimeSpan.FromDays(7)) return;
+        string status = lastBackupAt == null ? "成績のバックアップがまだありません" : "しばらくバックアップしていません";
+        Snackbar.Add($"{status}\nバックアップしておきませんか？", Severity.Info, config =>
+        {
+            config.VisibleStateDuration = 8000;
+            config.Action = "データ管理へ";
+            config.ActionColor = Color.Info;
+            config.OnClick = _ =>
+            {
+                NavigationManager.NavigateTo("settings");
+                return Task.CompletedTask;
+            };
+        });
     }
 
     // --- テンキー ---
