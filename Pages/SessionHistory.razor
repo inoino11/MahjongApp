@@ -238,7 +238,7 @@
                             {
                                 var group = new SessionGroup
                                 {
-                                    Session = AggregateSessionDuplicates(s),
+                                    Session = MahjongApp.Services.SettlementCalculator.MergeDuplicateParticipants(s),
                                     Games = safeGames.Where(g => g != null && g.SessionId == s.SessionId).OrderBy(g => g.Timestamp).ToList(),
                                     ShowDetails = false,
                                     HasBeenOpened = false
@@ -263,33 +263,6 @@
         }
         isLoading = false;
         StateHasChanged();
-    }
-
-    // セッション内の重複した参加枠を1つにまとめる
-    private SavedSessionRecord AggregateSessionDuplicates(SavedSessionRecord session)
-    {
-        var distinctIds = new List<string>();
-        var distinctChips = new List<int>();
-        var pIds = session.ParticipantPlayerIds ?? new List<string>();
-        var sChips = session.SettledChips ?? new List<int>();
-        for (int i = 0; i < pIds.Count; i++)
-        {
-            var id = pIds[i];
-            var chip = sChips.Count > i ? sChips[i] : 0;
-            int existingIdx = id == null ? -1 : distinctIds.IndexOf(id);
-            if (existingIdx != -1)
-            {
-                distinctChips[existingIdx] += chip;
-            }
-            else
-            {
-                distinctIds.Add(id ?? "");
-                distinctChips.Add(chip);
-            }
-        }
-        session.ParticipantPlayerIds = distinctIds;
-        session.SettledChips = distinctChips;
-        return session;
     }
 
     // 削除は2回押しで確定する（1回目は警告表示）

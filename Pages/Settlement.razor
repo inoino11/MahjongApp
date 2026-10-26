@@ -1,5 +1,6 @@
 @page "/settlement"
 @using MahjongApp.Models
+@using MahjongApp.Services
 @inject MahjongApp.Services.DatabaseService DatabaseService
 @inject MahjongApp.Services.SessionStateService SessionStateService
 @inject ISnackbar Snackbar
@@ -379,7 +380,6 @@
 
 @code {
     [CascadingParameter] public CurrencySetting Currency { get; set; } = new();
-    public enum FeeRule { TopPays, SplitEvenly, TopPerGame, SplitByGames }
     private bool isLoading = true;
     private bool isSharing = false;
     private readonly string shareTargetId = $"settlement-share-{Guid.NewGuid():N}";
@@ -422,7 +422,7 @@
     }
 
     private Dictionary<string, string> playerMap = new();
-    private List<PlayerResult> calculatedResults = new();
+    private List<SettlementResult> calculatedResults = new();
 
     // --- テンキー ---
     private bool isKeypadOpen = false;
@@ -461,7 +461,7 @@
                 .OrderByDescending(s => s.Date)
                 .Select(s => new SettlementSessionGroup
                 {
-                    Session = AggregateSessionDuplicates(s),
+                    Session = SettlementCalculator.MergeDuplicateParticipants(s),
                     Games = safeGames.Where(g => g != null && g.SessionId == s.SessionId).ToList(),
                     IsUnsaved = false
                 }).ToList();
@@ -524,7 +524,7 @@
                 }).ToList(),
                 IsUnsaved = true
             };
-            activeSessionGroup.Session = AggregateSessionDuplicates(activeSessionGroup.Session);
+            activeSessionGroup.Session = SettlementCalculator.MergeDuplicateParticipants(activeSessionGroup.Session);
             allSessions.Insert(0, activeSessionGroup);
             _selectedSessions.Add(activeSessionGroup);
         }
@@ -533,138 +533,7 @@
 
     private void CalculateSettlement()
     {
-        calculatedResults.Clear();
-        if (selectedSessions == null || selectedSessions.Count == 0) return;
-
-        var map = new Dictionary<string, PlayerResult>();
-
-        foreach (var group in selectedSessions)
-        {
-            var session = group.Session;
-            var sessionId = session.SessionId;
-            var rules = session.Rules;
-            var pIds = session.ParticipantPlayerIds ?? new();
-            var sChips = session.SettledChips ?? new();
-
-            for (int i = 0; i < pIds.Count; i++)
-            {
-                var pId = pIds[i];
-                if (string.IsNullOrEmpty(pId)) continue;
-                var res = GetOrAddPlayer(map, pId);
-
-                if (!res.SessionYen.ContainsKey(sessionId)) res.SessionYen[sessionId] = 0;
-
-                if (sChips.Count > i)
-                {
-                    res.SessionYen[sessionId] += sChips[i] * (rules?.ChipRate ?? 0);
-                }
-            }
-
-            foreach (var game in group.Games)
-            {
-                var gPids = game.PlayerIds ?? new();
-                var gPts = game.Points ?? new();
-                var gYen = game.Yen ?? new();
-                var gRaws = game.RawScores ?? new();
-
-                for (int i = 0; i < gPids.Count; i++)
-                {
-                    var pId = gPids[i];
-                    if (string.IsNullOrEmpty(pId)) continue;
-                    var res = GetOrAddPlayer(map, pId);
-
-                    if (!res.SessionYen.ContainsKey(sessionId)) res.SessionYen[sessionId] = 0;
-
-                    if (gRaws.Count > i && gRaws[i].HasValue)
-                    {
-                        res.GamesPlayed++;
-                        res.TotalPt += gPts.Count > i ? gPts[i] : 0;
-                        res.SessionYen[sessionId] += gYen.Count > i ? gYen[i] : 0;
-                    }
-                }
-            }
-        }
-        var activePlayers = map.Values.Where(p => p.GamesPlayed > 0 || p.TotalMahjongYen != 0).ToList();
-        if (activePlayers.Count == 0) return;
-        double fee = totalFee;
-        if (selectedRule == FeeRule.TopPays)
-        {
-            // 小数の計算誤差で同点を取りこぼさないよう、表示と同じ小数第1位で比較する
-            double maxPt = Math.Round(activePlayers.Max(p => p.TotalPt), 1);
-            var topPlayers = activePlayers.Where(p => Math.Round(p.TotalPt, 1) == maxPt).ToList();
-            double splitFee = fee / topPlayers.Count;
-            foreach (var p in topPlayers) p.Fee = splitFee;
-        }
-        else if (selectedRule == FeeRule.TopPerGame)
-        {
-            int validGamesCount = 0;
-            var gameTops = new List<List<PlayerResult>>();
-            foreach (var group in selectedSessions)
-            {
-                foreach (var game in group.Games)
-                {
-                    var gPids = game.PlayerIds ?? new();
-                    var gRaws = game.RawScores ?? new();
-                    var gPts = game.Points ?? new();
-                    double maxScore = double.MinValue;
-                    var currentTopPlayers = new List<PlayerResult>();
-                    for (int i = 0; i < gPids.Count; i++)
-                    {
-                        var pId = gPids[i];
-                        if (string.IsNullOrEmpty(pId)) continue;
-                        double? score = null;
-                        if (i < gPts.Count && gPts[i] is { } pt) score = Math.Round(pt, 1);
-                        if (score.HasValue)
-                        {
-                            if (score.Value > maxScore)
-                            {
-                                maxScore = score.Value;
-                                currentTopPlayers.Clear();
-                                if (map.TryGetValue(pId, out var pr)) currentTopPlayers.Add(pr);
-                            }
-                            else if (score.Value == maxScore)
-                            {
-                                if (map.TryGetValue(pId, out var pr)) currentTopPlayers.Add(pr);
-                            }
-                        }
-                    }
-                    if (currentTopPlayers.Count > 0)
-                    {
-                        validGamesCount++;
-                        gameTops.Add(currentTopPlayers);
-                    }
-                }
-            }
-            if (validGamesCount > 0)
-            {
-                double feePerGame = fee / validGamesCount;
-                foreach (var tops in gameTops)
-                {
-                    double splitFee = feePerGame / tops.Count;
-                    foreach (var p in tops)
-                    {
-                        p.Fee += splitFee;
-                    }
-                }
-            }
-        }
-        else if (selectedRule == FeeRule.SplitByGames)
-        {
-            int totalGames = activePlayers.Sum(p => p.GamesPlayed);
-            if (totalGames > 0)
-            {
-                foreach (var p in activePlayers)
-                {
-                    p.Fee = fee * ((double)p.GamesPlayed / totalGames);
-                }
-            }
-        }
-        else if (selectedRule == FeeRule.SplitEvenly)
-        {
-            double splitFee = fee / activePlayers.Count;
-            foreach (var p in activePlayers) p.Fee = splitFee;
-        }
-        calculatedResults = activePlayers.OrderByDescending(p => p.FinalAmount).ToList();
+        calculatedResults = SettlementCalculator.Calculate(selectedSessions, totalFee, selectedRule, playerMap);
     }
 
     // 1〜20 は丸数字（①〜⑳）にする
@@ -675,20 +544,6 @@
             return "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"[number - 1].ToString();
         }
         return $"({number})";
-    }
-
-    private PlayerResult GetOrAddPlayer(Dictionary<string, PlayerResult> map, string pId)
-    {
-        if (!map.TryGetValue(pId, out var res))
-        {
-            res = new PlayerResult
-            {
-                Id = pId,
-                Name = playerMap.TryGetValue(pId, out var name) ? name : "不明"
-            };
-            map[pId] = res;
-        }
-        return res;
     }
 
     private async Task ShareImageAsync()
@@ -782,50 +637,4 @@
         return amount > 0 ? "color: var(--color-positive);" : "color: var(--color-negative);";
     }
 
-    private SavedSessionRecord AggregateSessionDuplicates(SavedSessionRecord session)
-    {
-        var distinctIds = new List<string>();
-        var distinctChips = new List<int>();
-        var pIds = session.ParticipantPlayerIds ?? new();
-        var sChips = session.SettledChips ?? new();
-        for (int i = 0; i < pIds.Count; i++)
-        {
-            var id = pIds[i];
-            var chip = sChips.Count > i ? sChips[i] : 0;
-            int existingIdx = id == null ? -1 : distinctIds.IndexOf(id);
-            if (existingIdx != -1) distinctChips[existingIdx] += chip;
-            else { distinctIds.Add(id ?? ""); distinctChips.Add(chip); }
-        }
-        return new SavedSessionRecord
-        {
-            SessionId = session.SessionId,
-            Date = session.Date,
-            Rules = session.Rules,
-            ParticipantPlayerIds = distinctIds,
-            SettledChips = distinctChips
-        };
-    }
-
-    // --- 画面内で使う型 ---
-
-    public class SettlementSessionGroup
-    {
-        public SavedSessionRecord Session { get; set; } = new();
-        public List<SavedGameRecord> Games { get; set; } = new();
-        public bool IsUnsaved { get; set; } = false;
-        public override bool Equals(object? obj) => obj is SettlementSessionGroup other && Session.SessionId == other.Session.SessionId;
-        public override int GetHashCode() => Session.SessionId.GetHashCode();
-    }
-
-    public class PlayerResult
-    {
-        public string Id { get; set; } = "";
-        public string Name { get; set; } = "";
-        public double TotalPt { get; set; }
-        public int GamesPlayed { get; set; }
-        public double Fee { get; set; }
-        public Dictionary<string, int> SessionYen { get; set; } = new();
-        public int TotalMahjongYen => SessionYen.Values.Sum();
-        public double FinalAmount => TotalMahjongYen - Fee;
-    }
 }
