@@ -760,79 +760,9 @@
             return;
         }
 
-        if (key == "C")
-        {
-            feeInputBuffer = "";
-        }
-        else if (key == "⌫" || key == "戻る")
-        {
-            if (feeInputBuffer.Length > 0) feeInputBuffer = feeInputBuffer[..^1];
-        }
-        else if (key == "+" || key == "-")
-        {
-            // 符号が続いたら、後から押した符号で置き換える
-            if (feeInputBuffer.EndsWith('+') || feeInputBuffer.EndsWith('-'))
-            {
-                feeInputBuffer = feeInputBuffer[..^1];
-            }
-            feeInputBuffer += key;
-        }
-        else
-        {
-            // 数字の先頭の余分な0は消す
-            feeInputBuffer += key;
-            feeInputBuffer = System.Text.RegularExpressions.Regex.Replace(feeInputBuffer, @"(^|[-+])0+(?=[0-9])", "$1");
-        }
-
-        int? parsed = EvaluateScoreExpression(feeInputBuffer);
+        feeInputBuffer = KeypadInput.Apply(feeInputBuffer, key);
+        int? parsed = ScoreExpression.Evaluate(feeInputBuffer);
         totalFee = parsed ?? 0; // setter で精算結果も再計算される
-    }
-
-    // 足し算・引き算の式を計算する。式として読めなければ null
-    private int? EvaluateScoreExpression(string input)
-    {
-        if (string.IsNullOrWhiteSpace(input)) return null;
-        input = input.Replace(" ", "").Replace("　", "");
-        try
-        {
-            int total = 0;
-            string currentNumber = "";
-            char currentOp = '+';
-            for (int i = 0; i < input.Length; i++)
-            {
-                char c = input[i];
-                if (c == '+' || c == '-')
-                {
-                    if (string.IsNullOrEmpty(currentNumber))
-                    {
-                        currentOp = c == '-' && currentOp == '+' ? '-' : c;
-                        continue;
-                    }
-                    int val = int.Parse(currentNumber);
-                    total = currentOp == '+' ? total + val : total - val;
-                    currentNumber = "";
-                    currentOp = c;
-                }
-                else if (char.IsDigit(c))
-                {
-                    currentNumber += c;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            if (!string.IsNullOrEmpty(currentNumber))
-            {
-                int val = int.Parse(currentNumber);
-                total = currentOp == '+' ? total + val : total - val;
-            }
-            return total;
-        }
-        catch
-        {
-            return null;
-        }
     }
 
     // --- 表示用 ---

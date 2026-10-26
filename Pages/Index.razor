@@ -311,7 +311,7 @@
     }
     private List<PlayerInputState> currentPlayers = Enumerable.Range(0, 7).Select(_ => new PlayerInputState()).ToList();
     private List<PlayerProfile> playerMaster = new();
-    private List<int?> currentScores => scoreInputBuffers.Select(val => EvaluateScoreExpression(val)).ToList();
+    private List<int?> currentScores => scoreInputBuffers.Select(val => ScoreExpression.Evaluate(val)).ToList();
     private bool isFinalizing = false;
     private List<int?> previousScores = Enumerable.Repeat((int?)null, MaxParticipants).ToList();
     private List<GameResult> ActiveHistory => SessionState.ActiveHistory;
@@ -512,7 +512,7 @@
     // 素点の文字列（式を含む）が変わったとき
     private async Task HandleScoreStringInput(int index, string val)
     {
-        int? parsedVal = EvaluateScoreExpression(val);
+        int? parsedVal = ScoreExpression.Evaluate(val);
         if (parsedVal == null && currentScores[index] != null)
         {
             currentScores[index] = null;
@@ -523,54 +523,6 @@
             autoFilledIndex = null;
         currentScores[index] = parsedVal;
         EvaluateAutoFill();
-    }
-
-    // 足し算・引き算の式を計算する（例: 「300-50」→ 250）。式として読めなければ null
-    private int? EvaluateScoreExpression(string input)
-    {
-        if (string.IsNullOrWhiteSpace(input)) return null;
-        input = input.Replace(" ", "").Replace("　", "");
-        try
-        {
-            int total = 0;
-            string currentNumber = "";
-            char currentOp = '+';
-            for (int i = 0; i < input.Length; i++)
-            {
-                char c = input[i];
-                if (c == '+' || c == '-')
-                {
-                    // 数字の前の符号（先頭のマイナスなど）
-                    if (string.IsNullOrEmpty(currentNumber))
-                    {
-                        currentOp = c == '-' && currentOp == '+' ? '-' : c;
-                        continue;
-                    }
-                    int val = int.Parse(currentNumber);
-                    total = currentOp == '+' ? total + val : total - val;
-                    currentNumber = "";
-                    currentOp = c;
-                }
-                else if (char.IsDigit(c))
-                {
-                    currentNumber += c;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            if (!string.IsNullOrEmpty(currentNumber))
-            {
-                int val = int.Parse(currentNumber);
-                total = currentOp == '+' ? total + val : total - val;
-            }
-            return total;
-        }
-        catch
-        {
-            return null; // 桁あふれなどで読めない場合
-        }
     }
 
     // 名前の入力候補（名簿から部分一致で探す）
@@ -1429,7 +1381,7 @@
             await CommitScoreBuffer(activeScoreInputIndex.Value, saveToStorage);
         if (activeChipInputIndex.HasValue)
         {
-            int? finalChip = EvaluateScoreExpression(chipInputBuffer);
+            int? finalChip = ScoreExpression.Evaluate(chipInputBuffer);
             var name = TablePlayers[activeChipInputIndex.Value];
             ActiveSessionChips[name] = finalChip ?? 0;
             if (saveToStorage)
@@ -1453,17 +1405,11 @@
     {
         if (!activeChipInputIndex.HasValue && !activeScoreInputIndex.HasValue) return;
         if (key == "閉じる") { await CloseKeypad(); return; }
-        string UpdateBuffer(string current)
-        {
-            if (key == "C") return string.Empty;
-            if (key == "⌫" || key == "竚ｫ") return current.Length > 0 ? current[..^1] : current;
-            if (key is "+" or "-" && (current.EndsWith('+') || current.EndsWith('-'))) current = current[..^1];
-            return System.Text.RegularExpressions.Regex.Replace(current + key, @"(^|[-+])0+(?=[0-9])", "$1");
-        }
+
         if (activeChipInputIndex is int chipIdx)
         {
-            chipInputBuffer = UpdateBuffer(chipInputBuffer);
-            int? parsed = EvaluateScoreExpression(chipInputBuffer);
+            chipInputBuffer = KeypadInput.Apply(chipInputBuffer, key);
+            int? parsed = ScoreExpression.Evaluate(chipInputBuffer);
             var name = TablePlayers[chipIdx];
             ActiveSessionChips[name] = parsed ?? 0;
             StateHasChanged();
@@ -1482,7 +1428,7 @@
                 scoreInputBuffers[scoreIdx] = string.Empty;
                 autoFilledIndex = null;
             }
-            scoreInputBuffers[scoreIdx] = UpdateBuffer(scoreInputBuffers[scoreIdx]);
+            scoreInputBuffers[scoreIdx] = KeypadInput.Apply(scoreInputBuffers[scoreIdx], key);
             EvaluateAutoFill();
         }
     }
@@ -1490,7 +1436,7 @@
     // 入力した式を計算結果に確定する
     private async Task CommitScoreBuffer(int idx, bool saveToStorage = true)
     {
-        int? finalScore = EvaluateScoreExpression(scoreInputBuffers[idx]);
+        int? finalScore = ScoreExpression.Evaluate(scoreInputBuffers[idx]);
         if (finalScore.HasValue)
         {
             scoreInputBuffers[idx] = finalScore.Value.ToString();
