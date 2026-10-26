@@ -31,6 +31,8 @@ window.mahjongDb = {
                 db.onclose = () => { if (this.db === db) this.db = null; };
                 db.onversionchange = () => { db.close(); if (this.db === db) this.db = null; };
                 this.db = db;
+                // 空き容量が少ないときなどに、ブラウザが成績を自動で消す対象から外してもらう
+                try { navigator.storage?.persist?.().catch(() => { }); } catch { /* 未対応のブラウザは無視 */ }
                 resolve(true);
             };
             request.onerror = (e) => {
