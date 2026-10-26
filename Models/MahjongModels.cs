@@ -75,6 +75,37 @@ public class RuleSet
     public bool ColdJustIsCold { get; set; } = true;
     public int ColdBonus { get; set; } = 10;
 
+    /// <summary>
+    /// 通常のウマ（Uma1/Uma2）を、計算に使う順位ごとのウマ（CustomUma*）に反映する。個別設定中は手入力の値を残す
+    /// </summary>
+    public void SyncCustomUmaFromNormal()
+    {
+        if (IsCustomUma) return;
+        if (PlayerCount == 4)
+        {
+            CustomUma4_1 = Uma2;
+            CustomUma4_2 = Uma1;
+            CustomUma4_3 = -Uma1;
+            CustomUma4_4 = -Uma2;
+        }
+        else if (PlayerCount == 3)
+        {
+            // 三麻は2位・3位の両方から1位が受け取る
+            CustomUma3_1 = Uma1 + Uma2;
+            CustomUma3_2 = -Uma1;
+            CustomUma3_3 = -Uma2;
+        }
+    }
+
+    /// <summary>
+    /// 順位ウマの個別設定をやめ、通常のウマで計算するよう戻す
+    /// </summary>
+    public void DisableCustomUma()
+    {
+        IsCustomUma = false;
+        SyncCustomUmaFromNormal();
+    }
+
     // 編集用のコピー（ダイアログをキャンセルしたら破棄する）
     public RuleSet DeepClone()
     {

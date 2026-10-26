@@ -35,6 +35,8 @@ public class SessionStateService
     {
         var savedRules = await SafeGetAsync<RuleSet>(StorageKeys.Rules);
         if (savedRules != null) Rules = savedRules;
+        // 以前の版では個別ウマを解除しても計算用のウマが戻らなかったため、読み込み時に揃え直す
+        Rules.SyncCustomUmaFromNormal();
 
         var savedActiveCount = await SafeGetAsync<int?>(StorageKeys.ActiveParticipantCount);
         ActiveParticipantCount = Math.Clamp(savedActiveCount ?? Rules.PlayerCount, 3, 7);

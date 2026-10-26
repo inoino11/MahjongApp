@@ -471,42 +471,8 @@
     {
         rules.Uma1 = uma1;
         rules.Uma2 = uma2;
-        SyncNormalToCustomUma();
+        rules.SyncCustomUmaFromNormal();
         await SessionState.SaveRulesAsync(rules);
-    }
-
-    // 通常のウマ（Uma1/Uma2）を、計算に使う順位ごとのウマ（CustomUma*）に反映する
-    public void SyncNormalToCustomUma()
-    {
-        // 個別設定中は、手入力した値を上書きしない
-        if (rules.IsCustomUma) return;
-        if (rules.PlayerCount == 4)
-        {
-            rules.CustomUma4_1 = rules.Uma2;
-            rules.CustomUma4_2 = rules.Uma1;
-            rules.CustomUma4_3 = -rules.Uma1;
-            rules.CustomUma4_4 = -rules.Uma2;
-        }
-        else if (rules.PlayerCount == 3)
-        {
-            // 三麻は2位・3位の両方から1位が受け取る
-            rules.CustomUma3_1 = rules.Uma1 + rules.Uma2;
-            rules.CustomUma3_2 = -rules.Uma1;
-            rules.CustomUma3_3 = -rules.Uma2;
-        }
-    }
-
-    // 現在の人数の、順位ごとのウマ
-    public double[] GetCustomUmaArray()
-    {
-        if (rules.PlayerCount == 4)
-        {
-            return new double[] { rules.CustomUma4_1, rules.CustomUma4_2, rules.CustomUma4_3, rules.CustomUma4_4 };
-        }
-        else
-        {
-            return new double[] { rules.CustomUma3_1, rules.CustomUma3_2, rules.CustomUma3_3 };
-        }
     }
 
     // 素点の文字列（式を含む）が変わったとき
@@ -582,7 +548,7 @@
             ValidateDisplayMode();
             StateHasChanged();
         }
-        SyncNormalToCustomUma();
+        rules.SyncCustomUmaFromNormal();
     }
 
     // 今のルールをプリセットに保存する（同じ名前があれば、上書きか両方残すかを選ぶ）
@@ -658,12 +624,12 @@
             ValidateDisplayMode();
             StateHasChanged();
         }
-        SyncNormalToCustomUma();
+        rules.SyncCustomUmaFromNormal();
     }
 
     private async Task DisableCustomUma()
     {
-        rules.IsCustomUma = false;
+        rules.DisableCustomUma();
         await SessionState.SaveRulesAsync(rules);
         Snackbar.Add("順位ウマの個別設定を解除しました", Severity.Info);
         StateHasChanged();
@@ -931,7 +897,7 @@
             3 => (35000, 40000, 10, 20),
             _ => (rules.StartingPoints, rules.ReturnPoints, rules.Uma1, rules.Uma2)
         };
-        SyncNormalToCustomUma();
+        rules.SyncCustomUmaFromNormal();
         ResetInputForms();
         await LocalStorage.RemoveItemAsync(StorageKeys.BackupScoreBuffers);
         await LocalStorage.SetItemAsync(StorageKeys.Rules, rules);
