@@ -1,0 +1,289 @@
+@using MahjongApp.Services
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject SessionStateService SessionState
+@inject RulePresetService PresetService
+
+@* 素点集計のルール設定（折りたたみ可）。変更はすぐ保存し、OnRulesChanged で画面に知らせる *@
+<style>
+    /* ルール設定を閉じたとき、見出しの右側にルール名を出す */
+    .rule-name-preview {
+        margin-left: auto;
+        margin-right: 8px;
+        color: var(--mud-palette-text-secondary);
+        font-size: 0.85rem;
+        font-weight: normal;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        max-width: 55%;
+        opacity: 0;
+        /* パネルが閉じ終わる頃に、少し下からふわっと出す */
+        animation: fadeInRuleName 0.4s ease-out 0.25s forwards;
+    }
+
+    @@keyframes fadeInRuleName {
+        0% {
+            opacity: 0;
+            transform: translateY(4px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<MudExpansionPanels Class="mb-6">
+    <MudExpansionPanel @bind-Expanded="isExpanded">
+        <TitleContent>
+            <div class="d-flex align-center w-100 pr-2">
+                <span style="font-weight:bold; white-space: nowrap;">ルール設定</span>
+                @if (!isExpanded && !string.IsNullOrWhiteSpace(rules.Name))
+                {
+                    <span class="rule-name-preview">@rules.Name</span>
+                }
+            </div>
+        </TitleContent>
+        <ChildContent>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mb-4" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="OpenPresetDialog" Disabled="IsEditing">
+                保存済みの設定を呼び出す
+            </MudButton>
+            <MudCard Outlined="true" Class="w-100">
+                <MudCardHeader Class="pb-0">
+                    <CardHeaderContent>
+                        <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Settings" OnClick="OpenCustomRuleDialog" Disabled="IsEditing">
+                                    カスタム<span class="d-none d-sm-inline">ルール</span>
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Save" OnClick="SavePreset">
+                                    <span class="d-none d-sm-inline">現在の</span>設定保存
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent Class="pa-2 pa-sm-3 pt-1 mt-2">
+                    <MudGrid Spacing="2">
+                        <MudItem xs="6" sm="8">
+                            <MudTextField T="string" Label="ルール名" Value="rules.Name" ValueChanged="@((string v) => OnRuleNameChanged(v))" Margin="Margin.Dense" onfocus="this.select();" Class="px-2" @onfocusin="FocusIn" />
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudSelect T="int" Label="対局人数" Value="rules.PlayerCount" ValueChanged="OnPlayerCountChanged" Disabled="IsEditing" Margin="Margin.Dense" Class="px-2">
+                                <MudSelectItem Value="@(4)">四人麻雀</MudSelectItem>
+                                <MudSelectItem Value="@(3)">三人麻雀</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudNumericField T="int" Label="持ち点" Value="rules.StartingPoints" ValueChanged="OnStartingPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="FocusIn" />
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudNumericField T="int" Label="返し点" Value="rules.ReturnPoints" ValueChanged="OnReturnPointsChanged" Step="5000" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="FocusIn" />
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudNumericField Label="@($"レート ({Currency.Unit}/1k)")" T="int" Value="rules.Rate" ValueChanged="OnRateChanged" Step="10" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="FocusIn" />
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudNumericField Label="@($"チップ ({Currency.Unit}/枚)")" T="int" Value="rules.ChipRate" ValueChanged="OnChipRateChanged" Step="50" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="FocusIn" />
+                        </MudItem>
+                        @if (rules.IsCustomUma)
+                        {
+                            <MudItem xs="12" sm="8">
+                                <MudTextField Label="カスタム順位ウマ" Value="@rules.GetUmaDisplayText(true)" ReadOnly="true" Margin="Margin.Dense" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Close" OnAdornmentClick="DisableCustomUma" Style="font-variant-numeric: tabular-nums;" Class="px-2" />
+                            </MudItem>
+                        }
+                        else
+                        {
+                            <MudItem xs="6" sm="4">
+                                <MudNumericField T="int" Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←2)" : "順位ウマ(2←3)")" Value="rules.Uma1" ValueChanged="@((int v) => OnUmaChanged(v, rules.Uma2))" Step="5" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="FocusIn" />
+                            </MudItem>
+                            <MudItem xs="6" sm="4">
+                                <MudNumericField T="int" Label="@(rules.PlayerCount == 3 ? "順位ウマ(1←3)" : "順位ウマ(1←4)")" Value="rules.Uma2" ValueChanged="@((int v) => OnUmaChanged(rules.Uma1, v))" Step="5" Min="0" Margin="Margin.Dense" Class="px-2" @onfocusin="FocusIn" />
+                            </MudItem>
+                        }
+                        <MudItem xs="12">
+                            <MudTextField T="string" Label="その他のルール（メモ）" Value="rules.Memo" ValueChanged="OnMemoChanged" Placeholder="例: 北抜き / 取りきり / 赤3枚 / 鳴き祝儀なし / 流し満貫は満貫 / ツモ損あり" Lines="2" Sizing="InputSizing.Auto" MaxLines="8" MaxLength="500" Margin="Margin.Dense" Class="px-2" @onfocusin="FocusIn" />
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+        </ChildContent>
+    </MudExpansionPanel>
+</MudExpansionPanels>
+
+@code {
+    [CascadingParameter] public CurrencySetting Currency { get; set; } = new();
+    [Parameter] public bool IsEditing { get; set; }
+    // ルールを変えたら呼ぶ。引数は対局人数が変わったか（変わったら画面側で入力欄をリセットする）
+    [Parameter] public EventCallback<bool> OnRulesChanged { get; set; }
+    // 入力欄にフォーカスが移ったとき（画面側でテンキーを閉じる）
+    [Parameter] public EventCallback OnFieldFocus { get; set; }
+
+    private RuleSet rules => SessionState.Rules;
+    private bool isExpanded = true;
+
+    private Task FocusIn() => OnFieldFocus.InvokeAsync();
+
+    private async Task SaveAndNotifyAsync(bool isPlayerCountChanged = false)
+    {
+        await SessionState.SaveRulesAsync(rules);
+        await OnRulesChanged.InvokeAsync(isPlayerCountChanged);
+    }
+
+    private async Task OnRuleNameChanged(string value)
+    {
+        rules.Name = string.IsNullOrEmpty(value) ? " " : value;
+        await SaveAndNotifyAsync();
+    }
+
+    // 対局人数を変えたら、持ち点などを人数に合った初期値にする
+    private async Task OnPlayerCountChanged(int val)
+    {
+        rules.PlayerCount = val;
+        (rules.StartingPoints, rules.ReturnPoints, rules.Uma1, rules.Uma2) = val switch
+        {
+            4 => (25000, 30000, 10, 20),
+            3 => (35000, 40000, 10, 20),
+            _ => (rules.StartingPoints, rules.ReturnPoints, rules.Uma1, rules.Uma2)
+        };
+        rules.SyncCustomUmaFromNormal();
+        await SaveAndNotifyAsync(isPlayerCountChanged: true);
+    }
+
+    // 持ち点を変えたら、オカ（返し点との差）を保ったまま返し点も動かす
+    private async Task OnStartingPointsChanged(int val)
+    {
+        int currentOka = Math.Max(0, rules.ReturnPoints - rules.StartingPoints);
+        rules.StartingPoints = val;
+        rules.ReturnPoints = rules.StartingPoints + currentOka;
+        await SaveAndNotifyAsync();
+    }
+
+    // 返し点は持ち点より下にしない
+    private async Task OnReturnPointsChanged(int val)
+    {
+        rules.ReturnPoints = Math.Max(val, rules.StartingPoints);
+        await SaveAndNotifyAsync();
+    }
+
+    // レート・チップ・ウマは変えたらすぐ保存する（画面の移動や再起動で元に戻らないように）
+    private async Task OnRateChanged(int val)
+    {
+        rules.Rate = val;
+        await SaveAndNotifyAsync();
+    }
+
+    private async Task OnChipRateChanged(int val)
+    {
+        rules.ChipRate = val;
+        await SaveAndNotifyAsync();
+    }
+
+    private async Task OnMemoChanged(string val)
+    {
+        rules.Memo = val ?? "";
+        await SaveAndNotifyAsync();
+    }
+
+    private async Task OnUmaChanged(int uma1, int uma2)
+    {
+        rules.Uma1 = uma1;
+        rules.Uma2 = uma2;
+        rules.SyncCustomUmaFromNormal();
+        await SaveAndNotifyAsync();
+    }
+
+    private async Task DisableCustomUma()
+    {
+        rules.DisableCustomUma();
+        await SaveAndNotifyAsync();
+        Snackbar.Add("順位ウマの個別設定を解除しました", Severity.Info);
+    }
+
+    // プリセットを読み込む
+    private async Task OpenPresetDialog()
+    {
+        var parameters = new DialogParameters { ["Presets"] = await PresetService.GetAsync() };
+        var dialog = await DialogService.ShowAsync<PresetDialog>("保存済みの設定", parameters);
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled && result.Data is RuleSet preset)
+        {
+            bool isPlayerCountChanged = rules.PlayerCount != preset.PlayerCount;
+            var loaded = preset.DeepClone();
+            loaded.SyncCustomUmaFromNormal();
+            await SessionState.SaveRulesAsync(loaded);
+            Snackbar.Add($"「{preset.Name}」を読み込みました", Severity.Success);
+            await OnRulesChanged.InvokeAsync(isPlayerCountChanged);
+        }
+    }
+
+    // 今のルールをプリセットに保存する（同じ名前があれば、上書きか両方残すかを選ぶ）
+    private async Task SavePreset()
+    {
+        var presets = await PresetService.GetAsync();
+        var existingPreset = presets.FirstOrDefault(p => p.Name == rules.Name);
+        if (existingPreset != null)
+        {
+            string existingJson = System.Text.Json.JsonSerializer.Serialize(existingPreset);
+            string currentJson = System.Text.Json.JsonSerializer.Serialize(rules);
+            if (existingJson != currentJson)
+            {
+                bool? result = await DialogService.ShowMessageBoxAsync(
+                    "設定の保存",
+                    "同じルール名が保存されています。",
+                    yesText: "上書き",
+                    cancelText: "キャンセル",
+                    noText: "両方残す");
+                if (result == null) return;
+                if (result == true)
+                {
+                    presets.Remove(existingPreset);
+                }
+                else
+                {
+                    string baseName = rules.Name;
+                    int counter = 1;
+                    string newName = $"{baseName}_{counter}";
+                    while (presets.Any(p => p.Name == newName))
+                    {
+                        counter++;
+                        newName = $"{baseName}_{counter}";
+                    }
+                    rules.Name = newName;
+                }
+            }
+            else
+            {
+                presets.Remove(existingPreset);
+            }
+        }
+        presets.Add(rules.DeepClone());
+        await PresetService.SaveAsync();
+        await SaveAndNotifyAsync();
+        Snackbar.Add($"設定「{rules.Name}」を保存しました", Severity.Success);
+    }
+
+    private async Task OpenCustomRuleDialog()
+    {
+        var parameters = new DialogParameters { ["OriginalRules"] = rules };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = false,
+            BackdropClick = false,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            Position = DialogPosition.TopCenter
+        };
+        var dialog = await DialogService.ShowAsync<CustomRuleDialog>("カスタムルール", parameters, options);
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled && result.Data is RuleSet newRules)
+        {
+            bool isPlayerCountChanged = rules.PlayerCount != newRules.PlayerCount;
+            newRules.SyncCustomUmaFromNormal();
+            await SessionState.SaveRulesAsync(newRules);
+            await OnRulesChanged.InvokeAsync(isPlayerCountChanged);
+        }
+    }
+}

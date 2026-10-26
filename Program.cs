@@ -29,5 +29,6 @@ builder.Services.AddScoped<MahjongApp.Services.SessionStateService>();
 builder.Services.AddScoped<MahjongApp.Services.MahjongCalculatorService>();
 builder.Services.AddScoped<MahjongApp.Services.LiveShareService>();
 builder.Services.AddScoped<MahjongApp.Services.CloudBackupService>();
+builder.Services.AddScoped<MahjongApp.Services.RulePresetService>();
 
 await builder.Build().RunAsync();

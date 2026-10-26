@@ -1,5 +1,5 @@
 @using MahjongApp.Models
-@inject ILocalStorageService LocalStorage
+@inject MahjongApp.Services.RulePresetService PresetService
 @inject ISnackbar Snackbar
 
 <style>
@@ -151,7 +151,7 @@
     private async Task DeletePreset(RuleSet preset)
     {
         Presets.Remove(preset);
-        await LocalStorage.SetItemAsync(StorageKeys.RulePresets, Presets);
+        await PresetService.SaveAsync();
         Snackbar.Add($"設定「{preset.Name}」を削除しました", Severity.Info);
         StateHasChanged();
     }
@@ -179,7 +179,7 @@
         {
             Presets.RemoveAt(index);
             Presets.Insert(newIndex, preset);
-            await LocalStorage.SetItemAsync(StorageKeys.RulePresets, Presets);
+            await PresetService.SaveAsync();
             flashingPresets.Add(preset);
             StateHasChanged();
             _ = Task.Run(async () =>
