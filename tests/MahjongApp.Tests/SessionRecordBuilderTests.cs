@@ -82,6 +82,17 @@ public class SessionRecordBuilderTests
     }
 
     [Fact]
+    public void 初期のMリーグルールを読み込んだだけなら変更扱いにしない()
+    {
+        // 初期のプリセットはウマ10-30だが、順位ごとのウマは既定の +20/+10/-10/-20 のまま保存されている
+        var preset = new RuleSet { Name = "Mリーグルール", Uma1 = 10, Uma2 = 30, Rate = 0, ChipRate = 0, TieBreaker = TieBreakerRule.Split };
+        // 読み込むと、順位ごとのウマが +30/+10/-10/-30 に揃えられる
+        var rules = preset.DeepClone();
+        rules.SyncCustomUmaFromNormal();
+        Assert.Equal(SessionRecordBuilder.RuleNameIssue.None, SessionRecordBuilder.CheckRuleName(rules, new[] { preset }));
+    }
+
+    [Fact]
     public void メモだけの違いやプリセットにない名前はそのまま記録する()
     {
         var presets = new List<RuleSet> { new() { Name = "いつもの", Memo = "赤3枚" } };

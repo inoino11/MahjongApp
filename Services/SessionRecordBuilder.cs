@@ -43,11 +43,13 @@ public static class SessionRecordBuilder
         return RuleNameIssue.None;
     }
 
-    // 計算に関わるルールだけを比べるため、メモを除いたJSONにする
+    // 計算に関わるルールだけを比べるため、メモを除いたJSONにする。
+    // 順位ごとのウマは通常のウマから揃え直す（初期のプリセットには、通常のウマと揃っていないものがあるため）
     private static string RuleJsonWithoutMemo(RuleSet r)
     {
         var copy = r.DeepClone();
         copy.Memo = "";
+        copy.SyncCustomUmaFromNormal();
         return JsonSerializer.Serialize(copy);
     }
 
