@@ -118,7 +118,15 @@
         _isDarkMode = savedDarkMode ?? true;
         var savedCurrency = await SafeGetAsync<CurrencySetting>(StorageKeys.CurrencySetting);
         if (savedCurrency != null) _currencySetting = savedCurrency;
+        await ApplyThemeColorAsync();
         StateHasChanged();
+    }
+
+    // Android の PWA はステータスバーを theme-color で塗るため、ヘッダーの色に合わせる
+    private async Task ApplyThemeColorAsync()
+    {
+        string color = _isDarkMode ? mahjongTheme.PaletteDark.AppbarBackground.ToString() : mahjongTheme.PaletteLight.AppbarBackground.ToString();
+        await JSRuntime.InvokeVoidAsync("setThemeColor", color);
     }
 
     // 表示設定が読めなくても（保存形式の変更・破損など）初期値で起動を続ける
@@ -173,6 +181,7 @@
     {
         _isDarkMode = newValue;
         await LocalStorage.SetItemAsync(StorageKeys.IsDarkMode, newValue);
+        await ApplyThemeColorAsync();
     }
 
     private MudTheme mahjongTheme = new MudTheme()

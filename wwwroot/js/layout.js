@@ -66,3 +66,9 @@ window.attachScrollHint = (wrapperId, selector) => {
 
 // 画面が表示中か（観戦ページは、裏に回っている間は自動更新しない）
 window.getVisibilityState = () => document.visibilityState;
+
+// ステータスバーの色（Android の PWA は theme-color で塗る）を変える
+window.setThemeColor = (color) => {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', color);
+};
