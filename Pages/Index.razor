@@ -1,4 +1,5 @@
 @page "/"
+@using MahjongApp.Services
 @implements IDisposable
 @inject ILocalStorageService LocalStorage
 @inject IDialogService DialogService
@@ -742,15 +743,7 @@
             if (ActiveHistory.Count == 0)
                 return input.Players.Take(activeParticipantCount).Select(p => p.Name).ToList();
             // 局があれば、素点が記録された名前を出てきた順に並べる
-            var players = new List<string>();
-            foreach (var game in ActiveHistory)
-                for (int i = 0; i < game.PlayerNames.Count; i++)
-                    if (i < game.RawScores.Count && game.RawScores[i].HasValue)
-                    {
-                        var name = game.PlayerNames[i];
-                        if (!string.IsNullOrWhiteSpace(name) && !players.Contains(name)) players.Add(name);
-                    }
-            return players;
+            return SessionRecordBuilder.CollectPlayerNames(ActiveHistory);
         }
     }
 
@@ -931,14 +924,6 @@
         await SessionState.SaveRulesAsync(rules);
     }
 
-    // 計算に関わるルールだけを比べるため、メモを除いたJSONにする
-    private static string RuleJsonWithoutMemo(RuleSet r)
-    {
-        var copy = r.DeepClone();
-        copy.Memo = "";
-        return System.Text.Json.JsonSerializer.Serialize(copy);
-    }
-
     // セッションを確定して成績に保存する前の確認
     private async Task ConfirmFinalizeSession()
     {
@@ -947,31 +932,13 @@
         try
         {
             // ルール名が空、またはプリセットから内容を変えているなら、ルール名を「未設定」にして記録する
-            string ruleName = rules.Name;
-            bool isRuleNameEmpty = string.IsNullOrWhiteSpace(ruleName);
-            bool isPresetMatch = false;
-            bool isPresetNameExists = false;
-            if (!isRuleNameEmpty)
-            {
-                var preset = rulePresets.FirstOrDefault(p => p.Name == ruleName);
-                if (preset != null)
-                {
-                    isPresetNameExists = true;
-                    isPresetMatch = RuleJsonWithoutMemo(preset) == RuleJsonWithoutMemo(rules);
-                }
-            }
-            bool needsRuleNameChange = false;
+            var ruleNameIssue = SessionRecordBuilder.CheckRuleName(rules, rulePresets);
+            bool needsRuleNameChange = ruleNameIssue != SessionRecordBuilder.RuleNameIssue.None;
             string msg = "対局結果とチップ枚数を通算成績に記録して<br />現在の入力フォームをリセットしますか？";
-            if (isRuleNameEmpty)
-            {
-                needsRuleNameChange = true;
+            if (ruleNameIssue == SessionRecordBuilder.RuleNameIssue.Empty)
                 msg = "<span style='color: var(--mud-palette-warning); font-weight: bold;'>ルール名が未入力です。</span><br /><br />ルール名を「<b>未設定</b>」として<br />" + msg;
-            }
-            else if (isPresetNameExists && !isPresetMatch)
-            {
-                needsRuleNameChange = true;
-                msg = $"<span style='color: var(--mud-palette-warning); font-weight: bold;'>ルール名「{ruleName}」はプリセットから<br />内容が変更されています。</span><br /><br />ルール名を「<b>未設定</b>」として<br />" + msg;
-            }
+            else if (ruleNameIssue == SessionRecordBuilder.RuleNameIssue.ChangedFromPreset)
+                msg = $"<span style='color: var(--mud-palette-warning); font-weight: bold;'>ルール名「{rules.Name}」はプリセットから<br />内容が変更されています。</span><br /><br />ルール名を「<b>未設定</b>」として<br />" + msg;
             int chipSum = ActiveSessionChips.Values.Sum();
             bool isChipError = chipSum != 0;
             if (isChipError)
@@ -1006,68 +973,8 @@
     {
         try
         {
-            var sessionPlayerNames = ActiveHistory.SelectMany(h => h.PlayerNames.Select((name, idx) => new { Name = name, HasScore = idx < h.RawScores.Count && h.RawScores[idx].HasValue }).Where(x => x.HasScore && !string.IsNullOrWhiteSpace(x.Name)).Select(x => x.Name)).Distinct().ToList();
-            var nameToIdMap = new Dictionary<string, string>();
-            var playersToUpdate = new List<PlayerProfile>();
-            var gameRecordsToSave = new List<SavedGameRecord>();
-            var newSessionId = Guid.NewGuid().ToString();
-            var currentTimestamp = DateTime.Now;
-            foreach (var name in sessionPlayerNames)
-            {
-                var existingPlayer = playerMaster.FirstOrDefault(p => p.Name == name);
-                if (existingPlayer != null)
-                {
-                    nameToIdMap[name] = existingPlayer.Id; playersToUpdate.Add(new PlayerProfile { Id = existingPlayer.Id, Name = existingPlayer.Name, CumulativeChips = existingPlayer.CumulativeChips, CreatedAt = existingPlayer.CreatedAt });
-                }
-                else
-                {
-                    var newId = Guid.NewGuid().ToString();
-                    var newProfile = new PlayerProfile { Id = newId, Name = name, CumulativeChips = 0, CreatedAt = currentTimestamp }; playerMaster.Add(newProfile);
-                    playersToUpdate.Add(newProfile); nameToIdMap[name] = newId;
-                }
-            }
-            foreach (var game in ActiveHistory)
-            {
-                var savedRecord = new SavedGameRecord
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    SessionId = newSessionId,
-                    RuleName = rules.Name,
-                    PlayerCount = rules.PlayerCount,
-                    Timestamp = game.Timestamp,
-                    PlayerIds = game.PlayerNames.Select(name => !string.IsNullOrWhiteSpace(name) && nameToIdMap.ContainsKey(name) ? nameToIdMap[name] : null).ToList(),
-                    RawScores = game.RawScores,
-                    Points = game.Points,
-                    Yen = game.Yen,
-                    SinkPoints = game.SinkPoints != null ? new List<double>(game.SinkPoints) : new(),
-                    YakiPoints = game.YakiPoints != null ? new List<double>(game.YakiPoints) : new(),
-                    TobiPoints = game.TobiPoints != null ? new List<double>(game.TobiPoints) : new(),
-                    ColdPoints = game.ColdPoints != null ? new List<double>(game.ColdPoints) : new()
-                };
-                gameRecordsToSave.Add(savedRecord);
-            }
-            var sessionRecord = new SavedSessionRecord
-            {
-                SessionId = newSessionId,
-                Date = currentTimestamp,
-                Rate = rules.Rate,
-                ChipRate = rules.ChipRate,
-                ParticipantPlayerIds = new List<string>(),
-                SettledChips = new List<int>(),
-                Rules = rules.DeepClone()
-            };
-
-            for (int i = 0; i < TablePlayers.Count; i++)
-            {
-                string name = TablePlayers[i];
-                if (!string.IsNullOrWhiteSpace(name) && nameToIdMap.TryGetValue(name, out var playerId))
-                {
-                    int chipCount = ActiveSessionChips.TryGetValue(name, out var c) ? c : 0;
-                    sessionRecord.ParticipantPlayerIds.Add(playerId);
-                    sessionRecord.SettledChips.Add(chipCount);
-                }
-            }
-            await DatabaseService.SaveSessionAsync(playersToUpdate, sessionRecord, gameRecordsToSave);
+            var records = SessionRecordBuilder.Build(ActiveHistory, rules, ActiveSessionChips, playerMaster, DateTime.Now);
+            playerMaster.AddRange(records.NewPlayers);            await DatabaseService.SaveSessionAsync(records.PlayersToUpdate, records.Session, records.Games);
             if (LiveShare.IsActive) await LiveShare.EndAsync("finished", BuildSharePayloadJson());
             ActiveHistory.Clear();
             ActiveSessionChips.Clear();

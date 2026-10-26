@@ -470,14 +470,7 @@
         if (SessionStateService.ActiveHistory != null && SessionStateService.ActiveHistory.Count > 0)
         {
             // 参加者は、局履歴で素点が記録された名前から集める（途中で入れ替わった人のチップも漏らさない。確定保存時と同じ規則）
-            var activePlayerNames = new List<string>();
-            foreach (var game in SessionStateService.ActiveHistory)
-                for (int i = 0; i < game.PlayerNames.Count; i++)
-                    if (i < game.RawScores.Count && game.RawScores[i].HasValue)
-                    {
-                        var name = game.PlayerNames[i];
-                        if (!string.IsNullOrWhiteSpace(name) && !activePlayerNames.Contains(name)) activePlayerNames.Add(name);
-                    }
+            var activePlayerNames = SessionRecordBuilder.CollectPlayerNames(SessionStateService.ActiveHistory);
             var activePlayerIds = new List<string>();
             foreach (var name in activePlayerNames)
             {
