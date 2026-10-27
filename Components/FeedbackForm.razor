@@ -1,0 +1,113 @@
+@using System.Net
+@using System.Net.Http.Json
+@using System.Reflection
+@using MahjongApp.Services
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+@* 不具合報告・要望の送信フォーム。内容は端末で運営者の公開鍵により暗号化して送る（wwwroot/js/feedback.js） *@
+<MudPaper Class="pa-5" Elevation="2" id="feedback">
+    <MudText Typo="Typo.h6" Class="mb-1" Style="font-weight: bold;">問い合わせ・不具合報告</MudText>
+    <MudText Typo="Typo.body2" Class="mb-3" Style="line-height: 1.7;">
+        内容はこの端末で暗号化してから送ります。読めるのは運営者だけです。返信が必要な場合だけ、連絡先を書いてください。
+    </MudText>
+    @if (isSent)
+    {
+        <MudAlert Severity="Severity.Success" Class="mb-2">送信しました。ありがとうございます。</MudAlert>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="Reset">もう 1 件送る</MudButton>
+    }
+    else
+    {
+        <MudSelect T="string" @bind-Value="category" Label="種類" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3">
+            <MudSelectItem Value="@("不具合")">不具合</MudSelectItem>
+            <MudSelectItem Value="@("要望")">要望</MudSelectItem>
+            <MudSelectItem Value="@("その他")">その他</MudSelectItem>
+        </MudSelect>
+        <MudTextField T="string" @bind-Value="message" Immediate="true" Label="内容" Variant="Variant.Outlined" Lines="5" MaxLength="@MaxMessageLength" Counter="@MaxMessageLength" Class="mb-3"
+                      Placeholder="不具合なら、何をしたときに、どうなったかを書いてください" />
+        <MudTextField T="string" @bind-Value="contact" Label="連絡先（任意・返信が必要な場合）" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="200" Class="mb-2" />
+        <MudCheckBox T="bool" @bind-Value="includeEnvironment" Color="Color.Primary" Dense="true" Label="アプリのバージョンと端末の種類を一緒に送る" />
+        @* ボット対策のおとり。人には見えず、ここが埋まっていたら Worker が捨てる *@
+        <input type="text" name="website" @bind="honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0;" />
+        <div class="d-flex justify-end mt-3">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Send" OnClick="SendAsync" Disabled="@(isSending || string.IsNullOrWhiteSpace(message))">
+                @(isSending ? "送信中..." : "送信する")
+            </MudButton>
+        </div>
+    }
+</MudPaper>
+
+@code {
+    private const int MaxMessageLength = 2000;
+    private string category = "不具合";
+    private string message = "";
+    private string contact = "";
+    private bool includeEnvironment = true;
+    private string honeypot = "";
+    private bool isSending = false;
+    private bool isSent = false;
+
+    private class WorkerError
+    {
+        public string Error { get; set; } = "";
+    }
+
+    private async Task SendAsync()
+    {
+        isSending = true;
+        try
+        {
+            if (!await JSRuntime.InvokeAsync<bool>("feedbackCrypto.isReady"))
+            {
+                Snackbar.Add("問い合わせの受付を準備中です", Severity.Warning);
+                return;
+            }
+            string? environment = null;
+            if (includeEnvironment)
+            {
+                string version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "?";
+                environment = $"{version} / {await JSRuntime.InvokeAsync<string>("feedbackCrypto.getEnvironment")}";
+            }
+            string plain = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                category,
+                message = message.Trim(),
+                contact = string.IsNullOrWhiteSpace(contact) ? null : contact.Trim(),
+                environment
+            });
+            string encrypted = await JSRuntime.InvokeAsync<string>("feedbackCrypto.encrypt", plain);
+            var response = await Http.PostAsJsonAsync($"{LiveShareService.WorkerUrl}/feedback", new { encrypted, website = honeypot });
+            if (response.IsSuccessStatusCode)
+            {
+                isSent = true;
+                return;
+            }
+            string error = "";
+            try { error = (await response.Content.ReadFromJsonAsync<WorkerError>())?.Error ?? ""; } catch { }
+            string reason = response.StatusCode switch
+            {
+                HttpStatusCode.TooManyRequests when error == "daily limit" => WorkerErrors.DailyLimitMessage,
+                HttpStatusCode.TooManyRequests => "続けて送信されたため受け付けませんでした\n1 分ほど待ってから送ってください",
+                HttpStatusCode.RequestEntityTooLarge => "内容が長すぎます",
+                _ => $"送信に失敗しました（{(int)response.StatusCode}）"
+            };
+            Snackbar.Add(reason, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"送信に失敗しました。通信状況を確認してください\n{ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSending = false;
+        }
+    }
+
+    private void Reset()
+    {
+        message = "";
+        contact = "";
+        isSent = false;
+    }
+}

@@ -28,7 +28,7 @@
         {
             <MudText Typo="Typo.body2" Class="mb-4">
                 成績を自動でクラウドに保存し、機種変更やデータが消えたときに戻せるようにします。<br />
-                データはこの端末で暗号化してから送るため、サーバー側では中身を読めません。<br />
+                データはこの端末で暗号化してから送るため、サーバー側では中身を読めません（<MudLink Href="privacy" Typo="Typo.body2">データの扱い</MudLink>）。<br />
                 <span style="color: var(--mud-palette-warning); font-weight: bold;">復元には「復元キー」が必要です。なくすと誰にも復元できません。</span>
             </MudText>
             <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.CloudUpload" OnClick="EnableCloudBackup" Disabled="isCloudBusy">

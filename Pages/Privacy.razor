@@ -1,0 +1,120 @@
+@page "/privacy"
+
+@* プライバシーとデータの扱い。内容は実装（保存先・暗号化・保存期間）と合わせること。変えたら改定日を更新する *@
+<style>
+    .privacy-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+        line-height: 1.6;
+    }
+
+    .privacy-table th,
+    .privacy-table td {
+        border-bottom: 1px solid var(--mud-palette-divider);
+        padding: 8px 6px;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .privacy-table th {
+        white-space: nowrap;
+        color: var(--mud-palette-text-secondary);
+        font-weight: normal;
+    }
+
+    .privacy-text {
+        line-height: 1.8;
+    }
+
+    .privacy-text ul {
+        margin: 4px 0 0;
+        padding-left: 1.4em;
+    }
+</style>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-4 pb-10">
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
+        <MudIcon Icon="@Icons.Material.Filled.Shield" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
+        プライバシー
+    </MudText>
+
+    <MudPaper Class="pa-5 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">運営者</MudText>
+        <MudText Typo="Typo.body2" Class="privacy-text">
+            inoino11（個人）が、営利を目的とせずに運営しています。
+        </MudText>
+    </MudPaper>
+
+    <MudPaper Class="pa-5 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">端末の中だけに保存するもの</MudText>
+        <MudText Typo="Typo.body2" Class="privacy-text">
+            成績・名簿・ルール・入力中の記録・表示の設定は、この端末のブラウザの中（IndexedDB と localStorage）に保存し、サーバーには送りません。
+            ブラウザのサイトデータを消すと、これらも消えます。
+        </MudText>
+    </MudPaper>
+
+    <MudPaper Class="pa-5 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">サーバーに送るもの</MudText>
+        <MudText Typo="Typo.body2" Class="privacy-text mb-2">
+            次の機能を使ったときだけ、データをサーバー（Cloudflare）に送ります。どれも、この端末で暗号化してから送ります。
+        </MudText>
+        @foreach (var item in ServerItems)
+        {
+            <MudText Typo="Typo.subtitle2" Class="mt-4" Style="font-weight: bold;">@item.Name</MudText>
+            <table class="privacy-table">
+                <tr><th>送る内容</th><td>@item.Content</td></tr>
+                <tr><th>暗号化</th><td>@item.Encryption</td></tr>
+                <tr><th>保存期間</th><td>@item.Retention</td></tr>
+                <tr><th>消し方</th><td>@item.Deletion</td></tr>
+            </table>
+        }
+        <MudText Typo="Typo.body2" Class="privacy-text mt-4" Style="color: var(--mud-palette-text-secondary);">
+            暗号化していても、送った日時とデータの大きさはサーバーから分かります。
+            また、問い合わせの連投を防ぐため、送信元の IP アドレスを一時的に扱います。
+        </MudText>
+    </MudPaper>
+
+    <MudPaper Class="pa-5 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">外部のサービスとの通信</MudText>
+        <div class="privacy-text mud-typography-body2">
+            アプリを開くと、次のサービスと通信します。いずれも成績の内容は送りません。
+            <ul>
+                <li><b>GitHub Pages</b>（アプリの配信）</li>
+                <li><b>Cloudflare</b>（共有・観戦・バックアップ・問い合わせの受付、画像シェアに使うライブラリの配信）</li>
+                <li><b>Cloudflare Web Analytics</b>（閲覧数の集計。Cookie を使わず、個人を特定しない方式です）</li>
+                <li><b>Google Fonts</b>（文字の表示）</li>
+            </ul>
+            これらの事業者は、通信の記録（IP アドレスなど）を一定期間保持することがあります。詳しくは各社の方針をご覧ください:
+            <MudLink Href="https://docs.github.com/ja/site-policy/privacy-policies/github-general-privacy-statement" Target="_blank" Typo="Typo.body2">GitHub</MudLink>、
+            <MudLink Href="https://www.cloudflare.com/ja-jp/privacypolicy/" Target="_blank" Typo="Typo.body2">Cloudflare</MudLink>、
+            <MudLink Href="https://policies.google.com/privacy?hl=ja" Target="_blank" Typo="Typo.body2">Google</MudLink>
+        </div>
+        <MudText Typo="Typo.body2" Class="privacy-text mt-2">
+            広告や、Cookie を使った追跡はしていません。
+        </MudText>
+    </MudPaper>
+
+    <MudPaper Class="pa-5 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">この方針の変更</MudText>
+        <MudText Typo="Typo.body2" Class="privacy-text">
+            内容を変えたときは、このページで知らせ、下の改定日を更新します。<br />
+            改定日: @RevisedAt
+        </MudText>
+    </MudPaper>
+
+    <FeedbackForm />
+</MudContainer>
+
+@code {
+    private const string RevisedAt = "2026年10月27日";
+
+    private static readonly (string Name, string Content, string Encryption, string Retention, string Deletion)[] ServerItems =
+    {
+        ("URLシェア", "その日の結果", "暗号化の鍵は URL の # 以降にだけ含め、サーバーには送りません。URL を知らない人は読めません", "90日", "期限まで消せません"),
+        ("観戦URL", "進行中の結果", "URLシェアと同じです", "最後の更新から90日", "「配信を停止」で更新が止まり、期限が来ると消えます"),
+        ("クラウドバックアップ", "すべての成績・名簿・ルール", "あなたが控える「復元キー」で暗号化します。復元キーはサーバーに送りません", "最後の保存から365日", "データ管理の「停止する」で、すぐに消えます"),
+        ("パスキーへの保存", "パスキー本体は、あなたのパスワード管理（iCloud キーチェーンや Google パスワードマネージャーなど）に保存されます。サーバーには、パスキーで包んだ（暗号化した）復元キーだけを置きます", "パスキーがなければ開けません", "クラウドバックアップと同じです", "クラウドバックアップを停止すると消えます"),
+        ("問い合わせ", "入力した内容と、任意の連絡先。選んだ場合は、アプリのバージョンと端末の種類", "運営者の公開鍵で暗号化します。読めるのは、秘密鍵を持つ運営者だけです", "180日", "期限が来ると消えます。早く消してほしい場合は、問い合わせでお知らせください"),
+    };
+}

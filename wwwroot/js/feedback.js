@@ -41,6 +41,16 @@ window.feedbackCrypto = {
         return JSON.stringify({ v: this.version, epk: this.toB64(ephemeralPublicRaw), iv: this.toB64(iv), ct: this.toB64(cipher) });
     },
 
+    // 問い合わせに添える端末の種類（利用者が「一緒に送る」を選んだときだけ使う）
+    getEnvironment: function () {
+        const standalone = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
+        return navigator.userAgent + (standalone ? " / ホーム画面から起動" : "");
+    },
+
+    isReady: function () {
+        return !!this.publicKey;
+    },
+
     // 秘密鍵（JWK）で復号する。運営者の手元の読み取りページとテストで使う
     decrypt: async function (envelopeJson, privateJwk) {
         const envelope = JSON.parse(envelopeJson);
