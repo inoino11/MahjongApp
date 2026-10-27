@@ -110,7 +110,7 @@
             <MudItem xs="12" sm="6">
                 <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center justify-space-between px-2 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
                     @* 名前 *@
-                    <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="Input.Players[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged.InvokeAsync((index, v)))" SearchFunc="@SearchPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input balanced-center-select" Style="font-weight: bold; font-size: 0.95rem; width: 9.5em;" Disabled="@(isSitOut || IsEditing)" onfocus="this.select();" @onfocusin="@(() => OnFieldFocus.InvokeAsync())" />
+                    <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="Input.Players[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged.InvokeAsync((index, v)))" SearchFunc="@SearchPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" Underline="false" Margin="Margin.Dense" Class="player-name-input balanced-center-select" Style="font-weight: bold; font-size: 0.95rem; width: 9.5em;" Disabled="@(isSitOut || IsEditing)" onfocus="this.select();" @onfocusin="@(() => OnFieldFocus.InvokeAsync())" />
                     <div class="d-flex align-center justify-center flex-grow-1">
                         @* 抜け番 *@
                         @if (ParticipantCount > Rules.PlayerCount)
@@ -130,7 +130,7 @@
                     </div>
                     @* 素点（百点単位で入力し、下2桁の「00」は表示だけ） *@
                     <div id="score-input-@index" class="d-flex align-baseline" @onclick="@(() => OnOpenKeypad.InvokeAsync(index))" @onclick:stopPropagation="true">
-                        <MudTextField T="string" Value="@Input.Buffers[index]" ReadOnly="true" DisableUnderLine="true" Margin="Margin.Dense" Class="@($"score-input {(index == Input.AutoFilledIndex ? "auto-filled" : "")} {(ActiveScoreInputIndex == index ? "score-input-active" : "")} {(ActiveScoreInputIndex.HasValue && index == Input.AutoFilledIndex ? "score-input-auto-filling" : "")}")" Style="width: 77px; cursor: pointer;" Disabled="isSitOut" Adornment="@(index == Input.AutoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
+                        <MudTextField T="string" Value="@Input.Buffers[index]" ReadOnly="true" Underline="false" Margin="Margin.Dense" Class="@($"score-input {(index == Input.AutoFilledIndex ? "auto-filled" : "")} {(ActiveScoreInputIndex == index ? "score-input-active" : "")} {(ActiveScoreInputIndex.HasValue && index == Input.AutoFilledIndex ? "score-input-auto-filling" : "")}")" Style="width: 77px; cursor: pointer;" Disabled="isSitOut" Adornment="@(index == Input.AutoFilledIndex ? Adornment.Start : Adornment.None)" AdornmentIcon="@Icons.Material.Filled.AutoAwesome" AdornmentColor="Color.Info" />
                         <span class="score-zeros" style="cursor: pointer;">00</span>
                     </div>
                 </MudPaper>

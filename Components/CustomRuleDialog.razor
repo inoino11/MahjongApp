@@ -26,7 +26,7 @@
         </MudText>
     </TitleContent>
     <DialogContent>
-        <MudTabs DisableRipple="true" Class="compact-tabs" @bind-ActivePanelIndex="activeTabIndex" Centered="true" Elevation="1" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4" Style="min-height: 450px;">
+        <MudTabs Ripple="false" Class="compact-tabs" @bind-ActivePanelIndex="activeTabIndex" Centered="true" Elevation="1" Rounded="true" ApplyEffectsToContainer="true" Style="min-height: 450px;">
 
             @* --- タブ1: ウマ・同点処理 --- *@
             <MudTabPanel Text="@(activeTabIndex == 0 ? "ウマ・同点処理" : "")" Icon="@Icons.Material.Filled.Calculate">

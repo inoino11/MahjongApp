@@ -100,10 +100,11 @@
         }
     }
 
-    /* 線や点が上下で切れないよう、余白を取り SVG のはみ出しを許可する */
+    /* 線や点が上下で切れないよう、余白を取り SVG のはみ出しを許可する（SVG は下にはみ出して横軸のラベルを描くので、その分を下に空ける） */
     .responsive-chart-wrapper {
         padding-top: 12px;
         padding-bottom: 12px;
+        margin-bottom: 20px;
         width: 100%;
         height: 40vw;
         min-height: 150px;
@@ -143,10 +144,10 @@
 <MudStack Row="true" Wrap="Wrap.Wrap" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4 gap-2">
     <div class="d-flex flex-wrap gap-2">
         <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
-            <MudButton Variant="@(DisplayMode == 0 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(0)">素点</MudButton>
-            <MudButton Variant="@(DisplayMode == 1 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(1)">+/−</MudButton>
-            <MudButton Variant="@(DisplayMode == 2 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(2)">@Currency.Unit</MudButton>
-            <MudButton Variant="@(DisplayMode == 7 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(7)">グラフ</MudButton>
+            <MudButton Variant="@(DisplayMode == 0 ? Variant.Filled : Variant.Outlined)" DropShadow="false" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(0)">素点</MudButton>
+            <MudButton Variant="@(DisplayMode == 1 ? Variant.Filled : Variant.Outlined)" DropShadow="false" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(1)">+/−</MudButton>
+            <MudButton Variant="@(DisplayMode == 2 ? Variant.Filled : Variant.Outlined)" DropShadow="false" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(2)">@Currency.Unit</MudButton>
+            <MudButton Variant="@(DisplayMode == 7 ? Variant.Filled : Variant.Outlined)" DropShadow="false" Color="Color.Primary" Size="Size.Small" OnClick="() => SetDisplayMode(7)">グラフ</MudButton>
         </MudStack>
         @if (Rules?.IsSinkEnabled == true || Rules?.IsYakiEnabled == true || Rules?.IsTobiEnabled == true || Rules?.IsColdEnabled == true ||
              HasAnySinkPoints || HasAnyYakiPoints || HasAnyTobiPoints || HasAnyColdPoints)
@@ -154,19 +155,19 @@
             <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
                 @if (Rules?.IsSinkEnabled == true || HasAnySinkPoints)
                 {
-                    <MudButton Variant="@(DisplayMode == 3 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Warning" Size="Size.Small" OnClick="() => SetDisplayMode(3)">沈み</MudButton>
+                    <MudButton Variant="@(DisplayMode == 3 ? Variant.Filled : Variant.Outlined)" DropShadow="false" Color="Color.Warning" Size="Size.Small" OnClick="() => SetDisplayMode(3)">沈み</MudButton>
                 }
                 @if (Rules?.IsYakiEnabled == true || HasAnyYakiPoints)
                 {
-                    <MudButton Variant="@(DisplayMode == 4 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Warning" Size="Size.Small" OnClick="() => SetDisplayMode(4)">焼き鳥</MudButton>
+                    <MudButton Variant="@(DisplayMode == 4 ? Variant.Filled : Variant.Outlined)" DropShadow="false" Color="Color.Warning" Size="Size.Small" OnClick="() => SetDisplayMode(4)">焼き鳥</MudButton>
                 }
                 @if (Rules?.IsTobiEnabled == true || HasAnyTobiPoints)
                 {
-                    <MudButton Variant="@(DisplayMode == 5 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Info" Size="Size.Small" OnClick="() => SetDisplayMode(5)">トビ</MudButton>
+                    <MudButton Variant="@(DisplayMode == 5 ? Variant.Filled : Variant.Outlined)" DropShadow="false" Color="Color.Info" Size="Size.Small" OnClick="() => SetDisplayMode(5)">トビ</MudButton>
                 }
                 @if (Rules?.IsColdEnabled == true || HasAnyColdPoints)
                 {
-                    <MudButton Variant="@(DisplayMode == 6 ? Variant.Filled : Variant.Outlined)" DisableElevation="true" Color="Color.Info" Size="Size.Small" OnClick="() => SetDisplayMode(6)">コールド</MudButton>
+                    <MudButton Variant="@(DisplayMode == 6 ? Variant.Filled : Variant.Outlined)" DropShadow="false" Color="Color.Info" Size="Size.Small" OnClick="() => SetDisplayMode(6)">コールド</MudButton>
                 }
             </MudStack>
         }
@@ -183,7 +184,7 @@
             <div class="chart-flex-container gap-3">
                 <div style="flex-grow: 1; min-width: 0; width: 100%;">
                     <div class="responsive-chart-wrapper">
-                        <MudChart ChartType="ChartType.Line" ChartSeries="@_chartSeries" XAxisLabels="@_xAxisLabels" Width="100%" Height="100%" ChartOptions="@_chartOptions" />
+                        <MudChart ChartType="ChartType.Line" ChartSeries="@_chartSeries" ChartLabels="@_xAxisLabels" Width="100%" Height="100%" ChartOptions="@_chartOptions" />
                     </div>
                 </div>
                 <div class="d-flex flex-row flex-wrap flex-md-column gap-2" style="min-width: 140px; align-content: flex-start; flex-shrink: 0;">
