@@ -14,7 +14,10 @@ namespace MahjongApp.Services;
 public class LiveShareService
 {
     public const string WorkerUrl = "https://mahjong-share.inoino11.workers.dev";
-    private const int DebounceMilliseconds = 2000;
+    // 送信回数（KV の書き込み）を抑えるため、変化してから少し待ってまとめ、前回の送信からも間隔を空ける。
+    // 観戦は数局に一度見て現状が分かれば足りるので、記録が反映されるまで最大1分ほど遅れてよい
+    private static readonly TimeSpan Debounce = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan MinInterval = TimeSpan.FromSeconds(60);
 
     private readonly HttpClient _http;
     private readonly ILocalStorageService _localStorage;
@@ -23,10 +26,12 @@ public class LiveShareService
     private readonly SemaphoreSlim _sendLock = new(1, 1);
 
     private LiveShareInfo? _info;
-    private bool _isLoaded = false;
+    private Task? _loadTask;
     private string? _lastSentJson;
     private string? _pendingJson;
     private CancellationTokenSource? _debounceCts;
+    private DateTime? _lastSentAt;
+    private DotNetObjectReference<LiveShareService>? _selfRef;
 
     public bool IsActive => _info != null;
     public bool HasError { get; private set; }
@@ -41,6 +46,8 @@ public class LiveShareService
         public string Id { get; set; } = "";
         public string Token { get; set; } = "";
         public string Key { get; set; } = "";
+        // 最後に合計が ±0 だったチップ（入力途中のチップは送らない）
+        public Dictionary<string, int>? BalancedChips { get; set; }
     }
 
     private class CreatedResponse
@@ -63,9 +70,11 @@ public class LiveShareService
         _navigationManager = navigationManager;
     }
 
-    public async Task EnsureLoadedAsync()
+    // 複数の画面から同時に呼ばれても、読み込みと登録は1回だけにする
+    public Task EnsureLoadedAsync() => _loadTask ??= LoadAsync();
+
+    private async Task LoadAsync()
     {
-        if (_isLoaded) return;
         try
         {
             _info = await _localStorage.GetItemAsync<LiveShareInfo>(StorageKeys.LiveShare);
@@ -74,7 +83,45 @@ public class LiveShareService
         {
             _info = null;
         }
-        _isLoaded = true;
+        // 画面を閉じる・アプリを切り替えるときは、待っている送信をすぐ送る（スマホは画面を消すとタイマーが止まるため）
+        try
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            await _jsRuntime.InvokeVoidAsync("registerVisibilityFlush", _selfRef, nameof(FlushPendingAsync));
+        }
+        catch { }
+    }
+
+    [JSInvokable]
+    public async Task FlushPendingAsync()
+    {
+        if (_info == null || _pendingJson == null) return;
+        _debounceCts?.Cancel();
+        await UpdateNowAsync();
+    }
+
+    /// <summary>
+    /// 観戦データに載せるチップ。合計が ±0 のときだけ今の値を採用し、入力途中は前に採用した値のままにする
+    /// </summary>
+    public Dictionary<string, int> ChipsToSend(Dictionary<string, int> current)
+    {
+        if (_info == null) return current;
+        var chips = SelectChips(current, _info.BalancedChips);
+        if (!ReferenceEquals(chips, _info.BalancedChips))
+        {
+            _info.BalancedChips = chips;
+            _ = _localStorage.SetItemAsync(StorageKeys.LiveShare, _info).AsTask();
+        }
+        return chips;
+    }
+
+    public static Dictionary<string, int> SelectChips(Dictionary<string, int> current, Dictionary<string, int>? lastBalanced)
+    {
+        // まだ一度も採用していなければ、今の値をそのまま使う（配信開始時の状態を引き継ぐ）
+        if (lastBalanced == null) return new Dictionary<string, int>(current);
+        if (current.Values.Sum() != 0) return lastBalanced;
+        if (lastBalanced != null && lastBalanced.Count == current.Count && lastBalanced.All(kv => current.TryGetValue(kv.Key, out var v) && v == kv.Value)) return lastBalanced;
+        return new Dictionary<string, int>(current);
     }
 
     /// <summary>
@@ -95,6 +142,7 @@ public class LiveShareService
         _info = new LiveShareInfo { Id = created.Id, Token = created.Token, Key = encrypted.KeyUrlSafeBase64 };
         await _localStorage.SetItemAsync(StorageKeys.LiveShare, _info);
         _lastSentJson = payloadJson;
+        _lastSentAt = DateTime.Now;
         _pendingJson = null;
         HasError = false;
         OnChanged?.Invoke();
@@ -108,16 +156,22 @@ public class LiveShareService
     {
         if (_info == null || payloadJson == _lastSentJson || payloadJson == _pendingJson) return;
         _pendingJson = payloadJson;
+        var delay = Debounce;
+        if (_lastSentAt != null)
+        {
+            var untilAllowed = _lastSentAt.Value + MinInterval - DateTime.Now;
+            if (untilAllowed > delay) delay = untilAllowed;
+        }
         _debounceCts?.Cancel();
         var cts = _debounceCts = new CancellationTokenSource();
-        _ = SendAfterDelayAsync(cts.Token);
+        _ = SendAfterDelayAsync(delay, cts.Token);
     }
 
-    private async Task SendAfterDelayAsync(CancellationToken token)
+    private async Task SendAfterDelayAsync(TimeSpan delay, CancellationToken token)
     {
         try
         {
-            await Task.Delay(DebounceMilliseconds, token);
+            await Task.Delay(delay, token);
         }
         catch (TaskCanceledException)
         {
@@ -185,6 +239,7 @@ public class LiveShareService
             var response = await _http.SendAsync(request);
             statusCode = response.StatusCode;
             HasError = !response.IsSuccessStatusCode;
+            if (!HasError) _lastSentAt = DateTime.Now;
         }
         catch (Exception ex)
         {

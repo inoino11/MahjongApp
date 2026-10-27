@@ -72,3 +72,10 @@ window.setThemeColor = (color) => {
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', color);
 };
+
+// 画面が隠れたとき（画面を消す・アプリを切り替える）に .NET 側のメソッドを呼ぶ（観戦データの送り残しを送るため）
+window.registerVisibilityFlush = (dotnetRef, methodName) => {
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') dotnetRef.invokeMethodAsync(methodName).catch(() => { });
+    });
+};

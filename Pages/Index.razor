@@ -490,7 +490,8 @@
     // 記録・削除・修正・チップ・ルール変更はいずれも再描画を伴うため、描画後に内容の変化を検知して送る
     protected override void OnAfterRender(bool firstRender)
     {
-        if (LiveShare.IsActive) LiveShare.ScheduleUpdate(BuildSharePayloadJson());
+        // チップは合計が ±0 になったときだけ反映する（入力途中で何度も送らないように）
+        if (LiveShare.IsActive) LiveShare.ScheduleUpdate(SharePayloadBuilder.BuildJson(rules, TablePlayers, ActiveHistory, LiveShare.ChipsToSend(ActiveSessionChips), Currency));
     }
 
     // 1人だけ空欄なら合計が合うように自動入力し、条件を満たさなくなったら自動入力を消す
