@@ -32,4 +32,9 @@ builder.Services.AddScoped<MahjongApp.Services.CloudBackupService>();
 builder.Services.AddScoped<MahjongApp.Services.RulePresetService>();
 builder.Services.AddScoped<MahjongApp.Services.FeedbackSender>();
 
+// 画面で捕まえられなかったエラーを拾い、報告するか利用者に聞く（MainLayout）
+var errorCapture = new MahjongApp.Services.ErrorCapture();
+builder.Services.AddSingleton(errorCapture);
+builder.Logging.AddProvider(new MahjongApp.Services.ErrorCaptureLoggerProvider(errorCapture));
+
 await builder.Build().RunAsync();

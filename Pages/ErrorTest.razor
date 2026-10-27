@@ -1,0 +1,16 @@
+@page "/debug/error"
+
+@* エラー報告の動作確認用（画面テストと実機での確認に使う）。メニューには出さない *@
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-6">
+    <MudPaper Class="pa-5" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">エラー報告の確認</MudText>
+        <MudText Typo="Typo.body2" Class="mb-4" Style="line-height: 1.7;">
+            ボタンを押すと、わざとエラーを起こします。エラーの画面から「不具合を報告する」を試せます。データには影響しません。
+        </MudText>
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="Throw">エラーを起こす</MudButton>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private void Throw() => throw new InvalidOperationException("動作確認のためのエラーです");
+}

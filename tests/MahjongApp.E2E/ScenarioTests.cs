@@ -367,6 +367,58 @@ public class ScenarioTests
         Assert.Contains("taro@example.com", await item.InnerTextAsync());
     }
 
+    [E2EFact]
+    public async Task エラーが起きたら内容を確かめて暗号化して報告できる()
+    {
+        await using var device = await _app.NewDeviceAsync();
+        var page = await OpenAsync(device, "debug/error");
+        await EvalAsync(page, """
+            (async () => {
+              const pair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+              feedbackCrypto.publicKey = feedbackCrypto.toB64(await crypto.subtle.exportKey('raw', pair.publicKey));
+              window.__testPrivateKey = await crypto.subtle.exportKey('jwk', pair.privateKey);
+            })()
+            """);
+        await ClickAsync(page, "エラーを起こす");
+        await ClickAsync(page, "不具合を報告する");
+        // 送る前に、送る内容がそのまま見える
+        var details = page.Locator(".error-report-details");
+        await details.WaitForAsync();
+        Assert.Contains("System.InvalidOperationException: 動作確認のためのエラーです", await details.InnerTextAsync());
+        await page.Locator(".mud-dialog textarea").FillAsync("ボタンを押した");
+        await ClickAsync(page, "送信する");
+        await SnackbarTextAsync(page, "送信しました");
+
+        var result = await page.EvaluateAsync<JsonElement>("""
+            (async () => {
+              const kv = await e2e.kv();
+              const key = Object.keys(kv).filter(k => k.startsWith('feedback:')).sort().at(-1);
+              return JSON.parse(await feedbackCrypto.decrypt(JSON.parse(kv[key]).encrypted, window.__testPrivateKey));
+            })()
+            """);
+        Assert.Equal("エラー報告", result.GetProperty("category").GetString());
+        string message = result.GetProperty("message").GetString()!;
+        Assert.StartsWith("ボタンを押した", message);
+        Assert.Contains("画面: /debug/error", message);
+        Assert.Contains("動作確認のためのエラーです", message);
+    }
+
+    [E2EFact]
+    public async Task 金銭の賭けを推奨しない注記と規約が見える()
+    {
+        await using var device = await _app.NewDeviceAsync();
+        var page = await OpenAsync(device, "privacy");
+        await page.GetByText("ご利用にあたって").WaitForAsync();
+        await page.Locator(".mud-typography-h4", new() { HasTextString = "規約・プライバシー" }).WaitForAsync();
+        Assert.Equal(1, await page.Locator(".mud-nav-link-text", new() { HasTextString = "規約・プライバシー" }).CountAsync());
+        foreach (var path in new[] { "about", "settlement" })
+        {
+            await page.GotoAsync(path);
+            await WaitForAppAsync(page);
+            await page.GetByText("金銭の賭けを推奨するものではありません").First.WaitForAsync();
+        }
+    }
+
     // --- 10. 説明のページと初回の案内 ---
 
     [E2EFact]

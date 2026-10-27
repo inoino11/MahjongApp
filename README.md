@@ -56,7 +56,9 @@ E2E_WWWROOT=release/wwwroot E2E_BROWSER_CHANNEL=msedge dotnet test tests/Mahjong
 
 ## 運用
 
-### 問い合わせを読む
+### 問い合わせ・エラー報告を読む
+エラーの画面の「不具合を報告する」から送られたエラー報告も、問い合わせと同じ仕組み・同じ手順で読めます（種類が「エラー報告」になります）。動作確認は `/debug/error` でできます。
+
 アプリの「規約・プライバシー」ページのフォームから届いた問い合わせは、端末で運営者の公開鍵（[wwwroot/js/feedback.js](wwwroot/js/feedback.js)）により暗号化され、KV に `feedback:<受信日時>:<乱数>` のキーで 180 日保存されます。Cloudflare 側では中身を読めません。
 
 1. Cloudflare のダッシュボード → Storage & Databases → KV → 名前空間を開き、キーを `feedback:` で絞り込んで値をコピーします。

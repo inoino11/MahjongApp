@@ -5,6 +5,8 @@
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 @inject IDialogService DialogService
 @inject MahjongApp.Services.CloudBackupService CloudBackup
+@inject MahjongApp.Services.ErrorCapture ErrorCapture
+@inject ISnackbar Snackbar
 
 <MudThemeProvider Theme="@mahjongTheme" IsDarkMode="_isDarkMode" />
 <MudDialogProvider />
@@ -58,7 +60,7 @@
                 <ChildContent>
                     @Body
                 </ChildContent>
-                <ErrorContent>
+                <ErrorContent Context="ex">
                     <MudContainer MaxWidth="MaxWidth.Small" Class="mt-6">
                         <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
                             <MudText Typo="Typo.subtitle1" Style="font-weight: bold;">エラーが発生しました</MudText>
@@ -68,6 +70,7 @@
                             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RecoverToTop">トップに戻る</MudButton>
                             <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="ReloadApp">再読み込み</MudButton>
                         </div>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.BugReport" Class="mt-2" OnClick="@(() => OpenErrorReportAsync(ex))">不具合を報告する</MudButton>
                     </MudContainer>
                 </ErrorContent>
             </ErrorBoundary>
@@ -91,6 +94,25 @@
             _errorBoundary?.Recover(); // 画面を移動したらエラー表示を解除する
             StateHasChanged();
         };
+        ErrorCapture.Captured += ex => InvokeAsync(() => NotifyUnhandledError(ex));
+    }
+
+    // 画面の外で起きたエラーは、トーストで知らせて報告するか聞く（自動では送らない）
+    private void NotifyUnhandledError(Exception ex)
+    {
+        Snackbar.Add("エラーが発生しました", Severity.Error, config =>
+        {
+            config.VisibleStateDuration = 10000;
+            config.Action = "報告する";
+            config.ActionColor = Color.Inherit;
+            config.OnClick = _ => OpenErrorReportAsync(ex);
+        });
+    }
+
+    private async Task OpenErrorReportAsync(Exception ex)
+    {
+        var parameters = new DialogParameters { ["Details"] = MahjongApp.Services.ErrorReport.Describe(ex, NavManager.Uri, NavManager.BaseUri) };
+        await DialogService.ShowAsync<ErrorReportDialog>("不具合を報告する", parameters);
     }
 
     private ErrorBoundary? _errorBoundary;

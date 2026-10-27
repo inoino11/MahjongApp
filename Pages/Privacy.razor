@@ -34,7 +34,8 @@
 </style>
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4 pb-10">
-    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
+    @* 見出しが長いので、スマホの幅で 1 行に収まるよう少し小さくする *@
+    <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); font-size: 1.8rem; white-space: nowrap;">
         <MudIcon Icon="@Icons.Material.Filled.Shield" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
         規約・プライバシー
     </MudText>
@@ -126,6 +127,6 @@
         ("観戦URL", "進行中の結果", "URLシェアと同じです", "最後の更新から90日", "「配信を停止」で更新が止まり、期限が来ると消えます"),
         ("クラウドバックアップ", "すべての成績・名簿・ルール", "あなたが控える「復元キー」で暗号化します。復元キーはサーバーに送りません", "最後の保存から365日", "データ管理の「停止する」で、すぐに消えます"),
         ("パスキーへの保存", "パスキー本体は、あなたのパスワード管理（iCloud キーチェーンや Google パスワードマネージャーなど）に保存されます。サーバーには、パスキーで包んだ（暗号化した）復元キーだけを置きます", "パスキーがなければ開けません", "クラウドバックアップと同じです", "クラウドバックアップを停止すると消えます"),
-        ("問い合わせ", "入力した内容と、任意の連絡先。選んだ場合は、アプリのバージョンと端末の種類", "運営者の公開鍵で暗号化します。読めるのは、秘密鍵を持つ運営者だけです", "180日", "期限が来ると消えます。早く消してほしい場合は、問い合わせでお知らせください"),
+        ("問い合わせ・エラー報告", "入力した内容と、任意の連絡先。エラー報告では、エラーの種類と文面、発生した場所、開いていた画面（URL の # 以降は送りません）。選んだ場合は、アプリのバージョンと端末の種類。エラー報告は、送る内容を確かめて「送信する」を押したときだけ送ります", "運営者の公開鍵で暗号化します。読めるのは、秘密鍵を持つ運営者だけです", "180日", "期限が来ると消えます。早く消してほしい場合は、問い合わせでお知らせください"),
     };
 }

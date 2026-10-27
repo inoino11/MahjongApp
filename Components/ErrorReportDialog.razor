@@ -1,0 +1,62 @@
+@using MahjongApp.Services
+@inject FeedbackSender Sender
+@inject ISnackbar Snackbar
+
+@* エラーの報告。送る内容をそのまま見せ、同意して「送信する」を押したときだけ、暗号化して送る *@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.BugReport" Class="mr-2" Style="vertical-align: text-bottom;" />
+            不具合を報告する
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-3" Style="line-height: 1.7;">
+            次の内容を、この端末で暗号化して送ります。読めるのは運営者だけです。
+            成績や名簿は送りません（エラーの文面に名前などが含まれることはあります）。
+        </MudText>
+        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">送る内容</MudText>
+        <MudPaper Outlined="true" Class="pa-2 mb-3 error-report-details" Style="font-family: Consolas, 'Courier New', monospace; font-size: 0.75rem; white-space: pre-wrap; word-break: break-all; max-height: 10em; overflow-y: auto;">@Details</MudPaper>
+        <MudTextField T="string" @bind-Value="comment" Label="何をしていたか（任意）" Variant="Variant.Outlined" Lines="3" MaxLength="500" Class="mb-2" />
+        <MudTextField T="string" @bind-Value="contact" Label="連絡先（任意・返信が必要な場合）" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="200" Class="mb-2" />
+        <MudCheckBox T="bool" @bind-Value="includeEnvironment" Color="Color.Primary" Dense="true" Label="アプリのバージョンと端末の種類を一緒に送る" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">送らない</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Send" OnClick="SendAsync" Disabled="isSending">
+            @(isSending ? "送信中..." : "送信する")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public string Details { get; set; } = "";
+
+    private string comment = "";
+    private string contact = "";
+    private bool includeEnvironment = true;
+    private bool isSending = false;
+
+    private async Task SendAsync()
+    {
+        isSending = true;
+        try
+        {
+            string message = string.IsNullOrWhiteSpace(comment) ? Details : $"{comment.Trim()}\n\n{Details}";
+            string? error = await Sender.SendAsync("エラー報告", message, contact, includeEnvironment);
+            if (error == null)
+            {
+                Snackbar.Add("送信しました。ありがとうございます", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else Snackbar.Add(error, Severity.Error);
+        }
+        finally
+        {
+            isSending = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
