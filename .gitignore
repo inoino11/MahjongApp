@@ -1,3 +1,5 @@
 [bB]in/
 [oO]bj/
 AllCode.txt
+# 問い合わせを読む秘密鍵（誤ってコミットしないように）
+*private-key*.json
