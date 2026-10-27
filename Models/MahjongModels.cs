@@ -106,6 +106,18 @@ public class RuleSet
         SyncCustomUmaFromNormal();
     }
 
+    /// <summary>
+    /// 内容を比べるためのJSON。順位ごとのウマは通常のウマから揃え直す（初期のプリセットには、揃っていないまま保存されたものがあるため）
+    /// </summary>
+    public string ToComparableJson(bool ignoreName = false, bool ignoreMemo = false)
+    {
+        var copy = DeepClone();
+        copy.SyncCustomUmaFromNormal();
+        if (ignoreName) copy.Name = "";
+        if (ignoreMemo) copy.Memo = "";
+        return JsonSerializer.Serialize(copy);
+    }
+
     // 編集用のコピー（ダイアログをキャンセルしたら破棄する）
     public RuleSet DeepClone()
     {

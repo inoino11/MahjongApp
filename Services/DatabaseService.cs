@@ -130,51 +130,41 @@ public class DatabaseService
         }
     }
 
-    public async Task ImportDataAsync(string json, bool isMerge = false)
+    /// <summary>
+    /// バックアップから復元する。isMerge が false なら成績を消してから入れる。
+    /// 戻り値はルールプリセットの取り込み結果（成績の復元は済んでいるので、プリセットだけ失敗しても例外にはしない）
+    /// </summary>
+    public async Task<RulePresetService.ImportResult> ImportDataAsync(string json, bool isMerge = false)
     {
         await EnsureInitializedAsync();
         await _jsRuntime.InvokeVoidAsync("mahjongDb.restoreData", json, isMerge);
+        RulePresetService.ImportResult result;
         try
         {
-            var options = new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
-            var importedData = System.Text.Json.JsonSerializer.Deserialize<AllDbData>(json, options);
-            if (importedData?.RulePresets != null && importedData.RulePresets.Count > 0)
+            var (imported, unreadable) = RulePresetService.ParsePresets(json);
+            imported = RulePresetService.Distinct(imported);
+            if (isMerge)
             {
-                if (isMerge)
-                {
-                    var currentPresets = await _localStorage.GetItemAsync<List<RuleSet>>(StorageKeys.RulePresets) ?? new List<RuleSet>();
-                    foreach (var preset in importedData.RulePresets)
-                    {
-                        // 同名のプリセットがあれば「名前_連番」にして両方残す
-                        if (currentPresets.Any(p => p.Name == preset.Name))
-                        {
-                            string baseName = preset.Name;
-                            int counter = 1;
-                            string newName = $"{baseName}_{counter}";
-                            while (currentPresets.Any(p => p.Name == newName))
-                            {
-                                counter++;
-                                newName = $"{baseName}_{counter}";
-                            }
-                            preset.Name = newName;
-                        }
-                        currentPresets.Add(preset);
-                    }
-                    await _localStorage.SetItemAsync(StorageKeys.RulePresets, currentPresets);
-                }
-                else
-                {
-                    await _localStorage.SetItemAsync(StorageKeys.RulePresets, importedData.RulePresets);
-                }
+                var current = await _localStorage.GetItemAsync<List<RuleSet>>(StorageKeys.RulePresets) ?? new List<RuleSet>();
+                var merged = RulePresetService.Merge(current, imported);
+                if (merged.Added > 0) await _localStorage.SetItemAsync(StorageKeys.RulePresets, current);
+                result = merged with { Unreadable = unreadable };
+            }
+            else
+            {
+                // バックアップにプリセットが含まれないとき（プリセットを保存していなかった頃のファイルなど）は、今のものを残す
+                if (imported.Count > 0) await _localStorage.SetItemAsync(StorageKeys.RulePresets, imported);
+                result = new RulePresetService.ImportResult(imported.Count, 0, unreadable);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // プリセット部分が読めなくても、DBの復元は済んでいるのでそのまま終える
+            Console.WriteLine($"ルールプリセットの取り込みに失敗しました: {ex.Message}");
+            result = new RulePresetService.ImportResult(0, 0, 0, ex.Message);
         }
         OnDataChanged?.Invoke();
+        return result;
     }
-
     public async Task DeleteSessionAsync(string sessionId)
     {
         await EnsureInitializedAsync();

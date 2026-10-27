@@ -170,10 +170,10 @@
         </MudText>
         <MudRadioGroup @bind-Value="importMode" Class="mb-4 d-flex flex-column">
             <MudRadio Value='"overwrite"' Color="Color.Error">
-                <strong>完全上書き</strong><br />(データを消去して入れ替えます)
+                <strong>完全上書き</strong><br />(データを消去して入れ替えます。<br />ルールが含まれないバックアップなら、今のルールは残します)
             </MudRadio>
             <MudRadio Value='"merge"' Color="Color.Success">
-                <strong>データ統合</strong><br />(データに差分を追加します)
+                <strong>データ統合</strong><br />(データに差分を追加します。<br />同じ内容のルールは重複させません)
             </MudRadio>
         </MudRadioGroup>
         <div class="d-flex flex-wrap gap-2">
@@ -372,10 +372,10 @@
         if (confirmed != true) return;
         try
         {
-            await CloudBackup.RestoreAsync(selection.RecoveryKey, selection.Listing, selection.Generation, isMerge);
+            var presetResult = await CloudBackup.RestoreAsync(selection.RecoveryKey, selection.Listing, selection.Generation, isMerge);
             _ = StatsCache.InitializeAsync(forceReload: true);
-            Snackbar.Add(isMerge ? "データを統合しました！" : "データを復元しました！", Severity.Success);
-            await Task.Delay(1500);
+            ShowRestoreResult(isMerge, presetResult);
+            await Task.Delay(RestoreMessageDelay);
             NavigationManager.NavigateTo(NavigationManager.BaseUri, forceLoad: true);
         }
         catch (Exception ex)
@@ -456,17 +456,38 @@
                 Snackbar.Add("ファイルを読み取れませんでした\nバックアップファイルではない可能性があります", Severity.Error);
                 return;
             }
-            await DatabaseService.ImportDataAsync(json, isMerge);
+            var presetResult = await DatabaseService.ImportDataAsync(json, isMerge);
             _ = StatsCache.InitializeAsync(forceReload: true);
-            string successMsg = isMerge ? "データを統合しました！" : "データを復元しました！";
-            Snackbar.Add(successMsg, Severity.Success);
-            await Task.Delay(1500);
+            ShowRestoreResult(isMerge, presetResult);
+            await Task.Delay(RestoreMessageDelay);
             NavigationManager.NavigateTo(NavigationManager.BaseUri, forceLoad: true);
         }
         catch (Exception ex)
         {
             Snackbar.Add($"ファイルの読み込み処理中にエラーが発生しました:\n{ex.Message}", Severity.Error);
         }
+    }
+
+    // 復元の完了を、ルールプリセットの取り込み結果と一緒に知らせる（読めるよう、再読み込みまで少し待つ）
+    private const int RestoreMessageDelay = 2500;
+
+    private void ShowRestoreResult(bool isMerge, MahjongApp.Services.RulePresetService.ImportResult preset)
+    {
+        string done = isMerge ? "データを統合しました！" : "データを復元しました！";
+        void Show(string message, Severity severity) => Snackbar.Add(message, severity, config => config.VisibleStateDuration = RestoreMessageDelay + 1000);
+        if (preset.Error != null)
+        {
+            Show($"{done}\nただし、ルールの取り込みに失敗しました:\n{preset.Error}", Severity.Warning);
+            return;
+        }
+        var parts = new List<string>();
+        if (preset.Added > 0) parts.Add(isMerge ? $"{preset.Added}件追加" : $"{preset.Added}件");
+        if (preset.Skipped > 0) parts.Add($"{preset.Skipped}件は同じ内容のため省略");
+        string detail = parts.Count > 0 ? $"\nルール: {string.Join("、", parts)}" : "";
+        if (preset.Unreadable > 0)
+            Show($"{done}{detail}\n読み取れないルールが{preset.Unreadable}件ありました", Severity.Warning);
+        else
+            Show(done + detail, Severity.Success);
     }
 
     // IndexedDB の主キー（players.id / sessions.sessionId / games.id）が全件にあるか確認する。

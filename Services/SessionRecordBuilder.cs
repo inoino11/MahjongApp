@@ -1,4 +1,3 @@
-using System.Text.Json;
 using MahjongApp.Models;
 
 namespace MahjongApp.Services;
@@ -39,18 +38,9 @@ public static class SessionRecordBuilder
     {
         if (string.IsNullOrWhiteSpace(rules.Name)) return RuleNameIssue.Empty;
         var preset = presets.FirstOrDefault(p => p.Name == rules.Name);
-        if (preset != null && RuleJsonWithoutMemo(preset) != RuleJsonWithoutMemo(rules)) return RuleNameIssue.ChangedFromPreset;
+        // 計算に関わるルールだけを比べるため、メモは除く
+        if (preset != null && preset.ToComparableJson(ignoreMemo: true) != rules.ToComparableJson(ignoreMemo: true)) return RuleNameIssue.ChangedFromPreset;
         return RuleNameIssue.None;
-    }
-
-    // 計算に関わるルールだけを比べるため、メモを除いたJSONにする。
-    // 順位ごとのウマは通常のウマから揃え直す（初期のプリセットには、通常のウマと揃っていないものがあるため）
-    private static string RuleJsonWithoutMemo(RuleSet r)
-    {
-        var copy = r.DeepClone();
-        copy.Memo = "";
-        copy.SyncCustomUmaFromNormal();
-        return JsonSerializer.Serialize(copy);
     }
 
     /// <summary>

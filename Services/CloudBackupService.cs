@@ -339,7 +339,7 @@ public class CloudBackupService
     /// <summary>
     /// 選んだ世代で成績を復元し、以後はこの端末がバックアップを引き継ぐ
     /// </summary>
-    public async Task RestoreAsync(string recoveryKey, BackupListing listing, Generation generation, bool isMerge)
+    public async Task<RulePresetService.ImportResult> RestoreAsync(string recoveryKey, BackupListing listing, Generation generation, bool isMerge)
     {
         await EnsureLoadedAsync();
         string json = await _jsRuntime.InvokeAsync<string>("blazorCrypto.backup.decrypt", recoveryKey, generation.Data);
@@ -352,8 +352,9 @@ public class CloudBackupService
             Dirty = true
         };
         await SaveStateAsync();
-        await _database.ImportDataAsync(json, isMerge);
+        var presetResult = await _database.ImportDataAsync(json, isMerge);
         await BackupNowAsync(force: true);
+        return presetResult;
     }
 
     private async Task<DerivedKeys> DeriveAsync(string recoveryKey) =>
