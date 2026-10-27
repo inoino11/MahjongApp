@@ -128,6 +128,53 @@ test("観戦: 存在しないIDは404", async () => {
   assert.equal((await call(env, "GET", "/live/nothing")).status, 404);
 });
 
+// --- 問い合わせ ---
+
+const envelope = JSON.stringify({ v: 1, epk: "BAbc-_1", iv: "aXY", ct: "Y3Q" });
+
+test("問い合わせ: 暗号文の形なら受け付け、180日で期限を切る", async () => {
+  const env = createEnv();
+  const r = await call(env, "POST", "/feedback", { body: { encrypted: envelope } });
+  assert.equal(r.status, 200);
+  const key = [...env.store.keys()].find(k => k.startsWith("feedback:"));
+  assert.ok(key);
+  const saved = JSON.parse(env.store.get(key));
+  assert.equal(saved.encrypted, envelope);
+  assert.ok(saved.receivedAt);
+  assert.equal(env.puts.at(-1).opts.expirationTtl, 60 * 60 * 24 * 180);
+});
+
+test("問い合わせ: 暗号化されていない内容や、大きすぎる本文は断る", async () => {
+  const env = createEnv();
+  assert.equal((await call(env, "POST", "/feedback", { body: { encrypted: "平文の問い合わせ" } })).status, 400);
+  assert.equal((await call(env, "POST", "/feedback", { body: { message: "平文" } })).status, 400);
+  assert.equal((await call(env, "POST", "/feedback", { body: "x".repeat(17 * 1024) })).status, 413);
+  assert.equal(env.store.size, 0);
+});
+
+test("問い合わせ: おとりの欄が埋まっていれば、受け付けたふりをして保存しない", async () => {
+  const env = createEnv();
+  const r = await call(env, "POST", "/feedback", { body: { encrypted: envelope, website: "http://spam.example" } });
+  assert.equal(r.status, 200);
+  assert.equal(env.store.size, 0);
+});
+
+test("問い合わせ: 回数制限に当たれば 429", async () => {
+  const env = createEnv();
+  let count = 0;
+  env.FEEDBACK_LIMITER = { limit: async () => ({ success: ++count <= 3 }) };
+  for (let i = 0; i < 3; i++) assert.equal((await call(env, "POST", "/feedback", { body: { encrypted: envelope } })).status, 200);
+  assert.equal((await call(env, "POST", "/feedback", { body: { encrypted: envelope } })).status, 429);
+});
+
+test("問い合わせ: 読む入口はなく、共有用の入口からも読めない", async () => {
+  const env = createEnv();
+  await call(env, "POST", "/feedback", { body: { encrypted: envelope } });
+  const key = [...env.store.keys()].find(k => k.startsWith("feedback:"));
+  assert.equal((await call(env, "GET", "/feedback")).status, 405);
+  assert.equal((await call(env, "GET", "/" + key)).status, 404);
+});
+
 // --- 共有URL・共通 ---
 
 test("共有: 保存した内容を短縮IDで取得できる", async () => {

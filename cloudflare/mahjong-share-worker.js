@@ -12,6 +12,7 @@
 //   GET    /backup/{id}         : クラウドバックアップの世代一覧を返す（同上）
 //   GET    /backup/{id}/wrapped : パスキーで包んだ復元キーを返す（パスキーがないと開けないので認証なし）
 //   DELETE /backup/{id}         : クラウドバックアップを削除する（同上）
+//   POST   /feedback            : 問い合わせを受け付ける（運営者の公開鍵で暗号化済み。読む入口は作らない）
 
 // 保存期限（秒）。観戦URLは更新のたびに延長する
 const KV_TTL = 60 * 60 * 24 * 90;
@@ -25,6 +26,12 @@ const BACKUP_PREFIX = "backup:";
 const BACKUP_TTL = 60 * 60 * 24 * 365;
 const BACKUP_GENERATIONS = 3;
 const BACKUP_MAX_BYTES = 5 * 1024 * 1024;
+
+// 問い合わせ。端末で運営者の公開鍵により暗号化されて届くので、ここでは中身を読めない。
+// 運営者は Cloudflare のダッシュボードで暗号文を取り出し、手元の秘密鍵で読む（tools/feedback-reader.html）
+const FEEDBACK_PREFIX = "feedback:";
+const FEEDBACK_TTL = 60 * 60 * 24 * 180;
+const FEEDBACK_MAX_BYTES = 16 * 1024;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -49,6 +56,10 @@ export default {
       return handleBackup(request, env, url);
     }
 
+    if (url.pathname === "/feedback") {
+      return handleFeedback(request, env);
+    }
+
     // POST /: 共有データを保存して短縮IDを返す
     if (request.method === "POST") {
       try {
@@ -68,8 +79,8 @@ export default {
     // GET /{id}: 共有データを返す
     if (request.method === "GET") {
       const id = url.pathname.slice(1);
-      // 観戦データ・バックアップ（鍵のハッシュを含む）はこの入口からは返さない
-      if (!id || id.startsWith(LIVE_PREFIX) || id.startsWith(BACKUP_PREFIX)) {
+      // 観戦データ・バックアップ（鍵のハッシュを含む）・問い合わせはこの入口からは返さない
+      if (!id || id.startsWith(LIVE_PREFIX) || id.startsWith(BACKUP_PREFIX) || id.startsWith(FEEDBACK_PREFIX)) {
         return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
       }
 
@@ -200,6 +211,41 @@ async function handleBackup(request, env, url) {
     return jsonResponse({ error: "method not allowed" }, 405);
   } catch (e) {
     return jsonResponse({ error: "server error" }, 500);
+  }
+}
+
+async function handleFeedback(request, env) {
+  if (request.method !== "POST") return jsonResponse({ error: "method not allowed" }, 405);
+  try {
+    // 同じ送信元からの連投を断る（KV の書き込みを使わない Rate Limiting バインディング。未設定の環境では素通り）
+    if (env.FEEDBACK_LIMITER) {
+      const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+      const { success } = await env.FEEDBACK_LIMITER.limit({ key: ip });
+      if (!success) return jsonResponse({ error: "too many requests" }, 429);
+    }
+    const text = await request.text();
+    if (text.length > FEEDBACK_MAX_BYTES) return jsonResponse({ error: "too large" }, 413);
+    const body = JSON.parse(text);
+    // 人には見えない入力欄が埋まっていればボットとみなし、受け付けたふりをして捨てる
+    if (body.website) return jsonResponse({ ok: true });
+    if (!isEncryptedEnvelope(body.encrypted)) return jsonResponse({ error: "bad request" }, 400);
+    const receivedAt = new Date().toISOString();
+    await env.MAHJONG_KV.put(FEEDBACK_PREFIX + receivedAt + ":" + randomString(6), JSON.stringify({ encrypted: body.encrypted, receivedAt }), { expirationTtl: FEEDBACK_TTL });
+    return jsonResponse({ ok: true });
+  } catch (e) {
+    return jsonResponse({ error: "server error" }, 500);
+  }
+}
+
+// wwwroot/js/feedback.js が作る暗号文の形式か（中身は読めないので、形だけを確かめる）
+function isEncryptedEnvelope(value) {
+  if (typeof value !== "string") return false;
+  try {
+    const e = JSON.parse(value);
+    const b64 = /^[A-Za-z0-9_-]+$/;
+    return e.v === 1 && [e.epk, e.iv, e.ct].every(s => typeof s === "string" && b64.test(s));
+  } catch {
+    return false;
   }
 }
 

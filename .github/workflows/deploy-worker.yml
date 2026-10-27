@@ -38,3 +38,5 @@ jobs:
         apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         workingDirectory: cloudflare
+        # Rate Limiting のバインディング（wrangler.toml の [[ratelimits]]）は Wrangler 4.36 以降が必要
+        wranglerVersion: '4'

@@ -8,3 +8,9 @@ workers_dev = true
 [[kv_namespaces]]
 binding = "MAHJONG_KV"
 id = "24c6cbf3a57e4698be02e555c8475cfb"
+
+# 問い合わせの連投を防ぐ（同じ送信元から 1 分に 3 件まで）。KV の書き込みを使わずに数える
+[[ratelimits]]
+name = "FEEDBACK_LIMITER"
+namespace_id = "1001"
+simple = { limit = 3, period = 60 }
