@@ -7,6 +7,11 @@
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
     
+    <!-- 警告を 0 件に保つため、警告はビルドエラーにする（CI でデプロイも止まる）。
+         ただし、パッケージの脆弱性の通知は外部の公開状況で突然出るため、エラーにはしない -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
+
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <InformationalVersion>v$([System.DateTime]::UtcNow.AddHours(9).ToString("yy.MM.dd.HHmm"))</InformationalVersion>
   </PropertyGroup>
