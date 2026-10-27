@@ -275,6 +275,7 @@
                         }
                     </div>
                 </MudPaper>
+                <MudText Typo="Typo.caption" Class="d-block mt-2 px-1" Style="color: var(--mud-palette-text-secondary);">@MahjongApp.Services.Notices.NoGambling</MudText>
                 <div class="d-flex justify-end mt-4">
                     <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Image" OnClick="ShareImageAsync" Disabled="@(isSharing || selectedSessions.Count == 0)" Style="font-weight: bold;">
                         @(isSharing ? "生成中..." : "結果を画像でシェア")
@@ -370,6 +371,7 @@
                 </tbody>
             </table>
         }
+        <div style="margin-top: 12px; font-size: 0.75rem; color: #777;">@MahjongApp.Services.Notices.NoGambling</div>
     </div>
 </div>
 

@@ -1,6 +1,6 @@
 @page "/privacy"
 
-@* プライバシーとデータの扱い。内容は実装（保存先・暗号化・保存期間）と合わせること。変えたら改定日を更新する *@
+@* ご利用にあたっての注意（規約・免責）と、プライバシー・データの扱い。内容は実装（保存先・暗号化・保存期間）と合わせること。変えたら改定日を更新する *@
 <style>
     .privacy-table {
         width: 100%;
@@ -36,8 +36,21 @@
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4 pb-10">
     <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6" Style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
         <MudIcon Icon="@Icons.Material.Filled.Shield" Size="Size.Large" Class="mr-2" Style="vertical-align: bottom;" />
-        プライバシー
+        規約・プライバシー
     </MudText>
+
+    <MudPaper Class="pa-5 mb-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">ご利用にあたって</MudText>
+        <div class="privacy-text mud-typography-body2">
+            <ul>
+                <li>TaGAMΣ は、麻雀の点数と成績を記録・集計するための道具です。<b>金銭の賭けを推奨するものではありません。</b>賭博は法律で禁じられています。</li>
+                <li>精算や収支の表示は、場代の割り勘や、ポイントの記録に使うことを想定しています。</li>
+                <li>計算の正確さには努めていますが、結果を保証するものではありません。大切な記録はバックアップしてください。</li>
+                <li>このアプリの利用で生じた損害について、運営者は責任を負いません。</li>
+                <li>機能を変えたり、サーバーを使う機能（共有・観戦・バックアップ・問い合わせ）の提供を終えたりすることがあります。終えるときは、できるだけ前もってこのページで知らせます。</li>
+            </ul>
+        </div>
+    </MudPaper>
 
     <MudPaper Class="pa-5 mb-4" Elevation="2">
         <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">運営者</MudText>
@@ -94,7 +107,7 @@
     </MudPaper>
 
     <MudPaper Class="pa-5 mb-4" Elevation="2">
-        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">この方針の変更</MudText>
+        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: bold;">このページの変更</MudText>
         <MudText Typo="Typo.body2" Class="privacy-text">
             内容を変えたときは、このページで知らせ、下の改定日を更新します。<br />
             改定日: @RevisedAt
