@@ -45,3 +45,30 @@ dotnet test tests/MahjongApp.Tests  # 計算・精算・集計のテスト
 - Worker（[cloudflare/mahjong-share-worker.js](cloudflare/mahjong-share-worker.js)）は、`cloudflare/` を変えて `main` に push すると、テストが通った場合だけ自動でデプロイされます（[.github/workflows/deploy-worker.yml](.github/workflows/deploy-worker.yml)、設定は [cloudflare/wrangler.toml](cloudflare/wrangler.toml)）。ダッシュボードで直接編集すると、次のデプロイで上書きされます。
   - テストの実行: `cd cloudflare && node --test`
   - デプロイには、リポジトリの Secrets に `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` が必要です。
+
+## 運用
+
+### 問い合わせを読む
+アプリの「プライバシー」ページのフォームから届いた問い合わせは、端末で運営者の公開鍵（[wwwroot/js/feedback.js](wwwroot/js/feedback.js)）により暗号化され、KV に `feedback:<受信日時>:<乱数>` のキーで 180 日保存されます。Cloudflare 側では中身を読めません。
+
+1. Cloudflare のダッシュボード → Storage & Databases → KV → 名前空間を開き、キーを `feedback:` で絞り込んで値をコピーします。
+2. 手元で [tools/feedback-reader.html](tools/feedback-reader.html) をブラウザで開き、秘密鍵のファイルを選んで値を貼り付けます。
+
+鍵の組は [tools/feedback-keys.html](tools/feedback-keys.html) で作ります。秘密鍵はリポジトリや Cloudflare には置かず、運営者の手元とパスワード管理アプリにだけ保管します。鍵を作り直したら、`feedback.js` の `publicKey` を差し替えます（それまでの問い合わせは古い秘密鍵でしか読めません）。
+
+### 毎日の確認と通知
+[.github/workflows/monitor.yml](.github/workflows/monitor.yml) が毎日 8:30（日本時間）に、KV の書き込み回数と問い合わせの新着を調べます。次のどちらかに当たると「運用通知」の Issue に書き込み、GitHub からメールが届きます（件数だけで、問い合わせの内容は載せません）。
+
+- KV の書き込みが 1 日 700 回（無料枠の 70%）以上
+- 過去 24 時間に問い合わせが届いた
+
+Secrets の `CLOUDFLARE_MONITOR_TOKEN`（権限: Account Analytics: Read、Workers KV Storage: Read）が必要です。未設定なら確認を飛ばします。
+
+### 有料プランに切り替える目安
+- 無料枠: KV の書き込みは 1 日 1,000 回（UTC 0 時 = 日本時間 9 時に戻る）。超えると、その日は共有・観戦・バックアップ・問い合わせの保存が失敗し、アプリに「日本時間 9 時に回復します」と表示されます。
+- Workers Paid: 月 5 ドルで、KV の書き込みが月 100 万回まで含まれます（超えた分は 100 万回あたり 5 ドル）。
+- 次のどちらかに当たったら切り替えます。切り替えはダッシュボードでプランを変えるだけで、コードの変更は要りません。
+  - 1 週間のうち 3 日以上、書き込みが 700 回を超えた
+  - 上限に 1 回でも当たった
+
+料金は変わることがあるので、切り替える前に [KV の料金](https://developers.cloudflare.com/kv/platform/pricing/) を確認してください。
