@@ -1,9 +1,5 @@
-@using System.Net
-@using System.Net.Http.Json
-@using System.Reflection
 @using MahjongApp.Services
-@inject IJSRuntime JSRuntime
-@inject HttpClient Http
+@inject FeedbackSender Sender
 @inject ISnackbar Snackbar
 
 @* 不具合報告・要望の送信フォーム。内容は端末で運営者の公開鍵により暗号化して送る（wwwroot/js/feedback.js） *@
@@ -48,55 +44,14 @@
     private bool isSending = false;
     private bool isSent = false;
 
-    private class WorkerError
-    {
-        public string Error { get; set; } = "";
-    }
-
     private async Task SendAsync()
     {
         isSending = true;
         try
         {
-            if (!await JSRuntime.InvokeAsync<bool>("feedbackCrypto.isReady"))
-            {
-                Snackbar.Add("問い合わせの受付を準備中です", Severity.Warning);
-                return;
-            }
-            string? environment = null;
-            if (includeEnvironment)
-            {
-                string version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "?";
-                environment = $"{version} / {await JSRuntime.InvokeAsync<string>("feedbackCrypto.getEnvironment")}";
-            }
-            string plain = System.Text.Json.JsonSerializer.Serialize(new
-            {
-                category,
-                message = message.Trim(),
-                contact = string.IsNullOrWhiteSpace(contact) ? null : contact.Trim(),
-                environment
-            });
-            string encrypted = await JSRuntime.InvokeAsync<string>("feedbackCrypto.encrypt", plain);
-            var response = await Http.PostAsJsonAsync($"{LiveShareService.WorkerUrl}/feedback", new { encrypted, website = honeypot });
-            if (response.IsSuccessStatusCode)
-            {
-                isSent = true;
-                return;
-            }
-            string error = "";
-            try { error = (await response.Content.ReadFromJsonAsync<WorkerError>())?.Error ?? ""; } catch { }
-            string reason = response.StatusCode switch
-            {
-                HttpStatusCode.TooManyRequests when error == "daily limit" => WorkerErrors.DailyLimitMessage,
-                HttpStatusCode.TooManyRequests => "続けて送信されたため受け付けませんでした\n1 分ほど待ってから送ってください",
-                HttpStatusCode.RequestEntityTooLarge => "内容が長すぎます",
-                _ => $"送信に失敗しました（{(int)response.StatusCode}）"
-            };
-            Snackbar.Add(reason, Severity.Error);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"送信に失敗しました。通信状況を確認してください\n{ex.Message}", Severity.Error);
+            string? error = await Sender.SendAsync(category, message, contact, includeEnvironment, honeypot);
+            if (error == null) isSent = true;
+            else Snackbar.Add(error, Severity.Error);
         }
         finally
         {
