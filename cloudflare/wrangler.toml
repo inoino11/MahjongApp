@@ -1,0 +1,10 @@
+# Worker の設定。GitHub Actions（.github/workflows/deploy-worker.yml）がこの内容でデプロイする。
+# ダッシュボードで変えた設定は次のデプロイで上書きされるため、変更はここで行う
+name = "mahjong-share" # URL の mahjong-share.inoino11.workers.dev と一致させる
+main = "mahjong-share-worker.js"
+compatibility_date = "2026-06-11"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "MAHJONG_KV"
+id = "24c6cbf3a57e4698be02e555c8475cfb"

@@ -40,4 +40,6 @@ dotnet test tests/MahjongApp.Tests  # 計算・精算・集計のテスト
 
 - `main` に push すると、テストが通った場合だけ GitHub Pages に反映されます（[.github/workflows/deploy.yml](.github/workflows/deploy.yml)）。
 - 計算の中心は [Services/MahjongCalculatorService.cs](Services/MahjongCalculatorService.cs) です。テストの期待値は手計算で求め、計算の過程をコメントに残しています。
-- Worker は Cloudflare のダッシュボードで管理しています。変更したら、[cloudflare/mahjong-share-worker.js](cloudflare/mahjong-share-worker.js) の全文をダッシュボードのエディタに貼り付けてデプロイしてください（KV バインディング名は `MAHJONG_KV`）。
+- Worker（[cloudflare/mahjong-share-worker.js](cloudflare/mahjong-share-worker.js)）は、`cloudflare/` を変えて `main` に push すると、テストが通った場合だけ自動でデプロイされます（[.github/workflows/deploy-worker.yml](.github/workflows/deploy-worker.yml)、設定は [cloudflare/wrangler.toml](cloudflare/wrangler.toml)）。ダッシュボードで直接編集すると、次のデプロイで上書きされます。
+  - テストの実行: `cd cloudflare && node --test`
+  - デプロイには、リポジトリの Secrets に `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` が必要です。

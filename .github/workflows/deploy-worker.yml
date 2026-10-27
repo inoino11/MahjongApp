@@ -1,0 +1,40 @@
+name: Deploy Worker to Cloudflare
+
+# Worker（共有・観戦・クラウドバックアップの API）は、cloudflare/ が変わったときだけデプロイする
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'cloudflare/**' ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "worker"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    # テストが落ちたら本番に反映しない
+    - name: Test
+      run: node --test
+
+    - name: Deploy
+      uses: cloudflare/wrangler-action@v3
+      with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        workingDirectory: cloudflare

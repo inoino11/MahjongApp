@@ -1,4 +1,5 @@
-// 麻雀集計ツールの共有用 Worker（Cloudflare ダッシュボードのエディタに全文を貼り付けてデプロイする）
+// 麻雀集計ツールの共有用 Worker。main に push すると GitHub Actions がテストしてデプロイする（.github/workflows/deploy-worker.yml）。
+// ダッシュボードで直接編集すると、次のデプロイで上書きされる
 // KV バインディング: MAHJONG_KV
 //
 // 入口
