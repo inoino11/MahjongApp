@@ -237,11 +237,8 @@
                     cancelText: "キャンセル",
                     noText: "両方残す");
                 if (result == null) return;
-                if (result == true)
-                {
-                    presets.Remove(existingPreset);
-                }
-                else
+                // 「両方残す」は別の名前にして末尾に加える（「上書き」は下で同じ位置に差し替える）
+                if (result == false)
                 {
                     string baseName = rules.Name;
                     int counter = 1;
@@ -254,12 +251,8 @@
                     rules.Name = newName;
                 }
             }
-            else
-            {
-                presets.Remove(existingPreset);
-            }
         }
-        presets.Add(rules.DeepClone());
+        RulePresetService.Upsert(presets, rules.DeepClone());
         await PresetService.SaveAsync();
         await SaveAndNotifyAsync();
         Snackbar.Add($"設定「{rules.Name}」を保存しました", Severity.Success);

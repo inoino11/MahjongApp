@@ -51,6 +51,16 @@ public class RulePresetService
         await _localStorage.SetItemAsync(StorageKeys.RulePresets, _presets);
     }
 
+    /// <summary>
+    /// 同じ名前のプリセットがあればその位置のまま差し替え、なければ末尾に加える
+    /// </summary>
+    public static void Upsert(List<RuleSet> presets, RuleSet rule)
+    {
+        int index = presets.FindIndex(p => p.Name == rule.Name);
+        if (index >= 0) presets[index] = rule;
+        else presets.Add(rule);
+    }
+
     private static List<RuleSet> CreateDefaults()
     {
         var presets = new List<RuleSet>
