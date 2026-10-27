@@ -38,7 +38,15 @@
 ```sh
 dotnet run                          # http://localhost:5260 で起動
 dotnet test tests/MahjongApp.Tests  # 計算・精算・集計のテスト
+node --test tests/js/               # 問い合わせの暗号化のテスト
+
+# 画面テスト（Playwright）: 公開物を作ってから、その wwwroot を指定して動かす
+dotnet publish MahjongApp.csproj -c Release -o release
+E2E_WWWROOT=release/wwwroot E2E_BROWSER_CHANNEL=msedge dotnet test tests/MahjongApp.E2E
 ```
+
+- 画面テストは、記録・修正・抜け番・成績の保存・統合・クラウドバックアップ・パスキー・観戦・問い合わせ・説明のページを、実際のブラウザで操作して確かめます。Worker は本物のコードを Node で動かした代役に向けます（Node は `E2E_NODE` で指定でき、なければ PATH の `node`）。
+- `E2E_BROWSER_CHANNEL` を省くと Playwright の Chromium を使います（初回は `pwsh tests/MahjongApp.E2E/bin/Debug/net10.0/playwright.ps1 install chromium` が必要）。
 
 - `main` に push すると、テストが通った場合だけ GitHub Pages に反映されます（[.github/workflows/deploy.yml](.github/workflows/deploy.yml)）。
 - 計算の中心は [Services/MahjongCalculatorService.cs](Services/MahjongCalculatorService.cs) です。テストの期待値は手計算で求め、計算の過程をコメントに残しています。

@@ -35,7 +35,34 @@ jobs:
       run: sed -i 's/<base href="\/" \/>/<base href="\/MahjongApp\/" \/>/g' wwwroot/index.html
 
     - name: Publish Blazor App
-      run: dotnet publish -c Release -o release
+      run: dotnet publish MahjongApp.csproj -c Release -o release
+
+    # 公開する前に、公開物そのものを画面テストする（Worker は本物のコードを代役のサーバーで動かす）
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Test feedback encryption
+      run: node --test tests/js/
+
+    - name: Install browser for screen tests
+      run: |
+        dotnet build tests/MahjongApp.E2E -c Release
+        pwsh tests/MahjongApp.E2E/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+    - name: Screen tests
+      env:
+        E2E_WWWROOT: ${{ github.workspace }}/release/wwwroot
+        E2E_ARTIFACTS: ${{ github.workspace }}/e2e-artifacts
+      run: dotnet test tests/MahjongApp.E2E -c Release --no-build
+
+    - name: Upload screen test recordings
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: e2e-recordings
+        path: e2e-artifacts
 
     - name: Fix GitHub Pages settings
       run: |
