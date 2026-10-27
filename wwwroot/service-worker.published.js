@@ -13,7 +13,9 @@ self.addEventListener('message', event => {
 const cacheNamePrefix = 'offline-cache-';
 const cacheName = `${cacheNamePrefix}${self.assetsManifest.version}`;
 const offlineAssetsInclude = [/\.dll$/, /\.wasm/, /\.html/, /\.js/, /\.json/, /\.css/, /\.woff/, /\.png/, /\.jpe?g/, /\.gif/, /\.ico/, /\.blat/, /\.dat/];
-const offlineAssetsExclude = [/^service-worker\.js$/];
+// 書体のファイル（数MB）は最初にまとめて保存せず、画面に出た分だけ fontCacheName に保存する
+const offlineAssetsExclude = [/^service-worker\.js$/, /^fonts\/.*\.woff2$/];
+const fontCacheName = 'font-cache-v1'; // 版ごとに作り直さない（書体は変わらないため）
 
 async function onInstall(event) {
     const assetsRequests = self.assetsManifest.assets
@@ -31,6 +33,15 @@ async function onActivate(event) {
 }
 
 async function onFetch(event) {
+    if (event.request.method === 'GET' && /\/fonts\/.*\.woff2$/.test(new URL(event.request.url).pathname)) {
+        const cache = await caches.open(fontCacheName);
+        const hit = await cache.match(event.request);
+        if (hit) return hit;
+        const response = await fetch(event.request);
+        if (response.ok) await cache.put(event.request, response.clone());
+        return response;
+    }
+
     let cachedResponse = null;
     if (event.request.method === 'GET') {
         // 運営者用のページ（tools/）はアプリの画面ではないので、index.html に差し替えない

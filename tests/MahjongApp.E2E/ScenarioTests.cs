@@ -373,7 +373,12 @@ public class ScenarioTests
     public async Task 初回の案内は閉じたら出ず説明のページが開ける()
     {
         await using var device = await _app.NewDeviceAsync();
+        var external = new List<string>();
+        device.Request += (_, r) => { if (r.Url.Contains("fonts.googleapis.com") || r.Url.Contains("fonts.gstatic.com")) external.Add(r.Url); };
         var page = await OpenAsync(device);
+        // 見出しの書体は自前で配り、Google Fonts とは通信しない
+        Assert.True(await page.EvaluateAsync<bool>("document.fonts.load(\"bold 16px 'Kaisei Decol'\", '素点集計').then(f => f.length > 0)"));
+        Assert.Empty(external);
         var welcome = page.GetByText("はじめての方へ");
         await welcome.WaitForAsync();
         await page.Locator(".mud-alert", new() { HasTextString = "はじめての方へ" }).Locator("button").First.ClickAsync();
