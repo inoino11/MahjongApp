@@ -72,6 +72,7 @@ export default {
           headers: { "Content-Type": "application/json", ...CORS_HEADERS }
         });
       } catch (e) {
+        if (isDailyLimitError(e)) return dailyLimitResponse();
         return new Response("Error saving data", { status: 500, headers: CORS_HEADERS });
       }
     }
@@ -146,6 +147,7 @@ async function handleLive(request, env, url) {
 
     return jsonResponse({ error: "method not allowed" }, 405);
   } catch (e) {
+    if (isDailyLimitError(e)) return dailyLimitResponse();
     return jsonResponse({ error: "server error" }, 500);
   }
 }
@@ -210,6 +212,7 @@ async function handleBackup(request, env, url) {
 
     return jsonResponse({ error: "method not allowed" }, 405);
   } catch (e) {
+    if (isDailyLimitError(e)) return dailyLimitResponse();
     return jsonResponse({ error: "server error" }, 500);
   }
 }
@@ -233,6 +236,7 @@ async function handleFeedback(request, env) {
     await env.MAHJONG_KV.put(FEEDBACK_PREFIX + receivedAt + ":" + randomString(6), JSON.stringify({ encrypted: body.encrypted, receivedAt }), { expirationTtl: FEEDBACK_TTL });
     return jsonResponse({ ok: true });
   } catch (e) {
+    if (isDailyLimitError(e)) return dailyLimitResponse();
     return jsonResponse({ error: "server error" }, 500);
   }
 }
@@ -247,6 +251,16 @@ function isEncryptedEnvelope(value) {
   } catch {
     return false;
   }
+}
+
+// KV の書き込みが1日の上限（無料枠は 1,000 回、UTC 0 時に戻る）に達して失敗したか
+function isDailyLimitError(e) {
+  return /limit|exceeded|429/i.test(String(e && e.message));
+}
+
+// 上限に当たったことをアプリに伝える（アプリは「日本時間 9 時に回復します」と表示する）
+function dailyLimitResponse() {
+  return jsonResponse({ error: "daily limit" }, 429);
 }
 
 function jsonResponse(obj, status = 200) {

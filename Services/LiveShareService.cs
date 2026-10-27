@@ -35,6 +35,8 @@ public class LiveShareService
 
     public bool IsActive => _info != null;
     public bool HasError { get; private set; }
+    // 直前の送信が、サーバーの1日の上限で断られた
+    public bool IsDailyLimited { get; private set; }
     public string? ShareUrl => _info == null ? null : $"{_navigationManager.BaseUri}shared?live={_info.Id}#{_info.Key}";
 
     // 配信状態・エラー状態が変わったときの通知（ボタン表示の更新に使う）
@@ -134,6 +136,7 @@ public class LiveShareService
 
         var encrypted = await _jsRuntime.InvokeAsync<CryptoResult>("blazorCrypto.encrypt", payloadJson);
         var response = await _http.PostAsJsonAsync($"{WorkerUrl}/live", new { encryptedData = encrypted.CombinedBase64 });
+        if (WorkerErrors.IsDailyLimit(response.StatusCode)) throw new InvalidOperationException(WorkerErrors.DailyLimitMessage);
         response.EnsureSuccessStatusCode();
         var created = await response.Content.ReadFromJsonAsync<CreatedResponse>();
         if (created == null || string.IsNullOrEmpty(created.Id) || string.IsNullOrEmpty(created.Token))
@@ -239,6 +242,7 @@ public class LiveShareService
             var response = await _http.SendAsync(request);
             statusCode = response.StatusCode;
             HasError = !response.IsSuccessStatusCode;
+            IsDailyLimited = WorkerErrors.IsDailyLimit(statusCode);
             if (!HasError) _lastSentAt = DateTime.Now;
         }
         catch (Exception ex)

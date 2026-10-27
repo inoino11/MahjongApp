@@ -175,6 +175,27 @@ test("問い合わせ: 読む入口はなく、共有用の入口からも読め
   assert.equal((await call(env, "GET", "/" + key)).status, 404);
 });
 
+// --- KV の書き込み上限 ---
+
+test("上限: KV の書き込みが1日の上限で失敗したら、どの入口も 429 で知らせる", async () => {
+  const env = createEnv();
+  const created = await call(env, "POST", "/live", { body: { encryptedData: "L1" } });
+  env.MAHJONG_KV.put = async () => { throw new Error("KV put() limit exceeded for the day."); };
+  assert.equal((await call(env, "POST", "/", { body: { encryptedData: "S" } })).status, 429);
+  assert.equal((await call(env, "POST", "/live", { body: { encryptedData: "L" } })).status, 429);
+  assert.equal((await call(env, "PUT", `/live/${created.json.id}`, { token: created.json.token, body: { encryptedData: "L2", status: "live" } })).status, 429);
+  const backup = await call(env, "PUT", `/backup/${id}`, { token: "t1", body: { encryptedData: "A", deviceId: "d1" } });
+  assert.equal(backup.status, 429);
+  assert.equal(backup.json.error, "daily limit");
+  assert.equal((await call(env, "POST", "/feedback", { body: { encrypted: envelope } })).status, 429);
+});
+
+test("上限: ほかの失敗は 500 のまま", async () => {
+  const env = createEnv();
+  env.MAHJONG_KV.put = async () => { throw new Error("network down"); };
+  assert.equal((await call(env, "PUT", `/backup/${id}`, { token: "t1", body: { encryptedData: "A", deviceId: "d1" } })).status, 500);
+});
+
 // --- 共有URL・共通 ---
 
 test("共有: 保存した内容を短縮IDで取得できる", async () => {

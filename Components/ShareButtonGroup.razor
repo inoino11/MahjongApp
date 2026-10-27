@@ -1,4 +1,5 @@
 @using MahjongApp.Models
+@using MahjongApp.Services
 @using System.Net.Http.Json
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
@@ -96,7 +97,7 @@
     {
         bool ok = await LiveShare.UpdateNowAsync();
         if (ok) Snackbar.Add("観戦URLを更新しました", Severity.Success);
-        else if (LiveShare.IsActive) Snackbar.Add("観戦URLの更新に失敗しました\n通信状況を確認してください", Severity.Warning);
+        else if (LiveShare.IsActive) Snackbar.Add(LiveShare.IsDailyLimited ? WorkerErrors.DailyLimitMessage : "観戦URLの更新に失敗しました\n通信状況を確認してください", Severity.Warning);
         else Snackbar.Add("観戦URLの有効期限が切れています\n新しく発行してください", Severity.Warning);
     }
 
@@ -185,7 +186,7 @@
             }
             else
             {
-                Snackbar.Add("共有URLの作成に失敗しました", Severity.Error);
+                Snackbar.Add(WorkerErrors.IsDailyLimit(response.StatusCode) ? WorkerErrors.DailyLimitMessage : "共有URLの作成に失敗しました", Severity.Error);
             }
         }
         catch (Exception ex)

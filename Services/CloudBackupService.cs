@@ -226,7 +226,7 @@ public class CloudBackupService
             LastError = statusCode switch
             {
                 HttpStatusCode.RequestEntityTooLarge => "データが大きすぎて送れませんでした",
-                HttpStatusCode.TooManyRequests => "サーバーが混み合っています。しばらくしてから送り直します",
+                HttpStatusCode.TooManyRequests => WorkerErrors.DailyLimitMessage.Replace("\n", "。") + "。次に開いたときや記録が変わったときに送り直します",
                 _ => $"送信に失敗しました（{(int)statusCode}）"
             };
             return false;
