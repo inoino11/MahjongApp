@@ -38,7 +38,7 @@
 ```sh
 dotnet run                          # http://localhost:5260 で起動
 dotnet test tests/MahjongApp.Tests  # 計算・精算・集計のテスト
-node --test tests/js/               # 問い合わせの暗号化のテスト
+node --test tests/js/feedback.test.mjs  # 問い合わせの暗号化のテスト
 
 # 画面テスト（Playwright）: 公開物を作ってから、その wwwroot を指定して動かす
 dotnet publish MahjongApp.csproj -c Release -o release

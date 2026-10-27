@@ -1,4 +1,4 @@
-// 問い合わせの暗号化（wwwroot/js/feedback.js）のテスト。実行: node --test tests/js/
+// 問い合わせの暗号化（wwwroot/js/feedback.js）のテスト。実行: node --test tests/js/feedback.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

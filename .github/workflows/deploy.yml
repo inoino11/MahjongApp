@@ -44,7 +44,7 @@ jobs:
         node-version: '22'
 
     - name: Test feedback encryption
-      run: node --test tests/js/
+      run: node --test tests/js/feedback.test.mjs
 
     - name: Install browser for screen tests
       run: |
