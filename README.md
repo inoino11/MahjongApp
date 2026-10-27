@@ -60,9 +60,11 @@ E2E_WWWROOT=release/wwwroot E2E_BROWSER_CHANNEL=msedge dotnet test tests/Mahjong
 アプリの「プライバシー」ページのフォームから届いた問い合わせは、端末で運営者の公開鍵（[wwwroot/js/feedback.js](wwwroot/js/feedback.js)）により暗号化され、KV に `feedback:<受信日時>:<乱数>` のキーで 180 日保存されます。Cloudflare 側では中身を読めません。
 
 1. Cloudflare のダッシュボード → Storage & Databases → KV → 名前空間を開き、キーを `feedback:` で絞り込んで値をコピーします。
-2. 手元で [tools/feedback-reader.html](tools/feedback-reader.html) をブラウザで開き、秘密鍵のファイルを選んで値を貼り付けます。
+2. 読み取りのページを開き、秘密鍵を入れて値を貼り付けます。秘密鍵はファイルを選ぶか、パスワード管理アプリからコピーした中身を貼り付けます。
+   - PC: [tools/feedback-reader.html](tools/feedback-reader.html) をブラウザで開きます。
+   - スマホ: https://inoino11.github.io/MahjongApp/tools/feedback-reader.html を開きます（公開物に同梱しています。秘密の情報は含まず、復号はブラウザの中だけで行い、通信は CSP で禁止しています）。
 
-鍵の組は [tools/feedback-keys.html](tools/feedback-keys.html) で作ります。秘密鍵はリポジトリや Cloudflare には置かず、運営者の手元とパスワード管理アプリにだけ保管します。鍵を作り直したら、`feedback.js` の `publicKey` を差し替えます（それまでの問い合わせは古い秘密鍵でしか読めません）。
+鍵の組は [tools/feedback-keys.html](tools/feedback-keys.html) で作ります。秘密鍵はリポジトリや Cloudflare には置かず、パスワード管理アプリ（と予備のオフラインの控え）にだけ保管します（誤ってコミットしないよう `.gitignore` で `*private-key*.json` を除外しています）。公開した読み取りのページを書き換えられると貼り付けた秘密鍵を盗まれるため、GitHub アカウントの 2 段階認証は必ず有効にしておきます。鍵を作り直したら、`feedback.js` の `publicKey` を差し替えます（それまでの問い合わせは古い秘密鍵でしか読めません）。
 
 ### 毎日の確認と通知
 [.github/workflows/monitor.yml](.github/workflows/monitor.yml) が毎日 8:30（日本時間）に、KV の書き込み回数と問い合わせの新着を調べます。次のどちらかに当たると「運用通知」の Issue に書き込み、GitHub からメールが届きます（件数だけで、問い合わせの内容は載せません）。

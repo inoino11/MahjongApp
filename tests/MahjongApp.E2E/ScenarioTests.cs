@@ -335,6 +335,38 @@ public class ScenarioTests
         Assert.True(result.GetProperty("hasEnvironment").GetBoolean());
     }
 
+    [E2EFact]
+    public async Task 公開された読み取りページで貼り付けた秘密鍵で問い合わせを読める()
+    {
+        await using var device = await _app.NewDeviceAsync();
+        var page = await device.NewPageAsync();
+        await page.GotoAsync("tools/feedback-reader.html");
+        await page.WaitForFunctionAsync("() => window.feedbackCrypto");
+        // テスト用の鍵の組で、アプリと同じ形の KV の値を作る
+        var keys = await page.EvaluateAsync<JsonElement>("""
+            (async () => {
+              const pair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+              const pub = feedbackCrypto.toB64(await crypto.subtle.exportKey('raw', pair.publicKey));
+              const plain = JSON.stringify({ category: '要望', message: '出先で読みたい', contact: 'taro@example.com' });
+              return {
+                jwk: JSON.stringify(await crypto.subtle.exportKey('jwk', pair.privateKey)),
+                value: JSON.stringify({ encrypted: await feedbackCrypto.encrypt(plain, pub), receivedAt: '2026-10-27T00:00:00.000Z' }),
+              };
+            })()
+            """);
+
+        await page.Locator("#keyText").FillAsync(keys.GetProperty("jwk").GetString()!);
+        await ClickAsync(page, "鍵を読み込む");
+        await page.GetByText("秘密鍵を読み込みました").WaitForAsync();
+        Assert.Equal("", await page.Locator("#keyText").InputValueAsync());
+
+        await page.Locator("#input").FillAsync(keys.GetProperty("value").GetString()!);
+        await ClickAsync(page, "読む");
+        var item = page.Locator(".item");
+        await item.GetByText("出先で読みたい").WaitForAsync();
+        Assert.Contains("taro@example.com", await item.InnerTextAsync());
+    }
+
     // --- 10. 説明のページと初回の案内 ---
 
     [E2EFact]

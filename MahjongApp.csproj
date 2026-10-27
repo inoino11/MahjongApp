@@ -34,4 +34,9 @@
   <ItemGroup>
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
   </ItemGroup>
+
+  <!-- 問い合わせを読むページだけは、スマホからも開けるように公開物に入れる（秘密の情報は含まない。オフライン用の一覧には入れない） -->
+  <Target Name="PublishFeedbackReader" AfterTargets="Publish">
+    <Copy SourceFiles="tools\feedback-reader.html" DestinationFolder="$(PublishDir)wwwroot\tools" />
+  </Target>
 </Project>

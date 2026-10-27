@@ -33,7 +33,9 @@ async function onActivate(event) {
 async function onFetch(event) {
     let cachedResponse = null;
     if (event.request.method === 'GET') {
-        const shouldServeIndexHtml = event.request.mode === 'navigate';
+        // 運営者用のページ（tools/）はアプリの画面ではないので、index.html に差し替えない
+        const shouldServeIndexHtml = event.request.mode === 'navigate'
+            && !new URL(event.request.url).pathname.includes('/tools/');
         const request = shouldServeIndexHtml ? 'index.html' : event.request;
         const cache = await caches.open(cacheName);
         cachedResponse = await cache.match(request);
