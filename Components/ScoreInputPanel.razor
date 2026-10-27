@@ -102,7 +102,7 @@
             </MudButton>
         </MudStack>
     </div>
-    <MudGrid Spacing="1" AlignItems="AlignItems.Center">
+    <MudGrid Spacing="1">
         @for (int i = 0; i < ParticipantCount; i++)
         {
             var index = i;
@@ -110,22 +110,22 @@
             <MudItem xs="12" sm="6">
                 <MudPaper Outlined="true" Elevation="0" Class="d-flex align-center justify-space-between px-2 py-1" Style="@($"background-color: rgba(255,255,255,0.02); transition: opacity 0.3s; {(isSitOut ? "opacity: 0.4;" : "")}")">
                     @* 名前 *@
-                    <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="Input.Players[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged.InvokeAsync((index, v)))" SearchFunc="@SearchPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" ShowOnFocus="true" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input balanced-center-select" Style="font-weight: bold; font-size: 0.95rem; width: 9.5em;" Disabled="@(isSitOut || IsEditing)" onfocus="this.select();" @onfocusin="@(() => OnFieldFocus.InvokeAsync())" />
+                    <MudAutocomplete T="string" Placeholder="@($"対局者 {index + 1}")" Value="Input.Players[index].Name" ValueChanged="@((string v) => OnPlayerNameChanged.InvokeAsync((index, v)))" SearchFunc="@SearchPlayers" CoerceText="true" CoerceValue="true" MinCharacters="0" DisableUnderLine="true" Margin="Margin.Dense" Class="player-name-input balanced-center-select" Style="font-weight: bold; font-size: 0.95rem; width: 9.5em;" Disabled="@(isSitOut || IsEditing)" onfocus="this.select();" @onfocusin="@(() => OnFieldFocus.InvokeAsync())" />
                     <div class="d-flex align-center justify-center flex-grow-1">
                         @* 抜け番 *@
                         @if (ParticipantCount > Rules.PlayerCount)
                         {
-                            <MudToggleIconButton Toggled="Input.SitOuts[index]" ToggledChanged="@((bool v) => OnSitOutChanged.InvokeAsync((index, v)))" Icon="@Icons.Material.Filled.Person" Color="Color.Default" Title="参加中" ToggledIcon="@Icons.Material.Filled.LocalCafe" ToggledColor="Color.Default" ToggledTitle="☕ 抜け番" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="IsEditing" />
+                            <MudToggleIconButton Toggled="Input.SitOuts[index]" ToggledChanged="@((bool v) => OnSitOutChanged.InvokeAsync((index, v)))" Icon="@Icons.Material.Filled.Person" Color="Color.Default" title="@(Input.SitOuts[index] ? "☕ 抜け番" : "参加中")" ToggledIcon="@Icons.Material.Filled.LocalCafe" ToggledColor="Color.Default" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="IsEditing" />
                         }
                         @* 焼き鳥 *@
                         @if (Rules.IsYakiEnabled)
                         {
-                            <MudToggleIconButton @bind-Toggled="Input.Yaki[index]" Icon="@Icons.Material.Filled.NoMeals" Color="Color.Default" Title="焼き鳥ではありません" ToggledIcon="@YakiIcon" ToggledColor="Color.Warning" ToggledTitle="🍗 焼き鳥です" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
+                            <MudToggleIconButton @bind-Toggled="Input.Yaki[index]" Icon="@Icons.Material.Filled.NoMeals" Color="Color.Default" title="@(Input.Yaki[index] ? "🍗 焼き鳥です" : "焼き鳥ではありません")" ToggledIcon="@YakiIcon" ToggledColor="Color.Warning" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
                         }
                         @* トビ賞 *@
                         @if (Rules.IsTobiEnabled)
                         {
-                            <MudToggleIconButton @bind-Toggled="Input.TobiBonus[index]" Icon="@Icons.Material.Filled.Rocket" Color="Color.Default" Title="トビ賞を獲得しません" ToggledIcon="@Icons.Material.Filled.RocketLaunch" ToggledColor="Color.Error" ToggledTitle="🚀 トビ賞を獲得します" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
+                            <MudToggleIconButton @bind-Toggled="Input.TobiBonus[index]" Icon="@Icons.Material.Filled.Rocket" Color="Color.Default" title="@(Input.TobiBonus[index] ? "🚀 トビ賞を獲得します" : "トビ賞を獲得しません")" ToggledIcon="@Icons.Material.Filled.RocketLaunch" ToggledColor="Color.Error" Size="Size.Small" ToggledSize="Size.Small" Class="mr-1" Disabled="isSitOut" />
                         }
                     </div>
                     @* 素点（百点単位で入力し、下2桁の「00」は表示だけ） *@

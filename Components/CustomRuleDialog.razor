@@ -18,7 +18,7 @@
         border-radius: 4px;
     }
 </style>
-<MudDialog DisableBackdropClick="true">
+<MudDialog>
     <TitleContent>
         <MudText Typo="Typo.h6">
             <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-2" Style="vertical-align: text-bottom;" />
@@ -106,7 +106,7 @@
                                         基準点数に満たない対局者に<br />ペナルティを課します
                                     </span>
                                 </MudText>
-                                <MudGrid Spacing="2" AlignItems="AlignItems.Center">
+                                <MudGrid Spacing="2">
                                     <MudItem xs="12" sm="6">
                                         <MudSelect T="bool" Label="基準点数" @bind-Value="EditingRules.IsSinkBaseCustom" Margin="Margin.Dense">
                                             <MudSelectItem Value="false">原点 (@EditingRules.StartingPoints 点)</MudSelectItem>

@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @inject MahjongApp.Services.StatsCacheService StatsCache
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavManager
@@ -41,9 +41,9 @@
             </MudText>
             <MudSpacer />
             <div class="d-flex align-center gap-2">
-                <MudIconButton Class="mx-n1" Style="padding: 8px;" Icon="@Icons.Material.Filled.ChangeCircle" Color="Color.Inherit" Title="単位設定" OnClick="OpenCurrencyDialog" />
-                <MudToggleIconButton Class="mx-n1" Style="padding: 8px;" Toggled="_isColorInverted" ToggledChanged="OnColorInvertChanged" Icon="@Icons.Material.Filled.InvertColors" Color="Color.Error" Title="正負のカラー設定" ToggledIcon="@Icons.Material.Filled.InvertColors" ToggledColor="Color.Info" ToggledTitle="正負のカラー設定" />
-                <MudToggleIconButton Class="mx-n1" Style="padding: 8px;" Toggled="_isDarkMode" ToggledChanged="OnDarkModeChanged" Icon="@Icons.Material.Filled.DarkMode" Color="Color.Inherit" Title="ダークモードへ" ToggledIcon="@Icons.Material.Filled.LightMode" ToggledColor="Color.Inherit" ToggledTitle="ライトモードへ" />
+                <MudIconButton Class="mx-n1" Style="padding: 8px;" Icon="@Icons.Material.Filled.ChangeCircle" Color="Color.Inherit" title="単位設定" OnClick="OpenCurrencyDialog" />
+                <MudToggleIconButton Class="mx-n1" Style="padding: 8px;" Toggled="_isColorInverted" ToggledChanged="OnColorInvertChanged" Icon="@Icons.Material.Filled.InvertColors" Color="Color.Error" title="正負のカラー設定" ToggledIcon="@Icons.Material.Filled.InvertColors" ToggledColor="Color.Info" />
+                <MudToggleIconButton Class="mx-n1" Style="padding: 8px;" Toggled="_isDarkMode" ToggledChanged="OnDarkModeChanged" Icon="@Icons.Material.Filled.DarkMode" Color="Color.Inherit" title="@(_isDarkMode ? "ライトモードへ" : "ダークモードへ")" ToggledIcon="@Icons.Material.Filled.LightMode" ToggledColor="Color.Inherit" />
             </div>
         </MudAppBar>
         @if (!IsSharedPage)
