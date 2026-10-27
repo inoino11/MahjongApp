@@ -23,11 +23,11 @@
     <PackageReference Include="MudBlazor" Version="9.3.0" />
   </ItemGroup>
 
-  <!-- テストプロジェクトと Worker（cloudflare/）のファイルをアプリ側に取り込まない -->
+  <!-- テスト・Worker（cloudflare/）・運営者用のページ（tools/）をアプリ側に取り込まない -->
   <ItemGroup>
     <Compile Remove="tests\**" />
-    <Content Remove="tests\**;cloudflare\**" />
-    <None Remove="tests\**;cloudflare\**" />
+    <Content Remove="tests\**;cloudflare\**;tools\**" />
+    <None Remove="tests\**;cloudflare\**;tools\**" />
     <EmbeddedResource Remove="tests\**" />
   </ItemGroup>
 

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<!-- 問い合わせを読むための鍵の組を作る。運営者が手元のブラウザで開く（公開しない）。鍵はこのページの中で作り、どこにも送らない -->
+<html lang="ja">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>問い合わせ用の鍵を作る</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; line-height: 1.7; color: #222; }
+        code, textarea { font-family: Consolas, monospace; }
+        textarea { width: 100%; height: 5em; }
+        button { font-size: 1rem; padding: 6px 16px; }
+        .box { border: 1px solid #ccc; border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+        .ok { color: #1b5e20; font-weight: bold; }
+        .ng { color: #b71c1c; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>問い合わせ用の鍵を作る</h1>
+    <p>
+        アプリの問い合わせは、ここで作る<b>公開鍵</b>で暗号化されます。読めるのは<b>秘密鍵</b>を持つ人だけです。<br />
+        鍵はこのページの中で作り、どこにも送りません。
+    </p>
+    <button id="generate">鍵の組を作る</button>
+
+    <div id="result" hidden>
+        <div class="box">
+            <h2>1. 秘密鍵を保存する</h2>
+            <p>
+                <button id="download">秘密鍵をファイルに保存</button><br />
+                保存したファイルは、パスワード管理アプリなど安全な場所にも控えてください。<br />
+                <span class="ng">なくすと、それまでの問い合わせは読めなくなります。他人に渡さないでください。</span>
+            </p>
+        </div>
+        <div class="box">
+            <h2>2. 公開鍵を Claude に伝える</h2>
+            <p>次の文字列をアプリに埋め込みます。公開鍵は秘密の情報ではありません。</p>
+            <textarea id="publicKey" readonly></textarea>
+        </div>
+        <p id="selftest"></p>
+    </div>
+
+    <script src="../wwwroot/js/feedback.js"></script>
+    <script>
+        let privateJwk = null;
+        document.getElementById("generate").addEventListener("click", async () => {
+            const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+            privateJwk = await crypto.subtle.exportKey("jwk", pair.privateKey);
+            const publicRaw = await crypto.subtle.exportKey("raw", pair.publicKey);
+            const publicKey = feedbackCrypto.toB64(publicRaw);
+            document.getElementById("publicKey").value = publicKey;
+            document.getElementById("result").hidden = false;
+            // 作った鍵で、暗号化して戻せることを確かめる
+            const sample = "鍵の確認 " + new Date().toISOString();
+            try {
+                const envelope = await feedbackCrypto.encrypt(sample, publicKey);
+                const back = await feedbackCrypto.decrypt(envelope, privateJwk);
+                document.getElementById("selftest").innerHTML = back === sample
+                    ? '<span class="ok">✓ この鍵の組で暗号化と復号ができることを確かめました。</span>'
+                    : '<span class="ng">✗ 復号した内容が一致しません。作り直してください。</span>';
+            } catch (e) {
+                document.getElementById("selftest").innerHTML = '<span class="ng">✗ 確認に失敗しました: ' + e.message + '</span>';
+            }
+        });
+        document.getElementById("download").addEventListener("click", () => {
+            const blob = new Blob([JSON.stringify(privateJwk, null, 2)], { type: "application/json" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "tagamsigma-feedback-private-key.json";
+            a.click();
+            URL.revokeObjectURL(a.href);
+        });
+    </script>
+</body>
+</html>
