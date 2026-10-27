@@ -3,7 +3,7 @@
 // 方式: 使い捨ての鍵ペアと運営者の公開鍵で ECDH（P-256）→ HKDF-SHA256 → AES-GCM（256bit）
 window.feedbackCrypto = {
     // 運営者の公開鍵（P-256 の非圧縮形式 65 バイトを URL Safe Base64 にしたもの）。鍵を作り直したらここを差し替える
-    publicKey: "",
+    publicKey: "BCkqQia2YnD5QOciv4UMxvrZS_b0E_vlWO_Bq5PjSJC-E6mXgXoJgXPWB8TfTwDlemDAmDfk6jEjk19PcamGBLQ",
 
     version: 1,
     hkdfSalt: new TextEncoder().encode("TaGAMΣ-feedback-v1"),
