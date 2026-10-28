@@ -23,7 +23,7 @@
         <MudTextField T="string" @bind-Value="message" Immediate="true" Label="内容" Variant="Variant.Outlined" Lines="5" MaxLength="@MaxMessageLength" Counter="@MaxMessageLength" Class="mb-3"
                       Placeholder="不具合なら、何をしたときに、どうなったかを書いてください" />
         <MudTextField T="string" @bind-Value="contact" Label="連絡先（任意・返信が必要な場合）" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="200" Class="mb-2" />
-        <MudCheckBox T="bool" @bind-Value="includeEnvironment" Color="Color.Primary" Dense="true" Label="アプリのバージョンと端末の種類を一緒に送る" />
+        <MudCheckBox T="bool" @bind-Value="includeEnvironment" Color="Color.Primary" Dense="true"><Phrases Text="アプリのバージョンと|端末の種類を|一緒に送る" /></MudCheckBox>
         @* ボット対策のおとり。人には見えず、ここが埋まっていたら Worker が捨てる *@
         <input type="text" name="website" @bind="honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0;" />
         <div class="d-flex justify-end mt-3">

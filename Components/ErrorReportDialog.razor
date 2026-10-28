@@ -19,7 +19,7 @@
         <MudPaper Outlined="true" Class="pa-2 mb-3 error-report-details" Style="font-family: Consolas, 'Courier New', monospace; font-size: 0.75rem; white-space: pre-wrap; word-break: break-all; max-height: 10em; overflow-y: auto;">@Details</MudPaper>
         <MudTextField T="string" @bind-Value="comment" Label="何をしていたか（任意）" Variant="Variant.Outlined" Lines="3" MaxLength="500" Class="mb-2" />
         <MudTextField T="string" @bind-Value="contact" Label="連絡先（任意・返信が必要な場合）" Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="200" Class="mb-2" />
-        <MudCheckBox T="bool" @bind-Value="includeEnvironment" Color="Color.Primary" Dense="true" Label="アプリのバージョンと端末の種類を一緒に送る" />
+        <MudCheckBox T="bool" @bind-Value="includeEnvironment" Color="Color.Primary" Dense="true"><Phrases Text="アプリのバージョンと|端末の種類を|一緒に送る" /></MudCheckBox>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">送らない</MudButton>

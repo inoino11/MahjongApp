@@ -113,14 +113,15 @@
         <MudExpansionPanels Elevation="0" Dense="true">
             @foreach (var (question, answer) in Faqs)
             {
-                <MudExpansionPanel Text="@question">
-                    <MudText Typo="Typo.body2" Style="line-height: 1.8;">@answer</MudText>
+                <MudExpansionPanel>
+                    <TitleContent><Phrases Text="@question" /></TitleContent>
+                    <ChildContent><MudText Typo="Typo.body2" Style="line-height: 1.8;">@answer</MudText></ChildContent>
                 </MudExpansionPanel>
             }
         </MudExpansionPanels>
         <MudText Typo="Typo.body2" Class="mt-4" Style="line-height: 1.8;">
-            解決しないときや、不具合・要望は <MudLink Href="privacy#feedback" Typo="Typo.body2" Style="font-weight: bold;">問い合わせ</MudLink> からお知らせください。
-            ご利用にあたっての注意とデータの扱いは <MudLink Href="privacy" Typo="Typo.body2" Style="font-weight: bold;">規約・プライバシー</MudLink> にまとめています。
+            解決しないときや、不具合・要望は <MudLink Href="privacy#feedback" Typo="Typo.body2" Class="phrase" Style="font-weight: bold;">問い合わせ</MudLink> からお知らせください。
+            ご利用にあたっての注意とデータの扱いは <MudLink Href="privacy" Typo="Typo.body2" Class="phrase" Style="font-weight: bold;">規約・プライバシー</MudLink> にまとめています。
         </MudText>
     </MudPaper>
 </MudContainer>
@@ -146,12 +147,13 @@
         (Icons.Material.Filled.MoneyOff, "無料・広告なし", "集計中の画面を広告がふさぐことはありません。"),
     };
 
+    // 質問は | で折り返してよい切れ目を示す（Phrases）
     private static readonly (string Question, string Answer)[] Faqs =
     {
-        ("「結果を記録する」が押せない", "全員の素点の合計が「持ち点 × 人数」と一致すると押せます。たとえば 25,000点持ちの四人麻雀なら、合計が 100,000点になる必要があります。名前が空欄の人や、同じ名前の人がいても記録できません。"),
-        ("5人以上で打ちたい", "素点入力の「追加」で枠を増やし、その半荘に入らない人を ☕（抜け番）にしてください。"),
-        ("ほかの人のスマホでも結果を見たい", "結果表の下の「URLシェア」で閲覧用のURLを、「観戦URL」で記録のたびに更新されるURLを送れます。"),
-        ("機種変更したい", "「データ管理」でクラウドバックアップを始めておくと、新しい端末で「クラウドから復元」を選び、パスキーか復元キーで戻せます。ファイルで移すこともできます。"),
-        ("ルールのメモは計算に使われる？", "使われません。抜き牌や赤の枚数など、計算に関係しない取り決めを残しておくための欄です。"),
+        ("「結果を記録する」が|押せない", "全員の素点の合計が「持ち点 × 人数」と一致すると押せます。たとえば 25,000点持ちの四人麻雀なら、合計が 100,000点になる必要があります。名前が空欄の人や、同じ名前の人がいても記録できません。"),
+        ("5人以上で|打ちたい", "素点入力の「追加」で枠を増やし、その半荘に入らない人を ☕（抜け番）にしてください。"),
+        ("ほかの人の|スマホでも|結果を見たい", "結果表の下の「URLシェア」で閲覧用のURLを、「観戦URL」で記録のたびに更新されるURLを送れます。"),
+        ("機種変更|したい", "「データ管理」でクラウドバックアップを始めておくと、新しい端末で「クラウドから復元」を選び、パスキーか復元キーで戻せます。ファイルで移すこともできます。"),
+        ("ルールのメモは|計算に|使われる？", "使われません。抜き牌や赤の枚数など、計算に関係しない取り決めを残しておくための欄です。"),
     };
 }

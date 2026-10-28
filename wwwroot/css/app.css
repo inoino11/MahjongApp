@@ -6,6 +6,22 @@ h1:focus {
     outline: none;
 }
 
+/* 言葉のまとまりの単位（Components/Phrases.razor）。途中では折り返さない */
+.phrase {
+    display: inline-block;
+}
+
+/* アプリ名の横の「- 麻雀集計 -」は、幅が足りない画面では出さない（2 行に崩れるため） */
+.appbar-subtitle {
+    white-space: nowrap;
+}
+
+@media (max-width: 340px) {
+    .appbar-subtitle {
+        display: none;
+    }
+}
+
 a, .btn-link {
     color: #0071c1;
 }
