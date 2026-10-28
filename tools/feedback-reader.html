@@ -35,7 +35,8 @@
         </li>
         <li>
             Cloudflare のダッシュボード（Storage &amp; Databases → KV → 名前空間）で、キーを <code>feedback:</code> で絞り込み、値をコピーして貼り付けます。<br />
-            複数をまとめて読むときは、1 行に 1 件ずつ貼り付けます。
+            複数をまとめて読むときは、1 行に 1 件ずつ貼り付けます。<br />
+            キー名の日時は UTC（日本時間 − 9 時間）です。読んだ結果の受信日時は日本時間で表示します。
         </li>
     </ol>
     <textarea id="input" placeholder='{"encrypted":"{\"v\":1,...}","receivedAt":"..."}' spellcheck="false"></textarea>
@@ -82,6 +83,12 @@
             if (privateJwk) box.value = "";
         });
 
+        // 受信日時は UTC（ISO 形式）で保存されているので、日本時間で見せる。読めない値はそのまま出す
+        const toJst = (iso) => {
+            const d = new Date(iso);
+            if (!iso || isNaN(d)) return iso ?? "不明";
+            return d.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }) + "（日本時間）";
+        };
         const escapeHtml = (s) => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
         document.getElementById("read").addEventListener("click", async () => {
@@ -98,7 +105,7 @@
                     const envelope = record.encrypted ?? line;
                     const plain = JSON.parse(await feedbackCrypto.decrypt(typeof envelope === "string" ? envelope : JSON.stringify(envelope), privateJwk));
                     div.innerHTML =
-                        `<div class="meta">受信: ${escapeHtml(record.receivedAt ?? "不明")} ／ 種類: ${escapeHtml(plain.category ?? "")}</div>` +
+                        `<div class="meta">受信: ${escapeHtml(toJst(record.receivedAt))} ／ 種類: ${escapeHtml(plain.category ?? "")}</div>` +
                         `<div>${escapeHtml(plain.message ?? "")}</div>` +
                         (plain.contact ? `<div class="meta">連絡先: ${escapeHtml(plain.contact)}</div>` : "") +
                         (plain.environment ? `<div class="meta">環境: ${escapeHtml(plain.environment)}</div>` : "");

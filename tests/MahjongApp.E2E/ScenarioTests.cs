@@ -365,6 +365,8 @@ public class ScenarioTests
         var item = page.Locator(".item");
         await item.GetByText("出先で読みたい").WaitForAsync();
         Assert.Contains("taro@example.com", await item.InnerTextAsync());
+        // 受信日時は UTC で保存されているが、日本時間で表示する
+        Assert.Contains("2026/10/27 09:00:00（日本時間）", await item.InnerTextAsync());
     }
 
     [E2EFact]

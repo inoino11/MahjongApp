@@ -15,6 +15,12 @@ if (!token || !accountId || !namespaceId) {
 const api = "https://api.cloudflare.com/client/v4";
 const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 const utcDate = (d) => d.toISOString().slice(0, 10);
+// 通知は日本時間で書く。KV の無料枠は UTC の日ごと（日本時間 9 時から翌日 9 時まで）に数えられる
+const jst = (d) => d.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+const jstRangeOfUtcDate = (date) => {
+  const start = new Date(`${date}T00:00:00Z`);
+  return `日本時間 ${jst(start)}〜${jst(new Date(start.getTime() + 24 * 3600e3))}`;
+};
 
 // UTC の日ごとの KV の書き込み回数（前日と当日）
 async function kvWritesByDate() {
@@ -64,10 +70,10 @@ const feedback = await recentFeedbackCount();
 console.error(`KV の書き込み: ${JSON.stringify(writes)} / 過去24時間の問い合わせ: ${feedback}件`);
 
 for (const [date, count] of Object.entries(writes)) {
-  if (count >= writeAlert) lines.push(`- ⚠️ ${date}（UTC）の KV の書き込みが **${count} 回**です（無料枠は 1 日 1,000 回、通知のしきい値は ${writeAlert} 回）。README の「運用」にある有料プランへの切り替えの目安を確認してください。`);
+  if (count >= writeAlert) lines.push(`- ⚠️ ${jstRangeOfUtcDate(date)} の KV の書き込みが **${count} 回**です（無料枠は 1 日 1,000 回、通知のしきい値は ${writeAlert} 回）。README の「運用」にある有料プランへの切り替えの目安を確認してください。`);
 }
 if (feedback > 0) lines.push(`- ✉️ 過去 24 時間に問い合わせが **${feedback} 件**届いています。Cloudflare のダッシュボードで \`feedback:\` のキーを開き、tools/feedback-reader.html で読んでください。`);
 
 if (lines.length > 0) {
-  console.log(`### ${new Date().toISOString().slice(0, 16).replace("T", " ")}（UTC）の運用確認\n\n${lines.join("\n")}`);
+  console.log(`### ${jst(new Date())}（日本時間）の運用確認\n\n${lines.join("\n")}`);
 }
