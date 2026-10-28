@@ -11,6 +11,12 @@ h1:focus {
     display: inline-block;
 }
 
+/* 左メニューの項目名が 2 行になっても（「規約・プライバシー」など）、アイコンを上下の中央に置く。
+   MudBlazor の CSS（上揃え）より先に読み込まれるので、.mud-navmenu を付けて優先させる */
+.mud-navmenu .mud-nav-link {
+    align-items: center;
+}
+
 /* アプリ名の横の「- 麻雀集計 -」は、幅が足りない画面では出さない（2 行に崩れるため） */
 .appbar-subtitle {
     white-space: nowrap;
