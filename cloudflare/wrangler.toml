@@ -1,8 +1,11 @@
 # Worker の設定。GitHub Actions（.github/workflows/deploy-worker.yml）がこの内容でデプロイする。
 # ダッシュボードで変えた設定は次のデプロイで上書きされるため、変更はここで行う
-name = "mahjong-share" # URL の mahjong-share.inoino11.workers.dev と一致させる
+name = "mahjong-share" # 旧 URL の mahjong-share.inoino11.workers.dev と一致させる
 main = "mahjong-share-worker.js"
 compatibility_date = "2026-06-11"
+# 呼び出し先は独自ドメイン（DNS と証明書は Cloudflare が用意する）。
+# workers.dev も残し、端末に残った古いアプリからの呼び出しを受け続ける
+routes = [{ pattern = "api.inoino11.com", custom_domain = true }]
 workers_dev = true
 
 [[kv_namespaces]]
