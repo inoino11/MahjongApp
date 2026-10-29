@@ -11,22 +11,22 @@
     <meta name="description" content="インストール不要・登録不要。素点を入れるだけでウマ・オカから焼き鳥・トビ賞まで自動計算し、精算と通算成績まで残せる麻雀集計アプリ" />
     <meta property="og:description" content="インストール不要・登録不要。素点を入れるだけでウマ・オカから焼き鳥・トビ賞まで自動計算し、精算と通算成績まで残せる麻雀集計アプリ" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://inoino11.github.io/MahjongApp/" />
-    <meta property="og:image" content="https://inoino11.github.io/MahjongApp/ogp-image.jpg" />
+    <meta property="og:url" content="https://tagame.inoino11.com/" />
+    <meta property="og:image" content="https://tagame.inoino11.com/ogp-image.jpg" />
     <meta property="og:site_name" content="TaGAMΣ" />
 
     <!-- X用のカード設定 -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="TaGAMΣ - 麻雀集計 -" />
     <meta name="twitter:description" content="インストール不要・登録不要。素点を入れるだけでウマ・オカから焼き鳥・トビ賞まで自動計算し、精算と通算成績まで残せる麻雀集計アプリ" />
-    <meta name="twitter:image" content="https://inoino11.github.io/MahjongApp/ogp-image.jpg" />
+    <meta name="twitter:image" content="https://tagame.inoino11.com/ogp-image.jpg" />
 
     <script>
-        // ローカル開発時はルート、GitHub Pages ではリポジトリ名のパスを基準にする
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            document.write('<base href="/" />');
-        } else {
+        // 独自ドメイン（tagame.inoino11.com）とローカル開発ではルート、旧住所の GitHub Pages（github.io）ではリポジトリ名のパスを基準にする
+        if (window.location.hostname.endsWith('github.io')) {
             document.write('<base href="/MahjongApp/" />');
+        } else {
+            document.write('<base href="/" />');
         }
     </script>
 

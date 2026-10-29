@@ -13,7 +13,7 @@ namespace MahjongApp.Services;
 /// </summary>
 public class LiveShareService
 {
-    public const string WorkerUrl = "https://mahjong-share.inoino11.workers.dev";
+    public const string WorkerUrl = "https://api.inoino11.com";
     // 送信回数（KV の書き込み）を抑えるため、変化してから少し待ってまとめ、前回の送信からも間隔を空ける。
     // 観戦は数局に一度見て現状が分かれば足りるので、記録が反映されるまで最大1分ほど遅れてよい
     private static readonly TimeSpan Debounce = TimeSpan.FromSeconds(10);

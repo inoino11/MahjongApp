@@ -31,9 +31,6 @@ jobs:
     - name: Test
       run: dotnet test tests/MahjongApp.Tests
 
-    - name: Rewrite base href for GitHub Pages
-      run: sed -i 's/<base href="\/" \/>/<base href="\/MahjongApp\/" \/>/g' wwwroot/index.html
-
     - name: Publish Blazor App
       run: dotnet publish MahjongApp.csproj -c Release -o release
 
@@ -55,7 +52,6 @@ jobs:
       env:
         E2E_WWWROOT: ${{ github.workspace }}/release/wwwroot
         E2E_ARTIFACTS: ${{ github.workspace }}/e2e-artifacts
-        E2E_BASE_PATH: MahjongApp # 公開物は base が /MahjongApp/ に書き換わっているので、本番と同じパスで配る
       # 失敗したテストを GitHub の注記に出す（ログを開かなくても原因が分かるように）
       run: dotnet test tests/MahjongApp.E2E -c Release --no-build --logger GitHubActions
 

@@ -1,7 +1,7 @@
 // 画面テストの補助（すべてのページに読み込ませる）。Worker への通信を代役のサーバーへ向け、テンキー操作やデータの準備を手伝う
 (() => {
   // --- Worker への通信を、代役のサーバーへ向ける（__MOCK_WORKER__ はテスト側で置き換える） ---
-  const WORKER = "https://mahjong-share.inoino11.workers.dev";
+  const WORKER = "https://api.inoino11.com";
   const LOCAL = "__MOCK_WORKER__";
   const origFetch = window.fetch.bind(window);
   window.fetch = async (input, init) => {

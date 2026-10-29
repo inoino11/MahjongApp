@@ -3,7 +3,9 @@
 麻雀の点数計算と成績管理を、スマホひとつで済ませるための Web アプリです。
 半荘ごとに素点を入れるだけで、ウマ・オカから焼き鳥・トビ賞まで自動で計算し、その日の精算と通算成績まで残せます。
 
-**https://inoino11.github.io/MahjongApp/**
+**https://tagame.inoino11.com/**
+
+（旧 URL の https://inoino11.github.io/MahjongApp/ は、新しい URL に転送されます）
 
 ## できること
 
@@ -64,7 +66,7 @@ E2E_WWWROOT=release/wwwroot E2E_BROWSER_CHANNEL=msedge dotnet test tests/Mahjong
 1. Cloudflare のダッシュボード → Storage & Databases → KV → 名前空間を開き、キーを `feedback:` で絞り込んで値をコピーします。
 2. 読み取りのページを開き、秘密鍵を入れて値を貼り付けます。秘密鍵はファイルを選ぶか、パスワード管理アプリからコピーした中身を貼り付けます。
    - PC: [tools/feedback-reader.html](tools/feedback-reader.html) をブラウザで開きます。
-   - スマホ: https://inoino11.github.io/MahjongApp/tools/feedback-reader.html を開きます（公開物に同梱しています。秘密の情報は含まず、復号はブラウザの中だけで行い、通信は CSP で禁止しています）。
+   - スマホ: https://tagame.inoino11.com/tools/feedback-reader.html を開きます（公開物に同梱しています。秘密の情報は含まず、復号はブラウザの中だけで行い、通信は CSP で禁止しています）。
 
 鍵の組は [tools/feedback-keys.html](tools/feedback-keys.html) で作ります。秘密鍵はリポジトリや Cloudflare には置かず、パスワード管理アプリ（と予備のオフラインの控え）にだけ保管します（誤ってコミットしないよう `.gitignore` で `*private-key*.json` を除外しています）。公開した読み取りのページを書き換えられると貼り付けた秘密鍵を盗まれるため、GitHub アカウントの 2 段階認証は必ず有効にしておきます。鍵を作り直したら、`feedback.js` の `publicKey` を差し替えます（それまでの問い合わせは古い秘密鍵でしか読めません）。
 

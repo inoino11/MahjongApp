@@ -5,7 +5,7 @@ namespace MahjongApp.Tests;
 // エラー報告で送る文（利用者に見せてから送る）
 public class ErrorReportTests
 {
-    private const string Base = "https://inoino11.github.io/MahjongApp/";
+    private const string Base = "https://tagame.inoino11.com/";
 
     private static Exception Thrown(Func<Exception> make)
     {
@@ -27,6 +27,9 @@ public class ErrorReportTests
     {
         Assert.Equal("/", ErrorReport.PagePath(Base, Base));
         Assert.Equal("/settings", ErrorReport.PagePath("http://localhost:5260/settings?x=1", "http://localhost:5260/"));
+        Assert.Equal("/privacy", ErrorReport.PagePath(Base + "privacy", Base));
+        // 旧住所（リポジトリ名のパスの下）で開いたときも、アプリ内のパスだけになる
+        Assert.Equal("/privacy", ErrorReport.PagePath("https://inoino11.github.io/MahjongApp/privacy", "https://inoino11.github.io/MahjongApp/"));
         Assert.Equal("/MahjongApp/privacy", ErrorReport.PagePath("https://example.com/MahjongApp/privacy", Base));
     }
 

@@ -63,7 +63,6 @@
     private string? errorMessage;
     private int displayMode = 1;
     private SharedPayload? sharedData;
-    private readonly string workerUrl = "https://mahjong-share.inoino11.workers.dev";
 
     [SupplyParameterFromQuery(Name = "id")]
     public string? SharedIdParam { get; set; }
@@ -99,7 +98,7 @@
         {
             try
             {
-                var encData = await Http.GetFromJsonAsync<EncryptedResponse>($"{workerUrl}/{SharedIdParam}");
+                var encData = await Http.GetFromJsonAsync<EncryptedResponse>($"{MahjongApp.Services.LiveShareService.WorkerUrl}/{SharedIdParam}");
                 if (encData != null && !string.IsNullOrEmpty(encData.EncryptedData))
                     await ApplyEncryptedAsync(encData.EncryptedData, decryptionKey);
                 else
@@ -128,7 +127,7 @@
     {
         try
         {
-            var live = await Http.GetFromJsonAsync<LiveResponse>($"{workerUrl}/live/{LiveIdParam}");
+            var live = await Http.GetFromJsonAsync<LiveResponse>($"{MahjongApp.Services.LiveShareService.WorkerUrl}/live/{LiveIdParam}");
             if (live == null)
             {
                 errorMessage = "データが存在しないか、形式が異なります。";

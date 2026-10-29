@@ -18,16 +18,6 @@ namespace MahjongApp.E2E;
 public sealed class AppFixture : IAsyncLifetime
 {
     public static string? WwwRoot => Environment.GetEnvironmentVariable("E2E_WWWROOT");
-    // アプリを配るパス。CI では公開用に base が /MahjongApp/ に書き換えられた公開物を試すので、本番と同じパスで配る
-    private static string BasePath
-    {
-        get
-        {
-            var trimmed = (Environment.GetEnvironmentVariable("E2E_BASE_PATH") ?? "").Trim('/');
-            return trimmed.Length == 0 ? "/" : $"/{trimmed}/";
-        }
-    }
-
     private WebApplication? _app;
     private Process? _worker;
     private IPlaywright? _playwright;
@@ -41,7 +31,7 @@ public sealed class AppFixture : IAsyncLifetime
     public async Task InitializeAsync()
     {
         if (string.IsNullOrEmpty(WwwRoot)) return;
-        BaseUrl = $"http://localhost:{await StartAppServerAsync(WwwRoot)}{BasePath}";
+        BaseUrl = $"http://localhost:{await StartAppServerAsync(WwwRoot)}/";
         WorkerUrl = $"http://127.0.0.1:{await StartWorkerAsync()}";
         _helpers = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "e2e-helpers.js")).Replace("__MOCK_WORKER__", WorkerUrl);
 
@@ -81,7 +71,6 @@ public sealed class AppFixture : IAsyncLifetime
         types.Mappings[".wasm"] = "application/wasm";
         types.Mappings[".dat"] = "application/octet-stream";
         types.Mappings[".blat"] = "application/octet-stream";
-        if (BasePath != "/") _app.UsePathBase(BasePath.TrimEnd('/'));
         _app.Use(async (ctx, next) =>
         {
             if (ctx.Request.Path.Value?.EndsWith("service-worker.js") == true) { ctx.Response.StatusCode = 404; return; }

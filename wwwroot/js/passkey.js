@@ -6,6 +6,13 @@ window.passkey = {
     // PRF に渡す固定の値。変えると登録済みのパスキーから同じ秘密を取り出せなくなるので変更しないこと
     salt: new TextEncoder().encode("TaGAMΣ-backup-wrap-v1"),
 
+    // inoino11.com とそのサブドメインでは、パスキーをドメイン全体に結び付ける（アプリを別のサブドメインに移しても使えるように）。
+    // それ以外（localhost など）では指定せず、開いている住所に結び付ける
+    rpId: function () {
+        const host = location.hostname;
+        return host === "inoino11.com" || host.endsWith(".inoino11.com") ? "inoino11.com" : undefined;
+    },
+
     isSupported: function () {
         return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
     },
@@ -28,7 +35,7 @@ window.passkey = {
         try {
             const cred = await navigator.credentials.create({
                 publicKey: {
-                    rp: { name: "TaGAMΣ" },
+                    rp: { name: "TaGAMΣ", id: this.rpId() },
                     user: { id: this.hexToBytes(backupId), name: "TaGAMΣ バックアップ", displayName: "TaGAMΣ バックアップ" },
                     challenge: crypto.getRandomValues(new Uint8Array(32)),
                     pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
@@ -44,6 +51,7 @@ window.passkey = {
                 const assertion = await navigator.credentials.get({
                     publicKey: {
                         challenge: crypto.getRandomValues(new Uint8Array(32)),
+                        rpId: this.rpId(),
                         allowCredentials: [{ type: "public-key", id: cred.rawId }],
                         userVerification: "required",
                         extensions: { prf: { eval: { first: this.salt } } }
@@ -67,6 +75,7 @@ window.passkey = {
             const assertion = await navigator.credentials.get({
                 publicKey: {
                     challenge: crypto.getRandomValues(new Uint8Array(32)),
+                    rpId: this.rpId(),
                     userVerification: "required",
                     extensions: { prf: { eval: { first: this.salt } } }
                 }
