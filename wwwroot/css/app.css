@@ -11,7 +11,7 @@ h1:focus {
     display: inline-block;
 }
 
-/* 左メニューの項目名が 2 行になっても（「規約・プライバシー」など）、アイコンを上下の中央に置く。
+/* 左メニューの項目名が 2 行になっても、アイコンを上下の中央に置く。
    MudBlazor の CSS（上揃え）より先に読み込まれるので、.mud-navmenu を付けて優先させる */
 .mud-navmenu .mud-nav-link {
     align-items: center;

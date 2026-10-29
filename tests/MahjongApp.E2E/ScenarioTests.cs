@@ -411,8 +411,13 @@ public class ScenarioTests
         await using var device = await _app.NewDeviceAsync();
         var page = await OpenAsync(device, "privacy");
         await page.GetByText("ご利用にあたって").WaitForAsync();
-        await page.Locator(".mud-typography-h4", new() { HasTextString = "規約・プライバシー" }).WaitForAsync();
-        Assert.Equal(1, await page.Locator(".mud-nav-link-text", new() { HasTextString = "規約・プライバシー" }).CountAsync());
+        await page.Locator(".mud-typography-h4", new() { HasTextString = "データと規約" }).WaitForAsync();
+        // メニューの項目名は 1 行に収まる（2 行だと行末の区切りが目立つため、短い名前にしている）
+        await page.Locator(".mud-appbar .mud-icon-button").First.ClickAsync();
+        var navText = page.Locator(".mud-nav-link-text", new() { HasTextString = "データと規約" });
+        await navText.WaitForAsync();
+        var lineHeight = await navText.EvaluateAsync<double>("e => parseFloat(getComputedStyle(e).lineHeight)");
+        Assert.True((await navText.BoundingBoxAsync())!.Height < lineHeight * 1.5);
         foreach (var path in new[] { "about", "settlement" })
         {
             await page.GotoAsync(path);
