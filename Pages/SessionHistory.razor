@@ -158,7 +158,7 @@
                                                         <span class="rule-badge">チップ @(group.Session.Rules.ChipRate)</span>
                                                     }
                                                 </div>
-                                                <ShareButtonGroup Rules="group.Session.Rules" TablePlayers="group.CachedPlayerNames" ActiveHistory="group.CachedResults" ActiveSessionChips="group.CachedChipsDict" />
+                                                <ShareButtonGroup Rules="group.Session.Rules" TablePlayers="group.CachedPlayerNames" ActiveHistory="group.CachedResults" ActiveSessionChips="group.CachedChipsDict" AllowLive="false" />
                                             }
                                             else if (group.Session.SettledChips != null && group.Session.SettledChips.Count > 0 && group.Session.SettledChips.Any(c => c != 0))
                                             {

@@ -291,6 +291,16 @@ public class ScenarioTests
         await view.GotoAsync($"shared?live={id}#{key}");
         await view.GetByText("はなこ").First.WaitForAsync(new() { Timeout = 30000 });
 
+        // 配信中でも、対局履歴（確定済みの対局）には観戦URLのボタンも LIVE メニューも出さない
+        await page.GotoAsync("sessions");
+        await WaitForAppAsync(page);
+        await page.Locator(".mud-table-body tr").First.ClickAsync();
+        await page.GetByRole(AriaRole.Button, new() { Name = "URLシェア" }).First.WaitForAsync();
+        Assert.Equal(0, await page.GetByRole(AriaRole.Button, new() { Name = "観戦URL" }).CountAsync());
+        Assert.Equal(0, await page.GetByRole(AriaRole.Button, new() { Name = "LIVE" }).CountAsync());
+        await page.GotoAsync("");
+        await WaitForAppAsync(page);
+
         await page.GetByRole(AriaRole.Button, new() { Name = "LIVE" }).ClickAsync();
         await page.GetByText("配信を停止").ClickAsync();
         await ClickAsync(page, "停止する");

@@ -16,13 +16,13 @@
     <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Link" OnClick="CopyShareUrlAsync" Disabled="@(isSharing || ActiveHistory.Count == 0)" Style="flex: 1; max-width: 140px; white-space: nowrap;">
         @(isSharing ? "生成中..." : "URLシェア")
     </MudButton>
-    @if (!LiveShare.IsActive)
+    @if (AllowLive && !LiveShare.IsActive)
     {
         <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.LiveTv" OnClick="StartLiveAsync" Disabled="@isSharing" Style="flex: 1; max-width: 140px; white-space: nowrap;">
             観戦URL
         </MudButton>
     }
-    else
+    else if (AllowLive)
     {
         <div style="flex: 1; max-width: 140px;">
             <MudMenu Label="@(LiveShare.HasError ? "更新失敗" : "LIVE")" StartIcon="@(LiveShare.HasError ? Icons.Material.Filled.SyncProblem : Icons.Material.Filled.Sensors)" Variant="Variant.Filled" Color="@(LiveShare.HasError ? Color.Warning : Color.Error)" Size="Size.Small" FullWidth="true" AnchorOrigin="Origin.TopRight" TransformOrigin="Origin.BottomRight">
@@ -43,6 +43,8 @@
     [Parameter] public List<string> TablePlayers { get; set; } = new();
     [Parameter] public List<GameResult> ActiveHistory { get; set; } = new();
     [Parameter] public Dictionary<string, int> ActiveSessionChips { get; set; } = new();
+    // 確定済みの対局（履歴）では配信しない。観戦URLはアプリ全体で 1 本だけで、素点集計の内容で更新されるため
+    [Parameter] public bool AllowLive { get; set; } = true;
 
     private string targetId = $"share-target-{Guid.NewGuid():N}";
     private bool isSharing = false;
